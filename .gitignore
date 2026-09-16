@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Python (for future backend)
+__pycache__/
+*.py[cod]
+*.env
+.env
+venv/
+.venv/
+
+# Node (if added later)
+node_modules/
+
+# Keys — never commit these
+*.key
+secrets.json

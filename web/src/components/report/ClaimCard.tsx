@@ -11,7 +11,7 @@ import type { Claim } from "@/types";
 const withScheme = (u: string) => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
 export const sourceCount = (urls: string[]) => independentSourceCount((urls || []).map(withScheme)) as number;
 
-export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: number; rateable: boolean }) {
+export function ClaimCard({ claim, index, rateable, instrumented = true }: { claim: Claim; index: number; rateable: boolean; instrumented?: boolean }) {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState<string | null>(null);
   const evidenceId = useId();
@@ -21,7 +21,7 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    study.claimExpanded(index, next);
+    if (instrumented) study.claimExpanded(index, next);
   };
 
   return (
@@ -55,7 +55,7 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
           <p className="text-[0.9375rem] leading-relaxed text-foreground">{claim.reasoning}</p>
           {claim.source_urls.length > 0 && (
             <ul className="space-y-2 border-t pt-3">
-              {claim.source_urls.map(url => <SourceItem key={url} url={url} claimIndex={index} />)}
+              {claim.source_urls.map(url => <SourceItem key={url} url={url} claimIndex={index} instrumented={instrumented} />)}
             </ul>
           )}
         </div>
@@ -85,7 +85,7 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
   );
 }
 
-function SourceItem({ url, claimIndex }: { url: string; claimIndex: number }) {
+function SourceItem({ url, claimIndex, instrumented }: { url: string; claimIndex: number; instrumented: boolean }) {
   const isLink = /^https?:\/\//i.test(url);
   const domain = registrableDomain(withScheme(url)) || url;
   if (!isLink) {
@@ -102,7 +102,7 @@ function SourceItem({ url, claimIndex }: { url: string; claimIndex: number }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => study.sourceClicked(claimIndex, url)}
+        onClick={() => { if (instrumented) study.sourceClicked(claimIndex, url); }}
         className="group inline-flex max-w-full items-center gap-2 rounded-sm text-primary"
       >
         <span className="font-medium group-hover:underline">{domain}</span>

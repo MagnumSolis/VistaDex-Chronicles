@@ -3,9 +3,12 @@ import { cn } from "@/lib/utils";
 import { liveMode } from "@/proto";
 import * as study from "@/study/controller";
 import { ScreenIdea } from "@/screens/ScreenIdea";
+import { Dashboard } from "@/screens/Dashboard";
+import { Graveyard } from "@/screens/Graveyard";
 import { Report } from "@/components/report/Report";
 import { cohort, cohortReport } from "@/lib/cohort";
 import { Swatch } from "@/dev/Swatch";
+import { ConsentDialog } from "@/study/StudyUI";
 import type { ViewName } from "@/types";
 
 // Dev-only style preview: ?demo=<cohort id> renders that demo report with the new components.
@@ -21,16 +24,14 @@ const NAV: { view: ViewName; label: string; short: string }[] = [
 ];
 
 export function App() {
-  const [view, setView] = useState<ViewName>("screen");
+  const [view, setView] = useState<ViewName>("dashboard");
+  const [consentOpen, setConsentOpen] = useState(false);
 
-  useEffect(() => {
-    study.init();
-    study.viewChanged("screen");
-  }, []);
+  useEffect(() => { study.init(); }, []);
 
   const go = (v: ViewName) => {
     setView(v);
-    study.viewChanged(v); // returns true when consent should be asked (wired in step 3)
+    if (study.viewChanged(v)) setConsentOpen(true);
   };
 
   return (
@@ -73,13 +74,17 @@ export function App() {
           const idea = cohort.find(i => i.id === demoPreview);
           return idea ? <Report report={cohortReport(idea)} runId={null} rateable demo /> : null;
         })()}
-        {!demoPreview && !swatchPreview && view === "screen" && <ScreenIdea />}
-        {!demoPreview && !swatchPreview && view !== "screen" && (
-          <p className="rounded-card bg-card p-6 text-[0.9375rem] text-muted-foreground shadow-card">
-            This screen moves to the new design in the next step. Use the current prototype for it in the meantime.
-          </p>
+        {/* All views stay mounted (hidden when inactive), as in the original UI, so a report,
+            its ratings and the survey survive switching views. */}
+        {!demoPreview && !swatchPreview && (
+          <>
+            <div hidden={view !== "dashboard"}><Dashboard /></div>
+            <div hidden={view !== "screen"}><ScreenIdea onReadStudyInfo={() => setConsentOpen(true)} /></div>
+            <div hidden={view !== "graveyard"}><Graveyard /></div>
+          </>
         )}
       </main>
+      <ConsentDialog open={consentOpen} onDone={() => setConsentOpen(false)} />
     </div>
   );
 }

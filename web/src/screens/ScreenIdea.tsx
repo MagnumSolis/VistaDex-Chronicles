@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PipelineProgress, type StageView } from "@/components/PipelineProgress";
 import { Report } from "@/components/report/Report";
-import { SAMPLE_IDEA, liveMode, screenIdea } from "@/proto";
+import { SAMPLE_IDEA, liveMode, screenIdea, studyConfig } from "@/proto";
+import { FinishCard, StudyBar, TrustPre } from "@/study/StudyUI";
 import * as study from "@/study/controller";
 import { useStudyState } from "@/study/useStudy";
 import type { ScreenResult } from "@/types";
@@ -15,11 +16,7 @@ const STAGE_ANIMATION_MS = 600;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const idleStages = (): StageView[] => [0, 1, 2, 3].map(() => ({ state: "idle" }));
 
-export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterReport }: {
-  studySlotTop?: React.ReactNode;           // study bar (step 3)
-  studySlotBeforeInput?: React.ReactNode;   // pre-use trust question (step 3)
-  studySlotAfterReport?: (runId: string) => React.ReactNode; // survey (step 3)
-}) {
+export function ScreenIdea({ onReadStudyInfo }: { onReadStudyInfo: () => void }) {
   const { participating } = useStudyState();
   const [idea, setIdea] = useState("");
   const [stages, setStages] = useState<StageView[]>(idleStages);
@@ -69,12 +66,14 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
         </p>
       </header>
 
-      {studySlotTop}
-      <div className={needsTrust ? "rounded-panel ring-2 ring-primary ring-offset-4 ring-offset-background" : undefined}>{studySlotBeforeInput}</div>
+      <StudyBar onReadInfo={onReadStudyInfo} />
+      <div className={needsTrust ? "rounded-panel ring-2 ring-primary ring-offset-4 ring-offset-background" : undefined}><TrustPre /></div>
 
       <div className="rounded-panel bg-card p-5 shadow-panel sm:p-7">
         <Label htmlFor="ideaInput" className="font-display text-xl font-bold">Idea text</Label>
-        <p id="ideaHint" className="mt-1 text-sm text-muted-foreground">Please don&apos;t include names, emails or confidential details.</p>
+        <p id="ideaHint" className="mt-1 text-sm text-muted-foreground">
+          {studyConfig.INPUT_WARNING.base}{participating ? studyConfig.INPUT_WARNING.stored : studyConfig.INPUT_WARNING.notStored}
+        </p>
         <Textarea
           id="ideaInput"
           value={idea}
@@ -109,7 +108,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
       {result && (
         <div ref={reportRef} tabIndex={-1} className="space-y-10 pt-2 outline-none" aria-live="polite">
           <Report report={result.data.report} mode={result.data.mode} runId={result.runId} rateable={participating} />
-          {participating && studySlotAfterReport?.(result.runId)}
+          {participating && <FinishCard key={result.runId} runId={result.runId} />}
         </div>
       )}
     </div>

@@ -80,7 +80,7 @@ export function Report({ report, mode, runId, rateable, demo = false }: {
             <p className="rounded-card bg-card p-6 text-[0.9375rem] shadow-card">No checkable claims were found in the idea text.</p>
           ) : (
             <div className="space-y-4">
-              {report.claims.map((c, i) => <ClaimCard key={`${runId}-${i}`} claim={c} index={i} rateable={rateable} />)}
+              {report.claims.map((c, i) => <ClaimCard key={`${runId}-${i}`} claim={c} index={i} rateable={rateable} instrumented={!demo} />)}
             </div>
           )}
         </Section>
@@ -96,7 +96,7 @@ export function Report({ report, mode, runId, rateable, demo = false }: {
           id={`notes-${runId ?? "demo"}`}
           className="mt-3 min-h-28"
           placeholder="Anything you want to remember about this idea"
-          onBlur={e => study.notesEdited(e.currentTarget.value.length)}
+          onBlur={e => { if (!demo) study.notesEdited(e.currentTarget.value.length); }}
         />
       </div>
     </div>

@@ -745,3 +745,12 @@ body {
   .screen-layout { flex-direction: column; }
   .screen-left { width: 100%; }
 }
+
+/* ─── RUN BUTTON SPINNER + NOTES ────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+a.source-chip { text-decoration: none; }
+.notes-box {
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+  color: var(--text-primary); font-family: var(--font); font-size: 0.875rem; resize: vertical; min-height: 80px; outline: none;
+}

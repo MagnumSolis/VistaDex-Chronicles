@@ -20,3 +20,9 @@ node_modules/
 # Keys — never commit these
 *.key
 secrets.json
+
+# Cloudflare Worker local state and secrets
+.dev.vars
+.wrangler/
+worker/node_modules/
+.claude/

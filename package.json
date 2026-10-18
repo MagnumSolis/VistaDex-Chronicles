@@ -1,0 +1,10 @@
+{
+  "name": "vistadex-prototype",
+  "private": true,
+  "type": "module",
+  "description": "VistaDex idea-novelty and overlap screener — weekend prototype (no runtime dependencies)",
+  "scripts": {
+    "serve": "node scripts/serve.js",
+    "test": "node --test \"tests/*.test.js\""
+  }
+}

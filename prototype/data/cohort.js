@@ -126,7 +126,7 @@ export const COHORT_IDEAS = [
     category: "Logistics / Drone",
     claims: [
       { claim: "FAA Part 135 approval for beyond-visual-line-of-sight (BVLOS) drone delivery is now achievable for small operators", type: "defensibility", status: "disputed", reasoning: "Wing, Amazon Prime Air, and Zipline hold BVLOS approvals but the process took 4-6 years for each. No small operator has received full BVLOS approval. This is optimistic.", source_urls: ["faa.gov/bvlos-approvals", "dronelife.com/part135-status"] },
-      { claim: "Suburban last-mile delivery cost is 30% higher than urban due to route density", type: "market_size", status: "confirmed", reasoning: "McKinsey Last Mile Logistics 2023 report confirms suburban delivery is 28-35% more expensive per parcel due to lower density. The figure is accurate.", source_urls: ["mckinsey.com/last-mile-2023"] },
+      { claim: "Suburban last-mile delivery cost is 30% higher than urban due to route density", type: "market_size", status: "unverified", reasoning: "McKinsey Last Mile Logistics 2023 report puts suburban delivery at 28-35% more expensive per parcel due to lower density. Only one independent source is cited, so this claim stays unverified.", source_urls: ["mckinsey.com/last-mile-2023"] },
       { claim: "No software platform exists to coordinate multiple operators in the same airspace", type: "novelty", status: "contradicted", reasoning: "NASA UTM (Unmanned Traffic Management), AirMap, and Altitude Angel all provide airspace coordination for drone fleets. The problem is being solved by incumbents with government backing.", source_urls: ["utm.arc.nasa.gov", "airmap.com", "altitudeangel.com"] }
     ],
     graveyard: [

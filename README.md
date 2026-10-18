@@ -10,12 +10,16 @@ It is also our BITS F364 (Human-AI Interaction) course project; the prototype in
 
 ## Run it
 
-ES modules don't load from `file://`, so serve the folder (Node 18+, no install needed):
+The frontend is a Vite + React + TypeScript app in `web/` (Tailwind + shadcn/ui). Node 20+:
 
 ```bash
-npm run serve        # http://localhost:5173
-npm test             # all tests, no keys or network needed
+npm --prefix web install   # once
+npm run serve              # http://localhost:5173
+npm test                   # pipeline, proxy and telemetry tests — no keys or network needed
+npm run build              # static site in web/dist (GitHub Pages)
 ```
+
+`npm run parity` and `npm run a11y` (with the dev server running) check telemetry against the recorded event contract and run the accessibility pass. See [`CLAUDE.md`](CLAUDE.md) for the UI design rules.
 
 With no configuration the whole pipeline runs **key-free in the browser**: deterministic, same idea → same report. There's no live evidence in this mode, so claims honestly stay `unverified`. Real providers are used only through the proxy (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
 
@@ -23,7 +27,7 @@ With no configuration the whole pipeline runs **key-free in the browser**: deter
 
 | Screen | Description |
 |--------|-------------|
-| **Cohort Dashboard** | 8 hand-written **demo** ideas (fictional submitters). Shows claim-status counts and graveyard leads, sorted by contradicted + disputed claims |
+| **Cohort Dashboard** | 8 hand-written **demo** ideas (fictional submitters). Status counts and graveyard leads, sorted by contradicted + disputed claims; each opens a demo report |
 | **Screen an Idea** | Paste idea text → 4-stage pipeline → claims with evidence, graveyard leads, Objector. Study consent, trust sliders, per-claim agreement and survey live here |
 | **Graveyard DB** | 20 seed entries (failed, pivoted or acquired startups) with cause-of-death filters |
 
@@ -87,8 +91,13 @@ The proxy adds `X-VistaDex-Trace-Id` and `X-VistaDex-Mode` (`live` | `mock`) res
 ## Repo structure
 
 ```
-prototype/                  static site (GitHub Pages)
-  index.html, style.css
+web/                        frontend: Vite + React + TS + Tailwind + shadcn/ui (static build → web/dist)
+  src/screens/              Dashboard, ScreenIdea, Graveyard
+  src/components/report/    report: status counts, claims, objections, graveyard leads
+  src/study/                controller.ts (all telemetry calls), StudyUI.tsx (consent, sliders, survey)
+  src/index.css             design tokens (colours, radii, shadows, fonts)
+  scripts/                  parity.mjs, a11y.mjs, shots-all.mjs (drive the installed Chrome)
+prototype/                  shared, framework-free code (imported by web/ and the Worker)
   config.js                 PROXY_URL (public URL only — never keys)
   core/                     pure ES modules shared by browser and Worker
     pipeline.js             runScreen(ideaText, deps) → { report, trace }
@@ -96,12 +105,13 @@ prototype/                  static site (GitHub Pages)
     stages/                 extract.js classify.js graveyard.js objector.js
     providers/              llm.js (Groq, Mistral, fallback) retrieval.js (TinyFish) embed.js
   data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea)
-  ui/                       app.js report.js client.js escape.js
-                            study.js telemetry.js study-config.js (consent, survey wording)
+  ui/                       client.js (proxy vs mock), telemetry.js (event log, export, withdraw),
+                            study-config.js (consent, survey wording, STUDY_VERSION)
 worker/                     Cloudflare Worker proxy: /screen /events /session/:id /export
   src/index.js src/store.js schema.sql wrangler.toml
-scripts/                    serve.js (static server), dev-proxy.js (Worker handler in Node)
-tests/                      node:test suites
+scripts/                    dev-proxy.js (Worker handler in Node)
+tests/                      node:test suites; fixtures/event-contract.json (telemetry contract)
+docs/STUDY-NOTES.md         instrumentation changes to report in the study write-up
 docs/DEPLOY.md              deployment + data export
 .env.example                key names (copy to .env locally; never commit .env)
 ```
@@ -115,6 +125,7 @@ docs/DEPLOY.md              deployment + data export
 - Timestamped events under a random anonymous session ID: claim expanded, source clicked, objections/graveyard viewed, time on report, ratings, survey.
 - No names, emails, IP addresses or user agents. Idea text is stored (participants are warned not to include identifying details).
 - Participants can download their data (JSON/CSV) and withdraw (local + server deletion). Researchers export from the Worker with a token.
+- Every event carries `study_version` (`2026-10-pilot-2` = redesigned UI). The event contract in `tests/fixtures/event-contract.json` is checked by `npm run parity`.
 
 ---
 

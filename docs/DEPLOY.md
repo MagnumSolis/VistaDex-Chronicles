@@ -4,13 +4,13 @@ Nothing here has been deployed yet. This is the checklist for whoever does it.
 
 ```
 Browser (GitHub Pages, static)            Cloudflare Worker "vistadex-proxy"          Providers
-prototype/ ──POST /screen──────────────►  holds keys as secrets  ───────────────────► Groq, Mistral, TinyFish
+web/dist   ──POST /screen──────────────►  holds keys as secrets  ───────────────────► Groq, Mistral, TinyFish
            ──POST /events (consented)──►  D1 database "vistadex" (events, traces)
            ──DELETE /session/:id──────►   (withdraw)
 researcher ──GET /export (token)───────►  JSON / CSV
 ```
 
-**Keys never go in the frontend.** `prototype/config.js` only holds the proxy's public URL.
+**Keys never go in the frontend.** `prototype/config.js` only holds the proxy's public URL. The frontend is the Vite app in `web/`, built to static files in `web/dist`; it imports the pipeline from `prototype/core` unchanged.
 
 ## 0. What you need
 
@@ -79,23 +79,23 @@ Look for `X-VistaDex-Mode: live` in the response headers. `mock` means no provid
 
 ## 5. Point the frontend at the proxy
 
-In `prototype/config.js`:
+In `prototype/config.js` (it is bundled into the web build):
 
 ```js
 export const CONFIG = { PROXY_URL: "https://vistadex-proxy.<subdomain>.workers.dev" };
 ```
 
-The sidebar badge then reads "Live providers (proxy)", and study events are sent to `/events`.
+Rebuild the site after changing it. The mode pill in the top bar then reads "Live providers", and study events are sent to `/events`.
 
 ## 6. GitHub Pages
 
-Pages can only publish from a branch root, from `/docs`, or through a GitHub Actions workflow. The site lives in `prototype/`, so use a workflow:
+Pages can only publish from a branch root, from `/docs`, or through a GitHub Actions workflow. The site is built from `web/` (Vite) into `web/dist`, so use a workflow that builds it:
 
 1. Repo **Settings → Pages → Source: GitHub Actions**.
 2. Add `.github/workflows/pages.yml` on the branch you publish from:
 
 ```yaml
-name: Deploy prototype to Pages
+name: Deploy VistaDex to Pages
 on:
   push:
     branches: [master]          # or the branch you publish from
@@ -108,14 +108,22 @@ jobs:
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+        working-directory: web
+      - run: npm test && npm run build      # contrast tests, then vite build -> web/dist
+        working-directory: web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
-        with: { path: prototype }
+        with: { path: web/dist }
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
 
-The site is then at `https://magnumsolis.github.io/VistaDex-Chronicles/`. All asset paths are relative, so the sub-path works.
+The site is then at `https://magnumsolis.github.io/VistaDex-Chronicles/`. Vite builds with `base: "./"` (relative asset paths) and the app has no client-side routes, so the sub-path works without a 404 fallback. Fonts (IBM Plex) are bundled into the build; nothing is loaded from a font CDN.
+
+To check a production build locally: `npm run build` then `npm --prefix web run preview` (http://localhost:4173).
 
 This workflow is deliberately not committed as an active file: committing it to the publishing branch is what starts a deployment.
 
@@ -134,12 +142,16 @@ Participants can also download their own data from the study bar, and withdraw. 
 ## 8. Running locally
 
 ```bash
-npm run serve                     # frontend on http://localhost:5173 (key-free mock path)
+npm --prefix web install          # once: frontend dependencies
+npm run serve                     # web/ dev server on http://localhost:5173 (key-free mock path)
 npm run dev-proxy                 # the Worker handler in Node on :8787, data in memory, keys from ./.env
-npm test                          # unit + Worker tests, no network or keys needed
+npm test                          # pipeline, proxy and telemetry tests (no network or keys)
+npm run test:web                  # web/ tests (WCAG contrast of the design tokens)
+npm run parity                    # replays the participant flow in Chrome and checks telemetry against tests/fixtures/event-contract.json
+npm run a11y                      # axe-core + keyboard-only flow + small-width checks in Chrome
 ```
 
-To use the dev proxy, temporarily set `PROXY_URL: "http://localhost:8787"` in `prototype/config.js`, and don't commit that change. `cd worker && npx wrangler dev` runs the real Worker runtime locally against a local D1. Run `npm run db:init:local` first.
+`parity` and `a11y` need the dev server running and drive the installed Chrome through `playwright-core` (no browser download). To use the dev proxy, temporarily set `PROXY_URL: "http://localhost:8787"` in `prototype/config.js`, and don't commit that change. `cd worker && npx wrangler dev` runs the real Worker runtime locally against a local D1. Run `npm run db:init:local` first.
 
 ## Known gaps before the study
 

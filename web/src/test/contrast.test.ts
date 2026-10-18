@@ -22,19 +22,22 @@ const ratio = (a: string, b: string) => {
 
 // [foreground, background, minimum ratio] — 4.5 for body text, 3 for large text / UI parts.
 const PAIRS: [string, string, number][] = [
-  ["foreground", "background", 4.5], ["foreground", "card", 4.5],
+  // reading text
+  ["foreground", "background", 4.5], ["foreground", "card", 4.5], ["foreground", "muted", 4.5],
   ["muted-foreground", "background", 4.5], ["muted-foreground", "card", 4.5], ["muted-foreground", "muted", 4.5],
-  ["primary", "card", 4.5], ["primary", "background", 4.5], ["primary-foreground", "primary", 4.5],
-  ["accent-foreground", "accent", 4.5],
-  ["st-confirmed", "st-confirmed-bg", 4.5], ["st-confirmed", "card", 4.5],
+  // accent (interactive only)
+  ["primary", "card", 4.5], ["primary", "background", 4.5], ["primary", "accent", 4.5], ["primary-foreground", "primary", 4.5],
+  ["card", "foreground", 4.5],
+  // status colour on its own tint and on white (tags, count tiles, icons)
   ["st-contradicted", "st-contradicted-bg", 4.5], ["st-contradicted", "card", 4.5],
   ["st-disputed", "st-disputed-bg", 4.5], ["st-disputed", "card", 4.5],
+  ["st-confirmed", "st-confirmed-bg", 4.5], ["st-confirmed", "card", 4.5],
   ["st-unverified", "st-unverified-bg", 4.5], ["st-unverified", "card", 4.5],
-  ["sev-high", "card", 4.5], ["sev-medium", "card", 4.5], ["sev-low", "card", 4.5], ["sev-medium", "background", 4.5],
-  ["sev-high", "muted", 4.5], ["sev-medium", "muted", 4.5], ["sev-low", "muted", 4.5], ["foreground", "muted", 4.5],
-  ["st-confirmed", "muted", 4.5], ["st-contradicted", "muted", 4.5], ["st-disputed", "muted", 4.5], ["st-unverified", "muted", 4.5],
-  ["primary", "accent", 4.5], ["card", "foreground", 4.5],
-  ["ring", "background", 3], ["border-strong", "card", 1.5],
+  // ink labels and numbers inside status count tiles
+  ["foreground", "st-contradicted-bg", 4.5], ["foreground", "st-disputed-bg", 4.5],
+  ["foreground", "st-confirmed-bg", 4.5], ["foreground", "st-unverified-bg", 4.5],
+  // non-text: focus ring and field outline (WCAG 1.4.11, 3:1)
+  ["ring", "card", 3], ["ring", "background", 3], ["input", "card", 3],
 ];
 
 describe("WCAG AA contrast of design tokens", () => {

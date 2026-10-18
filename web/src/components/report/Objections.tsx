@@ -17,7 +17,7 @@ export const Objections = forwardRef<HTMLDivElement, { objections: Objection[] }
                   <CardLabel n={i + 1}>Objection</CardLabel>
                   <SeverityTag severity={o.severity} />
                 </div>
-                <p className="mt-4 text-[1.0625rem] leading-relaxed">{o.objection}</p>
+                <p className="mt-4 text-[1.0625rem] leading-relaxed text-foreground">{o.objection}</p>
               </li>
             ))}
           </ol>

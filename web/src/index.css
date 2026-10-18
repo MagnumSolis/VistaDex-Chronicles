@@ -4,59 +4,52 @@
 
 /* ── VistaDex design tokens ─────────────────────────────────────────
    Light only (no OS-dependent dark mode during the study — see CLAUDE.md).
-   Neutral paper base, one restrained accent (deep blue), muted status hues.
-   Every text/background pair below meets WCAG AA (checked in
-   src/test/contrast.test.ts). Status is never conveyed by colour alone. */
+   Rules: ink for all reading text; the indigo accent ONLY for interactive
+   elements (primary button, active nav, links, focus, pipeline steps);
+   status colours ONLY for status (tags, count tiles, status icons) — never
+   for body text, numbering or severity. Every text/background pair meets
+   WCAG AA (src/test/contrast.test.ts). Status never relies on colour alone. */
 
 :root {
   /* base */
-  --background: #eef0ec;          /* cool grey-white base (not cream) */
-  --foreground: #15192a;          /* ink */
+  --background: #f6f5f1;          /* warm paper */
+  --foreground: #1b1f2a;          /* ink: body, claim and objection text */
   --card: #ffffff;
-  --card-foreground: #15192a;
+  --card-foreground: #1b1f2a;
   --popover: #ffffff;
-  --popover-foreground: #1c2230;
-  --muted: #f3f4f1;               /* flat nested surfaces inside cards */
-  --muted-foreground: #535b69;
-  --secondary: #eff0ee;
-  --secondary-foreground: #1c2230;
-  --border: #dfe1e4;
-  --border-strong: #c6cad0;
-  --input: #c6cad0;
+  --popover-foreground: #1b1f2a;
+  --muted: #f3f2ee;               /* flat nested surfaces inside cards */
+  --muted-foreground: #5b6475;    /* helper text */
+  --secondary: #f3f2ee;
+  --secondary-foreground: #1b1f2a;
+  --border: #e4e2dc;
+  --border-strong: #cdcac2;
+  --input: #96948f;               /* field outline: 3.03:1 on white (WCAG 1.4.11 minimum) */
 
-  /* the one accent: interactive elements and focus */
-  --primary: #2a4a99;
+  /* the one accent: interactive elements only */
+  --primary: #3b4cca;
   --primary-foreground: #ffffff;
-  --accent: #eaf0fa;
-  --accent-foreground: #1d3a78;
-  --ring: #2a4a99;
-  --destructive: #a3322b;
+  --accent: #eceefb;              /* accent tint (hover / running step) */
+  --accent-foreground: #3b4cca;
+  --ring: #3b4cca;
+  --destructive: #b4413c;
 
-  /* claim statuses — text colour / tint / rule */
-  --st-confirmed: #2c6440;
-  --st-confirmed-bg: #edf4ef;
-  --st-confirmed-rule: #b9d3c1;
-  --st-contradicted: #9d2f28;
-  --st-contradicted-bg: #f9eeed;
-  --st-contradicted-rule: #e3bdb9;
-  --st-disputed: #7f5300;
-  --st-disputed-bg: #f8f1e3;
-  --st-disputed-rule: #e2cfa6;
-  --st-unverified: #4a5260;       /* neutral: an expected state, not an error */
-  --st-unverified-bg: #f1f2f3;
-  --st-unverified-rule: #d3d6db;
-
-  /* objection severity (label + glyph carry the meaning; colour is secondary) */
-  --sev-high: #9d2f28;
-  --sev-medium: #7f5300;
-  --sev-low: #4a5260;
+  /* claim statuses — text/icon colour + tint; used only for status */
+  --st-contradicted: #b4413c;
+  --st-contradicted-bg: #fbedec;
+  --st-disputed: #9a6410;
+  --st-disputed-bg: #fbf3e4;
+  --st-confirmed: #2e7b60;          /* spec #2F7D62 was 4.41:1 on its tint; nudged to 4.53:1 */
+  --st-confirmed-bg: #e9f4ef;
+  --st-unverified: #5b6475;
+  --st-unverified-bg: #eef0f4;
 
   --radius: 0.75rem;
 
   /* unused shadcn slots kept neutral */
-  --chart-1: #284a94; --chart-2: #565e6c; --chart-3: #8a919c; --chart-4: #c6cad0; --chart-5: #1c2230;
-  --sidebar: #ffffff; --sidebar-foreground: #1c2230; --sidebar-primary: #284a94; --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eaf0fa; --sidebar-accent-foreground: #1d3a78; --sidebar-border: #dfe1e4; --sidebar-ring: #284a94;
+  --chart-1: #3b4cca; --chart-2: #5b6475; --chart-3: #8b92a0; --chart-4: #cdcac2; --chart-5: #1b1f2a;
+  --sidebar: #ffffff; --sidebar-foreground: #1b1f2a; --sidebar-primary: #3b4cca; --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceefb; --sidebar-accent-foreground: #3b4cca; --sidebar-border: #e4e2dc; --sidebar-ring: #3b4cca;
 }
 
 @theme inline {
@@ -87,19 +80,12 @@
 
   --color-st-confirmed: var(--st-confirmed);
   --color-st-confirmed-bg: var(--st-confirmed-bg);
-  --color-st-confirmed-rule: var(--st-confirmed-rule);
   --color-st-contradicted: var(--st-contradicted);
   --color-st-contradicted-bg: var(--st-contradicted-bg);
-  --color-st-contradicted-rule: var(--st-contradicted-rule);
   --color-st-disputed: var(--st-disputed);
   --color-st-disputed-bg: var(--st-disputed-bg);
-  --color-st-disputed-rule: var(--st-disputed-rule);
   --color-st-unverified: var(--st-unverified);
   --color-st-unverified-bg: var(--st-unverified-bg);
-  --color-st-unverified-rule: var(--st-unverified-rule);
-  --color-sev-high: var(--sev-high);
-  --color-sev-medium: var(--sev-medium);
-  --color-sev-low: var(--sev-low);
 
   --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);

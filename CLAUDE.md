@@ -24,7 +24,29 @@ VistaDex is an evidence-linked screening tool for accelerator / VC / university 
 - **Accessibility:** WCAG AA contrast, fully keyboard navigable, visible focus states.
 - **Responsive:** usable at phone width (participants may open the link on mobile).
 - **Theme:** light mode required. No OS-dependent dark mode during the study (it would differ between participants).
-- **Fonts** are self-hosted in the build (no Google Fonts or other font CDNs at runtime).
+- **Fonts** are self-hosted in the build (no Google Fonts or other font CDNs at runtime): IBM Plex Sans Condensed (bold) for page/section titles and large counts (tabular figures); IBM Plex Sans for body and claim text; IBM Plex Mono for small numbers.
+- **Shape:** squircle cards (28px report header, 24px cards, 16px nested surfaces), soft shadows instead of borders, pill buttons/nav/tags, round icon chips. Graveyard leads are flat dashed cards (leads, not evidence).
+
+## Colour tokens (web/src/index.css — source of truth; AA verified in web/src/test/contrast.test.ts)
+| Role | Token | Value |
+|---|---|---|
+| Background (warm paper) | `--background` | `#F6F5F1` |
+| Cards | `--card` | `#FFFFFF` + soft shadow |
+| Ink — all body, claim and objection text | `--foreground` | `#1B1F2A` |
+| Muted / helper text | `--muted-foreground` | `#5B6475` |
+| Accent (indigo) — interactive only | `--primary` / `--ring` | `#3B4CCA` (tint `#ECEEFB`) |
+| Field outline | `--input` | `#96948F` (3:1 on white, WCAG 1.4.11) |
+| Contradicted | `--st-contradicted` / `-bg` | `#B4413C` / `#FBEDEC` |
+| Disputed | `--st-disputed` / `-bg` | `#9A6410` / `#FBF3E4` |
+| Confirmed | `--st-confirmed` / `-bg` | `#2E7B60` / `#E9F4EF` (spec `#2F7D62` nudged for AA on its tint) |
+| Unverified | `--st-unverified` / `-bg` | `#5B6475` / `#EEF0F4` |
+
+**Colour rules**
+- **Status colour is used only for status** — status tags, status count tiles, status icons. Never for body text, claim text, objections, numbering badges, severity, errors or decoration.
+- **The accent is used only for interactive elements** — primary button, active nav pill, links, selected choices, focus rings, pipeline step indicators.
+- All four status count tiles have equal presence (own tint, coloured icon, ink label and number). Unverified is never styled as emptier, weaker or as an error.
+- Objection severity is neutral: the word (Low / Medium / High) plus a 1–3 bar indicator in ink. It never reuses status hues.
+- Any new text/background pair is added to the contrast test.
 
 ## Commands
 - `npm test` — node tests (pipeline, proxy, telemetry).

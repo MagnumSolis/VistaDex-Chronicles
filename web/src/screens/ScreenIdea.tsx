@@ -70,7 +70,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
       </header>
 
       {studySlotTop}
-      <div className={needsTrust ? "rounded-panel ring-2 ring-sev-medium ring-offset-4 ring-offset-background" : undefined}>{studySlotBeforeInput}</div>
+      <div className={needsTrust ? "rounded-panel ring-2 ring-primary ring-offset-4 ring-offset-background" : undefined}>{studySlotBeforeInput}</div>
 
       <div className="rounded-panel bg-card p-5 shadow-panel sm:p-7">
         <Label htmlFor="ideaInput" className="font-display text-xl font-bold">Idea text</Label>
@@ -90,7 +90,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
           </Button>
         </div>
         {needsTrust && participating && (
-          <p id="trust-needed" role="alert" className="mt-3 text-sm text-sev-medium">Please answer the question above before your first run.</p>
+          <p id="trust-needed" role="alert" className="mt-3 text-sm font-medium text-foreground">Please answer the question above before your first run.</p>
         )}
       </div>
 
@@ -98,7 +98,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
 
       {error && (
         <div role="alert" className="flex gap-3 rounded-card bg-card p-5 shadow-card">
-          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-foreground" />
           <div>
             <p className="text-sm font-semibold">The screening run failed</p>
             <p className="mt-1 text-sm text-muted-foreground">{error}</p>

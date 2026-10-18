@@ -52,7 +52,7 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
         </div>
 
         <div id={evidenceId} hidden={!open} className="mt-4 space-y-3 rounded-inner bg-muted p-4">
-          <p className="text-[0.9375rem] leading-relaxed">{claim.reasoning}</p>
+          <p className="text-[0.9375rem] leading-relaxed text-foreground">{claim.reasoning}</p>
           {claim.source_urls.length > 0 && (
             <ul className="space-y-2 border-t pt-3">
               {claim.source_urls.map(url => <SourceItem key={url} url={url} claimIndex={index} />)}
@@ -73,7 +73,7 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
               onClick={() => { setRating(o.value); study.claimRated(index, claim.type, claim.status, o.value); }}
               className={cn(
                 "h-10 rounded-full border px-3 text-sm transition-colors duration-150",
-                rating === o.value ? "border-foreground bg-foreground font-medium text-card" : "border-input bg-card hover:bg-muted",
+                rating === o.value ? "border-primary bg-primary font-medium text-primary-foreground" : "border-input bg-card hover:bg-muted",
               )}
             >
               {o.label}

@@ -33,6 +33,10 @@ for (const [name, vp] of Object.entries(VIEWPORTS)) {
   while (await show.count()) await show.first().click();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(out, `${name}-report-demo-statuses.png`), fullPage: true });
+  // 3. Palette swatch.
+  await page.goto(`${BASE}?swatch`);
+  await page.waitForSelector("text=Palette");
+  await page.screenshot({ path: path.join(out, `${name}-palette.png`), fullPage: true });
   await ctx.close();
 }
 await browser.close();

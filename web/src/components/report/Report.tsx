@@ -39,21 +39,20 @@ export function Report({ report, mode, runId, rateable, demo = false }: {
         </div>
         <p className="mt-4 line-clamp-3 max-w-[70ch] text-[0.9375rem] leading-relaxed text-muted-foreground">{report.idea_text}</p>
 
-        {/* Counts, not a score: one tile per status, icon + word + number. */}
+        {/* Counts, not a score: one tile per status with equal presence — own tint, coloured icon, ink word and number. */}
         <dl className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {STATUS_ORDER.map(st => {
             const meta = STATUS[st];
             const Icon = meta.icon;
-            const zero = counts[st] === 0;
             return (
-              <div key={st} className="flex flex-col justify-between gap-5 rounded-card bg-muted p-5">
-                <dt className="flex items-center gap-2.5 text-[0.9375rem] font-medium">
-                  <span className={cn("inline-flex size-9 items-center justify-center rounded-full", meta.bg, meta.text)}>
-                    <Icon aria-hidden className="size-5" strokeWidth={2} />
+              <div key={st} className={cn("flex flex-col justify-between gap-6 rounded-card p-5", meta.bg)}>
+                <dt className="flex items-center gap-2.5 text-[0.9375rem] font-semibold text-foreground">
+                  <span className="inline-flex size-9 items-center justify-center rounded-full bg-card">
+                    <Icon aria-hidden className={cn("size-5", meta.text)} strokeWidth={2} />
                   </span>
                   {meta.label}
                 </dt>
-                <dd className={cn("font-mono text-5xl font-medium leading-none tracking-tight", zero && "text-muted-foreground")}>{counts[st]}</dd>
+                <dd className="font-display text-6xl font-bold leading-none tabular-nums text-foreground">{counts[st]}</dd>
               </div>
             );
           })}

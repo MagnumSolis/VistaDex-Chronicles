@@ -13,9 +13,9 @@ export interface StageView { state: StageState; note?: string }
 
 const STATE_LABEL: Record<StageState, string> = { idle: "Waiting", running: "Working…", done: "Done" };
 
-// The four stages are a real sequence, so they are numbered. Progress is the one animated element.
+// The four stages are a real sequence, so they are numbered. Completion shows in the step
+// indicators themselves (accent-filled when done); the running spinner is the one animated element.
 export function PipelineProgress({ stages }: { stages: StageView[] }) {
-  const doneCount = stages.filter(s => s.state === "done").length;
   return (
     <section aria-label="Pipeline progress" className="rounded-panel bg-card p-3 shadow-card sm:p-4">
       <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -27,15 +27,15 @@ export function PipelineProgress({ stages }: { stages: StageView[] }) {
               aria-current={st.state === "running" ? "step" : undefined}
               className={cn(
                 "flex items-center gap-3.5 rounded-inner px-4 py-3.5 transition-colors duration-200",
-                st.state === "running" ? "bg-accent" : st.state === "done" ? "bg-muted" : "bg-transparent",
+                st.state === "running" ? "bg-accent" : "bg-transparent",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
                   "relative flex size-11 shrink-0 items-center justify-center rounded-full font-mono text-[0.95rem] font-medium",
-                  st.state === "done" && "bg-foreground text-card",
-                  st.state === "running" && "bg-card text-primary",
+                  st.state === "done" && "bg-primary text-primary-foreground",
+                  st.state === "running" && "border-2 border-primary bg-card text-primary",
                   st.state === "idle" && "border-2 border-border-strong text-muted-foreground",
                 )}
               >
@@ -52,9 +52,6 @@ export function PipelineProgress({ stages }: { stages: StageView[] }) {
           );
         })}
       </ol>
-      <div aria-hidden className="mx-1 mt-3 h-1 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-foreground transition-[width] duration-300 ease-out" style={{ width: `${(doneCount / STAGES.length) * 100}%` }} />
-      </div>
     </section>
   );
 }

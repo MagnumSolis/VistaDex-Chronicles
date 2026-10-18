@@ -5,11 +5,14 @@ import * as study from "@/study/controller";
 import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Report } from "@/components/report/Report";
 import { cohort, cohortReport } from "@/lib/cohort";
+import { Swatch } from "@/dev/Swatch";
 import type { ViewName } from "@/types";
 
 // Dev-only style preview: ?demo=<cohort id> renders that demo report with the new components.
 // Stripped from production builds (import.meta.env.DEV is false there).
-const demoPreview = import.meta.env.DEV ? new URLSearchParams(location.search).get("demo") : null;
+const devParams = import.meta.env.DEV ? new URLSearchParams(location.search) : null;
+const demoPreview = devParams?.get("demo") ?? null;
+const swatchPreview = devParams?.has("swatch") ?? false;
 
 const NAV: { view: ViewName; label: string; short: string }[] = [
   { view: "dashboard", label: "Cohort dashboard", short: "Dashboard" },
@@ -53,7 +56,7 @@ export function App() {
                 aria-current={view === n.view ? "page" : undefined}
                 className={cn(
                   "h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors duration-150",
-                  view === n.view ? "bg-foreground text-card" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  view === n.view ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <span className="sm:hidden">{n.short}</span>
@@ -65,12 +68,13 @@ export function App() {
       </header>
 
       <main id="main" className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
+        {swatchPreview && <Swatch />}
         {demoPreview && (() => {
           const idea = cohort.find(i => i.id === demoPreview);
           return idea ? <Report report={cohortReport(idea)} runId={null} rateable demo /> : null;
         })()}
-        {!demoPreview && view === "screen" && <ScreenIdea />}
-        {!demoPreview && view !== "screen" && (
+        {!demoPreview && !swatchPreview && view === "screen" && <ScreenIdea />}
+        {!demoPreview && !swatchPreview && view !== "screen" && (
           <p className="rounded-card bg-card p-6 text-[0.9375rem] text-muted-foreground shadow-card">
             This screen moves to the new design in the next step. Use the current prototype for it in the meantime.
           </p>

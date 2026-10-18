@@ -34,5 +34,7 @@ async function screenViaProxy(ideaText, onStage = async () => {}) {
     if (n > 1) await onStage(n, "running");
     await onStage(n, "done", counts[n - 1]);
   }
-  return { report, trace: null, traceId: res.headers.get("X-VistaDex-Trace-Id"), mode: "live" };
+  // The proxy runs the mock path too when it has no keys; it says which in a header.
+  const mode = res.headers.get("X-VistaDex-Mode") === "live" ? "live" : "proxy-mock";
+  return { report, trace: null, traceId: res.headers.get("X-VistaDex-Trace-Id"), mode };
 }

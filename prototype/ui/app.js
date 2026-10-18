@@ -208,7 +208,7 @@ function renderLiveReport({ report, mode }) {
   document.getElementById("reportView").innerHTML = `
     <div class="report-header" style="animation:modal-in 0.3s ease;">
       <div class="report-meta">
-        <span style="color:var(--text-muted);font-size:0.82rem;">${mode === "live" ? "Live pipeline run" : "Key-free mock run — no live evidence, so claims stay unverified"}</span>
+        <span style="color:var(--text-muted);font-size:0.82rem;">${mode === "live" ? "Live run — evidence retrieved from the web" : "Key-free mock run — no live evidence, so claims stay unverified"}</span>
       </div>
       <div class="report-title">Screening Report</div>
       <div style="color:var(--text-secondary);font-size:0.845rem;margin-top:4px;line-height:1.5;">${esc(report.idea_text.slice(0, 120))}…</div>

@@ -1,0 +1,15 @@
+# Cloudflare Worker config for the VistaDex proxy. See docs/DEPLOY.md.
+# Secrets (GROQ_API_KEY, MISTRAL_API_KEY, TINYFISH_API_KEY, EXPORT_TOKEN) are
+# set with `npx wrangler secret put <NAME>` — never written in this file.
+name = "vistadex-proxy"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Comma-separated browser origins allowed to call the proxy.
+ALLOWED_ORIGINS = "https://magnumsolis.github.io,http://localhost:5173,http://127.0.0.1:5173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vistadex"
+database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"

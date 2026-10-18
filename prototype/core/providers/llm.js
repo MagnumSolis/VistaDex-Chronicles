@@ -36,7 +36,8 @@ function openAICompatible({ name, url, apiKey, model, fetchImpl }) {
         throw new ProviderError(name, 0, `network error: ${err.message}`);
       }
       if (!res.ok) {
-        const detail = await res.text().catch(() => "");
+        // Upstream error bodies go into traces: never let the key ride along.
+        const detail = (await res.text().catch(() => "")).split(apiKey).join("[redacted]");
         throw new ProviderError(name, res.status, `HTTP ${res.status} ${detail.slice(0, 200)}`);
       }
       const data = await res.json();

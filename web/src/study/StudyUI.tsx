@@ -58,7 +58,7 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
     setConfirming(false);
     const res = await study.withdraw();
     setResult(res.server.startsWith("failed")
-      ? `Your local data is deleted. The server could not be reached (${res.server}); please tell the VistaDex team your session code ${res.session_id?.slice(0, 8).toUpperCase()} so they can delete it.`
+      ? `Your local data is deleted. The server could not be reached (${res.server}). Please contact ${studyConfig.WITHDRAWAL_CONTACT} with your session code ${res.session_id?.slice(0, 8).toUpperCase()} so we can delete it.`
       : "You have withdrawn. Your data has been deleted.");
   }
 

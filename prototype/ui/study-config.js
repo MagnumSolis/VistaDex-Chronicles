@@ -3,13 +3,18 @@
 // Bump whenever the participant-facing UI changes (CLAUDE.md). pilot-1 = vanilla UI; pilot-2 = redesigned web/ UI.
 export const STUDY_VERSION = "2026-10-pilot-2";
 
+// ── Open decisions for the team (not decided in code). Shown to participants as bracketed
+// placeholders so an unfinished value can't go unnoticed. Replace before the study starts.
+export const RETENTION_PERIOD = "[TODO(team): retention period]";   // e.g. "until the end of the course (Dec 2026)"
+export const WITHDRAWAL_CONTACT = "[TODO(team): withdrawal contact]"; // e.g. a team email or form link
+
 export const CONSENT = {
   title: "Before you start: taking part in our study",
   paragraphs: [
     "VistaDex is a BITS F364 (Human-AI Interaction) course project. We are studying how people use an AI tool that checks startup ideas. VistaDex does not judge your idea — it shows evidence, and you make the decision.",
     "If you agree, we record: the full text of the idea you type (it is stored with your study data), the report VistaDex produces, your ratings (trust sliders, agree/disagree on each claim, a short survey), and timestamps of what you do on the report page (for example opening a claim's evidence, clicking a source link, viewing the objections, and how long the report is on screen).",
     "We do NOT record your name, email, IP address or device details. You get a random session code instead. Because the idea text itself is stored, please do not include names, contact details or confidential information in it.",
-    "Taking part is voluntary. You can stop at any time, and you can withdraw: the \"Withdraw & delete my data\" button deletes your data from this browser and asks our server to delete it too. You can also download a copy of your data at any time.",
+    `Taking part is voluntary. You can stop at any time, and you can withdraw: the "Withdraw & delete my data" button deletes your data from this browser and asks our server to delete it too. You can also download a copy of your data at any time. We keep the data for ${RETENTION_PERIOD} and then delete it. If the withdraw button does not work for you, contact ${WITHDRAWAL_CONTACT} with your session code.`,
     "If you choose not to take part, you can still use VistaDex. Nothing will be recorded.",
   ],
   agree: "I agree — take part",
@@ -46,8 +51,10 @@ export const CLAIM_RATING = {
   ],
 };
 
-// 1–7 agreement items (1 = strongly disagree, 7 = strongly agree). Draft — team to confirm.
+// 1–7 agreement items (1 = strongly disagree, 7 = strongly agree).
+// TODO(team): items are drafts — set signedOff to true once the team has approved them.
 export const SURVEY = {
+  signedOff: false,
   title: "A few last questions",
   likert: [
     { id: "useful", text: "The report was useful for judging this idea." },

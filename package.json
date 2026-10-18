@@ -10,6 +10,7 @@
     "test:web": "npm --prefix web test",
     "parity": "npm --prefix web run parity",
     "dev-proxy": "node scripts/dev-proxy.js",
-    "a11y": "npm --prefix web run a11y"
+    "a11y": "npm --prefix web run a11y",
+    "prelaunch": "node scripts/prelaunch.js"
   }
 }

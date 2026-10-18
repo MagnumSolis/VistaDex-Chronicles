@@ -155,6 +155,8 @@ npm run a11y                      # axe-core + keyboard-only flow + small-width 
 
 ## Known gaps before the study
 
+- **Run `npm run prelaunch` before sharing the participant link.** It fails while any team decision is still open: `TODO(team)` retention period and withdrawal contact (shown to participants as bracketed placeholders), survey items not signed off (`SURVEY.signedOff`), or no `PROXY_URL`.
+
 - **`/screen` is open to anyone who finds the URL.** CORS only stops other websites, not scripts, so someone could use up the free provider quotas. Add a Cloudflare rate-limiting rule on `/screen`, or a shared study code, before sharing the link.
 - **No automatic retention or deletion schedule.** Decide how long study data is kept and delete it at the end of the course.
 - **Graveyard matching is lexical (TF-IDF).** MiniLM embeddings are planned, and the threshold must be re-calibrated when switching.

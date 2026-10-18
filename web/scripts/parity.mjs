@@ -1,12 +1,12 @@
 // ── parity.mjs — Replays the recorded participant flow on the new UI and compares the
 // telemetry it produces with tests/fixtures/event-contract.json (the vanilla UI's events).
-// Usage: node scripts/parity.mjs   (dev server on :5174, installed Chrome). Exit code 1 on mismatch.
+// Usage: node scripts/parity.mjs   (dev server on :5173, or VD_BASE=<url>, installed Chrome). Exit code 1 on mismatch.
 import { chromium } from "playwright-core";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const contract = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../tests/fixtures/event-contract.json", import.meta.url)), "utf8"));
-const BASE = "http://localhost:5174/";
+const BASE = process.env.VD_BASE || "http://localhost:5173/";
 const IDEA = "We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally.";
 const VIEWED = new Set(["graveyard_viewed", "objections_viewed"]);
 
@@ -129,6 +129,8 @@ for (const e of ev) if (VIEWED.has(e.type)) { const k = `${e.payload.run_id}:${e
 for (const [k, n] of Object.entries(perRun)) if (n > 1) problems.push(`${k} fired ${n} times`);
 const sv = ev.find(e => e.type === "survey_submitted");
 if (sv && JSON.stringify(Object.keys(sv.payload.answers)) !== JSON.stringify(contract.values["survey_submitted.answers"])) problems.push("survey answer keys differ");
+const versions = [...new Set(ev.map(e => e.study_version))];
+if (JSON.stringify(versions) !== JSON.stringify([contract.study_version])) problems.push(`study_version ${versions} != ${contract.study_version}`);
 const tp = ev.find(e => e.type === "trust_pre");
 if (tp && JSON.stringify(tp.payload.scale) !== JSON.stringify(contract.values.scale)) problems.push("trust scale differs");
 

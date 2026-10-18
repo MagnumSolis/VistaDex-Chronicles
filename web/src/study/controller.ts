@@ -1,4 +1,5 @@
-// ── controller.ts — Study instrumentation, ported 1:1 from prototype/ui/study.js ──
+// ── controller.ts — Study instrumentation, ported 1:1 from the pilot-1 vanilla UI ──
+// (prototype/ui/study.js, removed at the switch-over; see git history before it).
 // All event types, payload fields and timing rules are identical to the vanilla
 // UI (contract: tests/fixtures/event-contract.json). Components call these
 // functions; nothing else in the React app calls telemetry.log directly.

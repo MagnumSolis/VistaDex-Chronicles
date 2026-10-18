@@ -1,6 +1,7 @@
 // ── study-config.js — Wording for the BITS F364 study (edit here, not in code) ──
 
-export const STUDY_VERSION = "2026-10-pilot-1";
+// Bump whenever the participant-facing UI changes (CLAUDE.md). pilot-1 = vanilla UI; pilot-2 = redesigned web/ UI.
+export const STUDY_VERSION = "2026-10-pilot-2";
 
 export const CONSENT = {
   title: "Before you start: taking part in our study",

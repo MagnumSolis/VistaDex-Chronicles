@@ -1,4 +1,4 @@
-// ── StudyUI.tsx — Participant-facing study surfaces (restyled; behaviour as prototype/ui/study.js) ──
+// ── StudyUI.tsx — Participant-facing study surfaces (restyled; behaviour as the pilot-1 vanilla UI) ──
 // Consent dialog, study bar, withdraw dialogs, trust sliders, end survey. Every
 // event is logged through study/controller.ts with the original payloads.
 

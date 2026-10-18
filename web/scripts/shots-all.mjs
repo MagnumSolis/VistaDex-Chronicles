@@ -1,12 +1,12 @@
 // ── shots-all.mjs — Screenshots of every screen and study surface, desktop + phone ──
-// Usage: node scripts/shots-all.mjs <outDir>   (dev server on :5174, installed Chrome)
+// Usage: node scripts/shots-all.mjs <outDir>   (dev server on :5173, or VD_BASE=<url>, installed Chrome)
 import { chromium } from "playwright-core";
 import fs from "node:fs";
 import path from "node:path";
 
 const out = path.resolve(process.argv[2] || "screenshots");
 fs.mkdirSync(out, { recursive: true });
-const BASE = "http://localhost:5174/";
+const BASE = process.env.VD_BASE || "http://localhost:5173/";
 const IDEA = "We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally. Big law firms cannot easily replicate this because their cost structure requires billing by hour.";
 const VIEWPORTS = {
   desktop: { viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 },

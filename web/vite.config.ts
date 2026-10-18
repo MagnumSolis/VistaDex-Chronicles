@@ -16,7 +16,8 @@ export default defineConfig({
       "@proto": r("../prototype"),
     },
   },
-  server: { port: 5174, strictPort: true, fs: { allow: [".."] } },
+  server: { port: 5173, strictPort: true, fs: { allow: [".."] } },
+  preview: { port: 4173, strictPort: true },
   build: { outDir: "dist", emptyOutDir: true },
   test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"], setupFiles: ["src/test/setup.ts"] },
 });

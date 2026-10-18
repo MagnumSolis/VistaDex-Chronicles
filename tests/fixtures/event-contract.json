@@ -1,35 +1,141 @@
 {
-  "about": "Telemetry contract recorded from the vanilla UI (commit e0b1099) before the React redesign. The new UI must reproduce the envelope, the payload keys per event type, the enum values and the event sequence of the scripted flow below. Only study_version may change (it is bumped when the new UI ships).",
-  "captured": { "commit": "e0b1099", "date": "2026-10-18", "viewport": "1280x900", "events_after_decline": 0 },
-  "study_version": "2026-10-pilot-1",
-  "envelope": ["session_id", "seq", "ts", "type", "study_version", "payload"],
+  "about": "Telemetry contract recorded from the vanilla UI (commit e0b1099, study_version 2026-10-pilot-1) before the React redesign. The UI must reproduce the envelope, the payload keys per event type, the enum values and the event sequence of the scripted flow below. study_version is the version the current UI must emit; it was bumped to 2026-10-pilot-2 when the redesigned UI shipped.",
+  "captured": {
+    "commit": "e0b1099",
+    "date": "2026-10-18",
+    "viewport": "1280x900",
+    "events_after_decline": 0,
+    "study_version": "2026-10-pilot-1"
+  },
+  "study_version": "2026-10-pilot-2",
+  "envelope": [
+    "session_id",
+    "seq",
+    "ts",
+    "type",
+    "study_version",
+    "payload"
+  ],
   "payload_keys": {
-    "consent_given": ["study_version"],
-    "trust_pre": ["scale", "value"],
-    "view_changed": ["view"],
-    "demo_report_opened": ["idea_id"],
-    "run_started": ["idea_chars", "mode", "run_id"],
-    "run_completed": ["duration_ms", "idea_text", "mode", "report", "run_id", "trace", "trace_id"],
-    "run_failed": ["error", "run_id"],
-    "claim_expanded": ["claim_index", "expanded", "run_id"],
-    "claim_rating": ["claim_index", "claim_type", "rating", "run_id", "status"],
-    "source_clicked": ["claim_index", "run_id", "url"],
-    "graveyard_viewed": ["ms_after_report", "run_id"],
-    "objections_viewed": ["ms_after_report", "run_id"],
-    "notes_edited": ["chars", "run_id"],
-    "trust_post": ["run_id", "scale", "value"],
-    "survey_submitted": ["answers", "comments", "run_id"],
-    "report_time": ["ended_by", "run_id", "visible_ms"]
+    "consent_given": [
+      "study_version"
+    ],
+    "trust_pre": [
+      "scale",
+      "value"
+    ],
+    "view_changed": [
+      "view"
+    ],
+    "demo_report_opened": [
+      "idea_id"
+    ],
+    "run_started": [
+      "idea_chars",
+      "mode",
+      "run_id"
+    ],
+    "run_completed": [
+      "duration_ms",
+      "idea_text",
+      "mode",
+      "report",
+      "run_id",
+      "trace",
+      "trace_id"
+    ],
+    "run_failed": [
+      "error",
+      "run_id"
+    ],
+    "claim_expanded": [
+      "claim_index",
+      "expanded",
+      "run_id"
+    ],
+    "claim_rating": [
+      "claim_index",
+      "claim_type",
+      "rating",
+      "run_id",
+      "status"
+    ],
+    "source_clicked": [
+      "claim_index",
+      "run_id",
+      "url"
+    ],
+    "graveyard_viewed": [
+      "ms_after_report",
+      "run_id"
+    ],
+    "objections_viewed": [
+      "ms_after_report",
+      "run_id"
+    ],
+    "notes_edited": [
+      "chars",
+      "run_id"
+    ],
+    "trust_post": [
+      "run_id",
+      "scale",
+      "value"
+    ],
+    "survey_submitted": [
+      "answers",
+      "comments",
+      "run_id"
+    ],
+    "report_time": [
+      "ended_by",
+      "run_id",
+      "visible_ms"
+    ]
   },
   "values": {
-    "scale": [1, 7],
-    "view_changed.view": ["dashboard", "screen", "graveyard"],
-    "run_started.mode": ["mock", "live"],
-    "run_completed.mode": ["mock", "live", "proxy-mock"],
-    "claim_rating.rating": ["agree", "disagree", "unsure"],
-    "report_time.ended_by": ["new_run", "page_hidden", "withdrawn", "survey_submitted"],
-    "survey_submitted.answers": ["useful", "understandable", "evidence_clear", "in_control", "use_again"],
-    "run_completed.report": ["claims", "graveyard_matches", "idea_text", "objections"],
+    "scale": [
+      1,
+      7
+    ],
+    "view_changed.view": [
+      "dashboard",
+      "screen",
+      "graveyard"
+    ],
+    "run_started.mode": [
+      "mock",
+      "live"
+    ],
+    "run_completed.mode": [
+      "mock",
+      "live",
+      "proxy-mock"
+    ],
+    "claim_rating.rating": [
+      "agree",
+      "disagree",
+      "unsure"
+    ],
+    "report_time.ended_by": [
+      "new_run",
+      "page_hidden",
+      "withdrawn",
+      "survey_submitted"
+    ],
+    "survey_submitted.answers": [
+      "useful",
+      "understandable",
+      "evidence_clear",
+      "in_control",
+      "use_again"
+    ],
+    "run_completed.report": [
+      "claims",
+      "graveyard_matches",
+      "idea_text",
+      "objections"
+    ],
     "run_id": "r<n>, counting every run attempt in the page session (including runs made before consent)"
   },
   "flow": [

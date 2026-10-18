@@ -27,7 +27,7 @@ export function ConsentDialog({ open, onDone }: { open: boolean; onDone: () => v
         className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl sm:p-0"
       >
         {/* The text scrolls; the two choices stay visible underneath it. */}
-        <div className="overflow-y-auto p-6 sm:p-8">
+        <div tabIndex={0} role="region" aria-label="Study information" className="overflow-y-auto p-6 focus-visible:outline-offset-[-4px] sm:p-8">
           <DialogHeader>
             <DialogTitle className="text-[1.75rem] sm:text-3xl">{CONSENT.title}</DialogTitle>
             <DialogDescription className="sr-only">Study information and consent</DialogDescription>
@@ -50,6 +50,9 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
   const { consent, sessionCode } = useStudyState();
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  // Dialogs are opened from state, so put focus back on the bar's first button when they close.
+  const returnFocus = (e: Event) => { e.preventDefault(); barRef.current?.querySelector<HTMLButtonElement>("button")?.focus(); };
 
   async function withdraw() {
     setConfirming(false);
@@ -62,7 +65,7 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
   const dialogs = (
     <>
       <Dialog open={confirming} onOpenChange={setConfirming}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onCloseAutoFocus={e => { e.preventDefault(); barRef.current?.querySelector<HTMLButtonElement>("[data-withdraw]")?.focus(); }}>
           <DialogHeader>
             <DialogTitle>Withdraw from the study?</DialogTitle>
             <DialogDescription className="text-[0.9375rem] text-foreground">
@@ -76,7 +79,7 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
         </DialogContent>
       </Dialog>
       <Dialog open={result !== null} onOpenChange={o => { if (!o) setResult(null); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onCloseAutoFocus={returnFocus}>
           <DialogHeader>
             <DialogTitle>Withdrawn</DialogTitle>
             <DialogDescription className="text-[0.9375rem] text-foreground">{result}</DialogDescription>
@@ -90,7 +93,7 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
   if (consent === null) return dialogs;
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-card px-4 py-3 shadow-card sm:px-5">
+      <div ref={barRef} className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-card px-4 py-3 shadow-card sm:px-5">
         {consent === "given" ? (
           <>
             <span className="inline-flex items-center gap-2.5 text-sm">
@@ -101,7 +104,7 @@ export function StudyBar({ onReadInfo }: { onReadInfo: () => void }) {
             <span className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={study.exportJSON}><Download aria-hidden /> My data (JSON)</Button>
               <Button variant="outline" onClick={study.exportCSV}>CSV</Button>
-              <Button variant="outline" onClick={() => setConfirming(true)}>Withdraw &amp; delete my data</Button>
+              <Button variant="outline" data-withdraw onClick={() => setConfirming(true)}>Withdraw &amp; delete my data</Button>
             </span>
           </>
         ) : (

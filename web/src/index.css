@@ -151,7 +151,7 @@
   /* Untouched: no answer is implied, so the thumb is hollow until the participant moves it. */
   .trust-range.untouched::-webkit-slider-thumb { background: var(--card); box-shadow: 0 0 0 2px var(--input); }
   .trust-range.untouched::-moz-range-thumb { background: var(--card); box-shadow: 0 0 0 2px var(--input); }
-  .trust-range:focus-visible { outline: none; }
+  .trust-range:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 9999px; }
   .trust-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
   .trust-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
 }

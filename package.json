@@ -9,6 +9,7 @@
     "test": "node --test \"tests/*.test.js\"",
     "test:web": "npm --prefix web test",
     "parity": "npm --prefix web run parity",
-    "dev-proxy": "node scripts/dev-proxy.js"
+    "dev-proxy": "node scripts/dev-proxy.js",
+    "a11y": "npm --prefix web run a11y"
   }
 }

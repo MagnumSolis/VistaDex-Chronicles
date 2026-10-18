@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Ghost, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +28,7 @@ export function Dashboard() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
 
   const reports = useMemo(() => Object.fromEntries(cohort.map(i => [i.id, cohortReport(i)])), []);
   const rows = sorted.filter(idea => {
@@ -41,7 +42,8 @@ export function Dashboard() {
   const withLead = cohort.filter(i => reports[i.id].graveyard_matches.length > 0).length;
   const open = cohort.find(i => i.id === openId) ?? null;
 
-  const openReport = (id: string) => {
+  const openReport = (id: string, button: HTMLButtonElement) => {
+    trigger.current = button;
     setOpenId(id);
     study.cohortReportOpened(id);
   };
@@ -118,7 +120,7 @@ export function Dashboard() {
                   )}
                   <div className="mt-0.5 text-muted-foreground"><span className="font-mono text-foreground">{r.claims.length}</span> claims, <span className="font-mono text-foreground">{sources}</span> sources</div>
                 </div>
-                <Button variant="outline" onClick={() => openReport(idea.id)} aria-label={`View report: ${idea.name}`} className="justify-self-start lg:justify-self-end">
+                <Button variant="outline" onClick={e => openReport(idea.id, e.currentTarget)} aria-label={`View report: ${idea.name}`} className="justify-self-start lg:justify-self-end">
                   View report
                 </Button>
               </li>
@@ -128,7 +130,7 @@ export function Dashboard() {
       </section>
 
       <Dialog open={open !== null} onOpenChange={o => { if (!o) setOpenId(null); }}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto bg-background p-4 sm:max-w-6xl sm:p-8">
+        <DialogContent className="max-h-[92dvh] overflow-y-auto bg-background p-4 sm:max-w-6xl sm:p-8" onCloseAutoFocus={e => { e.preventDefault(); trigger.current?.focus(); }}>
           <DialogHeader>
             <DialogTitle className="pr-10 text-3xl">{open?.name}</DialogTitle>
             <DialogDescription>{open?.category}, submitted by {open?.submitter} (fictional)</DialogDescription>

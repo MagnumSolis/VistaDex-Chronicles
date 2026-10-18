@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ── VistaDex design tokens ─────────────────────────────────────────
+   Light only (no OS-dependent dark mode during the study — see CLAUDE.md).
+   Neutral paper base, one restrained accent (deep blue), muted status hues.
+   Every text/background pair below meets WCAG AA (checked in
+   src/test/contrast.test.ts). Status is never conveyed by colour alone. */
+
+:root {
+  /* base */
+  --background: #f7f7f5;          /* paper */
+  --foreground: #1c2230;          /* ink */
+  --card: #ffffff;
+  --card-foreground: #1c2230;
+  --popover: #ffffff;
+  --popover-foreground: #1c2230;
+  --muted: #eff0ee;
+  --muted-foreground: #565e6c;    /* 6.1:1 on paper */
+  --secondary: #eff0ee;
+  --secondary-foreground: #1c2230;
+  --border: #dfe1e4;
+  --border-strong: #c6cad0;
+  --input: #c6cad0;
+
+  /* the one accent: interactive elements and focus */
+  --primary: #284a94;
+  --primary-foreground: #ffffff;
+  --accent: #eaf0fa;
+  --accent-foreground: #1d3a78;
+  --ring: #284a94;
+  --destructive: #a3322b;
+
+  /* claim statuses — text colour / tint / rule */
+  --st-confirmed: #2c6440;
+  --st-confirmed-bg: #edf4ef;
+  --st-confirmed-rule: #b9d3c1;
+  --st-contradicted: #9d2f28;
+  --st-contradicted-bg: #f9eeed;
+  --st-contradicted-rule: #e3bdb9;
+  --st-disputed: #7f5300;
+  --st-disputed-bg: #f8f1e3;
+  --st-disputed-rule: #e2cfa6;
+  --st-unverified: #4a5260;       /* neutral: an expected state, not an error */
+  --st-unverified-bg: #f1f2f3;
+  --st-unverified-rule: #d3d6db;
+
+  /* objection severity (label + glyph carry the meaning; colour is secondary) */
+  --sev-high: #9d2f28;
+  --sev-medium: #7f5300;
+  --sev-low: #4a5260;
+
+  --radius: 0.375rem;
+
+  /* unused shadcn slots kept neutral */
+  --chart-1: #284a94; --chart-2: #565e6c; --chart-3: #8a919c; --chart-4: #c6cad0; --chart-5: #1c2230;
+  --sidebar: #ffffff; --sidebar-foreground: #1c2230; --sidebar-primary: #284a94; --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eaf0fa; --sidebar-accent-foreground: #1d3a78; --sidebar-border: #dfe1e4; --sidebar-ring: #284a94;
+}
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-st-confirmed: var(--st-confirmed);
+  --color-st-confirmed-bg: var(--st-confirmed-bg);
+  --color-st-confirmed-rule: var(--st-confirmed-rule);
+  --color-st-contradicted: var(--st-contradicted);
+  --color-st-contradicted-bg: var(--st-contradicted-bg);
+  --color-st-contradicted-rule: var(--st-contradicted-rule);
+  --color-st-disputed: var(--st-disputed);
+  --color-st-disputed-bg: var(--st-disputed-bg);
+  --color-st-disputed-rule: var(--st-disputed-rule);
+  --color-st-unverified: var(--st-unverified);
+  --color-st-unverified-bg: var(--st-unverified-bg);
+  --color-st-unverified-rule: var(--st-unverified-rule);
+  --color-sev-high: var(--sev-high);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-low: var(--sev-low);
+
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary); --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.67);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.33);
+  --radius-xl: calc(var(--radius) * 1.67);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1; /* aligned figures for counts and scores */
+  }
+  /* Visible, consistent keyboard focus everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

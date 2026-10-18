@@ -3,7 +3,7 @@
 import { GRAVEYARD_DB } from "../data/graveyard.js";
 import { COHORT_IDEAS, SAMPLE_IDEA } from "../data/cohort.js";
 import { esc } from "./escape.js";
-import { renderReportBody } from "./report.js";
+import { renderReportBody, renderCountChips, renderEvidenceLine, sourceCount, statusCounts } from "./report.js";
 import { screenIdea, liveMode } from "./client.js";
 
 // ── State ─────────────────────────────────────────────────────────────
@@ -28,11 +28,12 @@ function renderTable(ideas) {
   const tbody = document.getElementById("tableBody");
   if (!tbody) return;
   tbody.innerHTML = ideas.map(idea => {
-    const conf = idea.confidence_pct;
-    const confColor = conf >= 70 ? "#22c55e" : conf >= 50 ? "#f59e0b" : "#ef4444";
-    const graveyardCell = idea.graveyard_match
-      ? `<span class="graveyard-match"><strong>${esc(idea.graveyard_match)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">verify yourself</span></span>`
+    const report = cohortReport(idea);
+    const lead = report.graveyard_matches[0];
+    const graveyardCell = lead
+      ? `<span class="graveyard-match"><strong>${esc(lead.company_name)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">verify yourself</span></span>`
       : `<span style="color:var(--text-muted);font-size:0.82rem;">—</span>`;
+    const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
     return `
       <tr data-idea-id="${esc(idea.id)}" style="cursor:pointer;">
         <td>
@@ -41,34 +42,41 @@ function renderTable(ideas) {
         </td>
         <td class="submitter">${esc(idea.submitter)}</td>
         <td><span class="category-tag">${esc(idea.category)}</span></td>
-        <td>${statusBadge(idea.status)}</td>
+        <td><div class="count-chips">${renderCountChips(report, { includeGraveyard: false })}</div></td>
         <td>${graveyardCell}</td>
-        <td>
-          <div class="confidence-wrap">
-            <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${confColor};"></div></div>
-            <span class="conf-pct">${conf}% · ${idea.sources_checked} src</span>
-          </div>
-        </td>
+        <td><span class="conf-pct">${report.claims.length} claims · ${sources} sources</span></td>
         <td><button class="btn-ghost btn-view">View →</button></td>
       </tr>`;
   }).join("");
 }
 
-function statusBadge(status) {
-  const map = {
-    "clear":      ["badge-clear",      "✅ Clear"],
-    "caution":    ["badge-caution",    "⚠️ Caution"],
-    "high-risk":  ["badge-high-risk",  "❌ High Risk"],
-    "unverified": ["badge-unverified", "❓ Unverified"],
-  };
-  const [cls, label] = map[status] || ["badge-unverified", esc(status)];
-  return `<span class="badge ${cls}">${label}</span>`;
+function renderStats() {
+  const reports = COHORT_IDEAS.map(cohortReport);
+  const withStatus = s => reports.filter(r => r.claims.some(c => c.status === s)).length;
+  const cards = [
+    ["blue", COHORT_IDEAS.length, "Demo ideas"],
+    ["red", withStatus("contradicted"), "With a contradicted claim"],
+    ["amber", withStatus("disputed"), "With a disputed claim"],
+    ["purple", reports.filter(r => r.graveyard_matches.length).length, "With a graveyard lead"],
+  ];
+  document.getElementById("statGrid").innerHTML = cards.map(([color, value, label]) => `
+    <div class="stat-card">
+      <div class="stat-icon ${color}"></div>
+      <div class="stat-body">
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${esc(label)}</div>
+      </div>
+    </div>`).join("");
+  document.getElementById("dashSubtitle").innerHTML =
+    `<span class="demo-tag">Demo data</span> ${COHORT_IDEAS.length} hand-written example ideas — not real submissions, statuses not re-checked`;
 }
 
 function filterTable() {
   const q = document.getElementById("dashSearch")?.value.toLowerCase() || "";
   const filtered = sortedCohort().filter(idea => {
-    const matchStatus = currentStatusFilter === "all" || idea.status === currentStatusFilter;
+    const report = cohortReport(idea);
+    const matchStatus = currentStatusFilter === "all"
+      || (currentStatusFilter === "graveyard" ? report.graveyard_matches.length > 0 : report.claims.some(c => c.status === currentStatusFilter));
     const matchSearch = !q || [idea.name, idea.submitter, idea.category, idea.desc].some(s => s.toLowerCase().includes(q));
     return matchStatus && matchSearch;
   });
@@ -82,9 +90,10 @@ function filterStatus(btn, status) {
   filterTable();
 }
 
+// Ideas with the most contradicted + disputed claims first; ties by name.
 function sortedCohort() {
-  const order = { "high-risk": 0, "caution": 1, "clear": 2 };
-  return [...COHORT_IDEAS].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+  const weight = idea => { const n = statusCounts(idea.claims); return n.contradicted + n.disputed; };
+  return [...COHORT_IDEAS].sort((a, b) => weight(b) - weight(a) || a.name.localeCompare(b.name));
 }
 
 // Cohort entries are stored in the contract shape, with graveyard leads by id.
@@ -107,15 +116,14 @@ function openIdeaModal(ideaId) {
   document.getElementById("modalContent").innerHTML = `
     <div class="report-header">
       <div class="report-meta">
-        ${statusBadge(idea.status)}
+        <span class="demo-tag">Demo data</span>
         <span class="category-tag">${esc(idea.category)}</span>
-        <span style="color:var(--text-muted);font-size:0.82rem;">Submitted by ${esc(idea.submitter)}</span>
+        <span style="color:var(--text-muted);font-size:0.82rem;">Submitted by ${esc(idea.submitter)} (fictional)</span>
       </div>
       <div class="report-title">${esc(idea.name)}</div>
       <div style="color:var(--text-secondary);font-size:0.875rem;">${esc(idea.desc)}</div>
-      <div class="report-footer-line">
-        ${idea.sources_checked} sources checked · ${idea.claims.length} claims extracted · Confidence ${idea.confidence_pct}%
-      </div>
+      <div class="count-chips" style="margin-top:10px;">${renderCountChips(report)}</div>
+      <div class="report-footer-line">${renderEvidenceLine(report)} · demo statuses were hand-written and not re-checked</div>
     </div>
     <div class="report-body">${renderReportBody(report, { notesPlaceholder: "Add your own notes — these feed the accuracy feedback loop…" })}</div>`;
   document.getElementById("reportModal").style.display = "flex";
@@ -189,27 +197,15 @@ function renderError(err) {
 }
 
 function renderLiveReport({ report, mode }) {
-  const { claims, graveyard_matches: graveyard } = report;
-  const contradicted = claims.filter(c => c.status === "contradicted").length;
-  const confirmed = claims.filter(c => c.status === "confirmed").length;
-  const hasHighGraveyardMatch = graveyard.some(g => g.similarity >= 0.7);
-  let overallStatus = "clear";
-  if (contradicted >= 2 || (contradicted >= 1 && hasHighGraveyardMatch)) overallStatus = "high-risk";
-  else if (contradicted >= 1 || graveyard.length > 0) overallStatus = "caution";
-  const confidence = Math.round(50 + confirmed * 10 - contradicted * 12 + (graveyard.length === 0 ? 5 : -8));
-  const sourceCount = claims.reduce((n, c) => n + c.source_urls.length, 0);
-
   document.getElementById("reportView").innerHTML = `
     <div class="report-header" style="animation:modal-in 0.3s ease;">
       <div class="report-meta">
-        ${statusBadge(overallStatus)}
-        <span style="color:var(--text-muted);font-size:0.82rem;">${mode === "live" ? "Live pipeline run" : "Key-free mock run"}</span>
+        <span style="color:var(--text-muted);font-size:0.82rem;">${mode === "live" ? "Live pipeline run" : "Key-free mock run — no live evidence, so claims stay unverified"}</span>
       </div>
       <div class="report-title">Screening Report</div>
       <div style="color:var(--text-secondary);font-size:0.845rem;margin-top:4px;line-height:1.5;">${esc(report.idea_text.slice(0, 120))}…</div>
-      <div class="report-footer-line">
-        ${sourceCount} sources cited · ${claims.length} claims extracted · Confidence ${Math.max(20, Math.min(confidence, 95))}% · Graveyard: ${graveyard.length} match${graveyard.length !== 1 ? "es" : ""}
-      </div>
+      <div class="count-chips" style="margin-top:10px;">${renderCountChips(report)}</div>
+      <div class="report-footer-line">${renderEvidenceLine(report)} · you make the decision</div>
     </div>
     <div class="report-body" style="animation:modal-in 0.35s 0.05s both ease;">${renderReportBody(report)}</div>`;
   document.getElementById("resultsPanel").style.display = "block";
@@ -272,5 +268,7 @@ document.getElementById("tableBody").addEventListener("click", e => {
   if (row) openIdeaModal(row.dataset.ideaId);
 });
 document.getElementById("modeBadge").textContent = liveMode() ? "Live providers (proxy)" : "Key-free mock mode";
+renderStats();
 renderTable(sortedCohort());
+document.getElementById("graveyardCount").textContent = `${GRAVEYARD_DB.length} seed entries`;
 renderGraveyard(GRAVEYARD_DB);

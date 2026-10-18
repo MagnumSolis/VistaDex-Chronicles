@@ -754,3 +754,22 @@ a.source-chip { text-decoration: none; }
   background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
   color: var(--text-primary); font-family: var(--font); font-size: 0.875rem; resize: vertical; min-height: 80px; outline: none;
 }
+
+/* ─── EVIDENCE COUNT CHIPS (replace verdict badges) ─────────────── */
+.count-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.count-chip {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+  font-size: 0.74rem; font-weight: 600; border: 1px solid var(--border); white-space: nowrap;
+}
+.count-chip.zero { opacity: 0.4; }
+.cc-contradicted { color: var(--red); background: var(--red-dim); }
+.cc-disputed     { color: var(--amber); background: var(--amber-dim); }
+.cc-confirmed    { color: var(--green); background: var(--green-dim); }
+.cc-unverified   { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+.cc-graveyard    { color: var(--purple); background: var(--purple-dim); }
+.source-count { font-size: 0.74rem; color: var(--text-muted); font-family: var(--font-mono); margin-left: auto; }
+.demo-tag {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--amber); border: 1px dashed var(--amber); border-radius: 4px; padding: 2px 6px;
+}
+.stat-icon.purple { background: var(--purple-dim); color: var(--purple); }

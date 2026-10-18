@@ -1,5 +1,7 @@
 // ── cohort.js — Demo cohort shown on the dashboard. Hand-written demo data, not study data. ──
 // Claim fields follow the POST /screen contract (source_urls, similarity 0–1).
+// Statuses, reasoning and source paths were hand-written by the team and have NOT been
+// re-checked; the UI labels them as demo data. Submitter names are fictional.
 
 export const COHORT_IDEAS = [
   {
@@ -8,11 +10,6 @@ export const COHORT_IDEAS = [
     desc: "AI contract review with human lawyer backstop, < $200/month",
     submitter: "Arjun Mehta",
     category: "LegalTech",
-    status: "high-risk",
-    graveyard_match: "Atrium",
-    graveyard_match_id: "atrium",
-    confidence_pct: 82,
-    sources_checked: 14,
     claims: [
       { claim: "No AI legal tool exists that combines LLM review with a human lawyer backstop under $200/month", type: "novelty", status: "contradicted", reasoning: "Atrium (shut down 2020, $75M raised) attempted exactly this model and failed on unit economics. Harvey AI and Robin AI currently offer similar positioning at comparable price points.", source_urls: ["techcrunch.com/atrium-shutdown", "harvey.ai/pricing", "robin.ai"] },
       { claim: "The legal-tech market is worth $27B globally", type: "market_size", status: "confirmed", reasoning: "Multiple reports (Grand View Research 2024, Allied Market Research) place the global legal tech market between $25B–$30B with 9% CAGR. The $27B figure is consistent.", source_urls: ["grandviewresearch.com/legal-tech-report", "alliedmarketresearch.com"] },
@@ -34,10 +31,6 @@ export const COHORT_IDEAS = [
     desc: "Scope 3 emissions tracking SaaS for mid-market supply chains",
     submitter: "Priya Sharma",
     category: "ClimaTech",
-    status: "clear",
-    graveyard_match: null,
-    confidence_pct: 71,
-    sources_checked: 11,
     claims: [
       { claim: "No affordable Scope 3 emissions tracking exists for mid-market companies (< $1B revenue)", type: "novelty", status: "disputed", reasoning: "Watershed, Persefoni, and Sweep serve this market. However, their pricing is enterprise-tier ($50K+/year). A true mid-market price point gap exists in the $5K–$15K/year band.", source_urls: ["watershed.com/pricing", "persefoni.com", "g2.com/categories/carbon-accounting"] },
       { claim: "SEC mandatory climate disclosure rules create a forcing function for all public companies", type: "market_size", status: "confirmed", reasoning: "SEC finalized climate disclosure rules in March 2024. All large accelerated filers must report Scope 1 & 2 by 2026; Scope 3 rules remain under legal challenge but the trend is clear.", source_urls: ["sec.gov/climate-disclosure-rules", "wsj.com/sec-esg-ruling"] },
@@ -56,11 +49,6 @@ export const COHORT_IDEAS = [
     desc: "AI-native short-form video creation tool for solo creators",
     submitter: "Rohan Das",
     category: "Creator Tools",
-    status: "caution",
-    graveyard_match: "Vine",
-    graveyard_match_id: "vine",
-    confidence_pct: 58,
-    sources_checked: 9,
     claims: [
       { claim: "No AI tool can automatically edit long-form content into platform-optimized short videos", type: "novelty", status: "contradicted", reasoning: "Opus Clip, Vidyo.ai, and Descript all do exactly this. Opus Clip specifically auto-generates viral clips with captions. This claim is demonstrably false.", source_urls: ["opus.pro", "vidyo.ai", "producthunt.com/opus-clip"] },
       { claim: "Short-form video market is growing at 40% annually", type: "market_size", status: "confirmed", reasoning: "Statista and eMarketer both report ~35-45% CAGR for short-form video ad revenue globally. The figure is consistent.", source_urls: ["statista.com/short-video-growth", "emarketer.com"] },
@@ -82,10 +70,6 @@ export const COHORT_IDEAS = [
     desc: "HIPAA-compliant AI scribe for solo-practice physicians",
     submitter: "Ananya Krishnan",
     category: "HealthTech",
-    status: "caution",
-    graveyard_match: null,
-    confidence_pct: 67,
-    sources_checked: 13,
     claims: [
       { claim: "Physicians spend 3+ hours daily on documentation — more than on patient care", type: "market_size", status: "confirmed", reasoning: "AMA 2024 Physician Work-Life survey confirms: physicians spend avg 2.6 hours/day on EHR/documentation, nearly matching direct patient care time.", source_urls: ["ama-assn.org/physician-burnout-survey", "nejm.org/documentation-burden"] },
       { claim: "No HIPAA-compliant AI medical scribe exists at under $100/month for solo practice", type: "novelty", status: "contradicted", reasoning: "Nabla Copilot ($119/month), Suki AI (starts ~$60/month), and Heidi Health (free tier) all target this segment explicitly. The claim is false.", source_urls: ["nabla.com/pricing", "suki.ai", "heidihealth.com"] },
@@ -104,11 +88,6 @@ export const COHORT_IDEAS = [
     desc: "Peer-to-peer voluntary carbon credit marketplace on-chain",
     submitter: "Kiran Bose",
     category: "Web3 / GreenTech",
-    status: "high-risk",
-    graveyard_match: "Bright Roll",
-    graveyard_match_id: null,
-    confidence_pct: 44,
-    sources_checked: 7,
     claims: [
       { claim: "Blockchain eliminates double-counting in voluntary carbon markets", type: "novelty", status: "disputed", reasoning: "Toucan Protocol, KlimaDAO, and Verra's registry already use on-chain registries. The 2022 'crypto winter' effectively killed KlimaDAO's mechanism. The claim is technically plausible but market history contradicts the narrative.", source_urls: ["toucan.earth", "verra.org/blockchain-pilot", "wsj.com/klimadao-collapse"] },
       { claim: "Voluntary carbon market is worth $2B today and will reach $50B by 2030", type: "market_size", status: "contradicted", reasoning: "Voluntary carbon markets have contracted significantly — BNEF revised 2030 projections down to $10-20B due to Verra credit invalidation scandal and reduced corporate demand.", source_urls: ["bnef.com/carbon-market-2024", "ft.com/verra-scandal"] },
@@ -127,10 +106,6 @@ export const COHORT_IDEAS = [
     desc: "AI-powered college application essay coaching for first-gen students",
     submitter: "Sana Mirza",
     category: "EdTech",
-    status: "clear",
-    graveyard_match: null,
-    confidence_pct: 76,
-    sources_checked: 10,
     claims: [
       { claim: "First-generation college applicants have significantly lower admission rates at selective institutions", type: "market_size", status: "confirmed", reasoning: "Harvard's Opportunity Insights data confirms first-gen students are underrepresented at top 12 schools at 4-6x lower rates than similarly qualified peers from high-income families.", source_urls: ["opportunityinsights.org/data", "nytimes.com/college-opportunity-gap"] },
       { claim: "Existing college coaching services average $5,000+ per student, inaccessible to low-income families", type: "market_size", status: "confirmed", reasoning: "National average for private college counselors is $3,500–$6,000/year per student (IECA 2024). Top-tier counselors charge $10,000+.", source_urls: ["ieca.net/counselor-pricing", "collegecounseling.org/survey"] },
@@ -149,11 +124,6 @@ export const COHORT_IDEAS = [
     desc: "Last-mile drone delivery coordination OS for suburban grocery",
     submitter: "Vikram Nair",
     category: "Logistics / Drone",
-    status: "caution",
-    graveyard_match: "DAQRI",
-    graveyard_match_id: "daqri",
-    confidence_pct: 53,
-    sources_checked: 8,
     claims: [
       { claim: "FAA Part 135 approval for beyond-visual-line-of-sight (BVLOS) drone delivery is now achievable for small operators", type: "defensibility", status: "disputed", reasoning: "Wing, Amazon Prime Air, and Zipline hold BVLOS approvals but the process took 4-6 years for each. No small operator has received full BVLOS approval. This is optimistic.", source_urls: ["faa.gov/bvlos-approvals", "dronelife.com/part135-status"] },
       { claim: "Suburban last-mile delivery cost is 30% higher than urban due to route density", type: "market_size", status: "confirmed", reasoning: "McKinsey Last Mile Logistics 2023 report confirms suburban delivery is 28-35% more expensive per parcel due to lower density. The figure is accurate.", source_urls: ["mckinsey.com/last-mile-2023"] },
@@ -174,11 +144,6 @@ export const COHORT_IDEAS = [
     desc: "No-code AI workflow builder embedded inside Slack and Teams",
     submitter: "Aisha Rahman",
     category: "Enterprise SaaS",
-    status: "high-risk",
-    graveyard_match: "Springpad",
-    graveyard_match_id: "springpad",
-    confidence_pct: 38,
-    sources_checked: 12,
     claims: [
       { claim: "No existing Slack/Teams app allows non-technical users to build multi-step AI workflows", type: "novelty", status: "contradicted", reasoning: "Zapier has a native Slack integration. Microsoft Copilot is embedded in Teams natively. Make.com (formerly Integromat), n8n, and Workato all do this. The claim is false.", source_urls: ["zapier.com/slack", "microsoft.com/copilot-teams", "make.com"] },
       { claim: "Enterprise workflow automation market is $10B by 2026", type: "market_size", status: "confirmed", reasoning: "Gartner and IDC both project the low-code/no-code workflow automation market at $13-15B by 2027. The $10B figure is conservative and plausible.", source_urls: ["gartner.com/workflow-automation", "idc.com/low-code-2026"] },

@@ -29,7 +29,7 @@ With no configuration the whole pipeline runs **key-free in the browser**: deter
 |--------|-------------|
 | **Cohort Dashboard** | 8 hand-written **demo** ideas (fictional submitters). Status counts and graveyard leads, sorted by contradicted + disputed claims; each opens a demo report |
 | **Screen an Idea** | Paste idea text → 4-stage pipeline → claims with evidence, graveyard leads, Objector. Study consent, trust sliders, per-claim agreement and survey live here |
-| **Graveyard DB** | 20 seed entries (failed, pivoted or acquired startups) with cause-of-death filters |
+| **Graveyard DB** | 18 seed entries (startups that shut down) with cause-of-death filters |
 
 ---
 

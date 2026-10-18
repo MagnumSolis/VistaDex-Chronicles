@@ -172,16 +172,6 @@ export const GRAVEYARD_DB = [
     sources: ["https://techcrunch.com/2015/06/01/circa-closes-down/"]
   },
   {
-    id: "brightroll",
-    company_name: "BrightRoll",
-    what_they_tried: "Video advertising exchange connecting publishers and advertisers for programmatic video ad buying",
-    cause_of_death: "Pivot — not a failure but a successful acquisition pivot; bought by Yahoo for $640M in 2014",
-    cause_category: "pivot",
-    year_closed: 2014,
-    raised: "$19M",
-    sources: ["https://techcrunch.com/2014/11/11/yahoo-brightroll/"]
-  },
-  {
     id: "shyp",
     company_name: "Shyp",
     what_they_tried: "On-demand package pickup and shipping service — photograph your item, someone picks it up and ships it for you",
@@ -190,15 +180,5 @@ export const GRAVEYARD_DB = [
     year_closed: 2018,
     raised: "$62.1M",
     sources: ["https://techcrunch.com/2018/03/27/shyp-is-shutting-down/"]
-  },
-  {
-    id: "timehop",
-    company_name: "Timehop",
-    what_they_tried: "Daily memory resurfacing app — shows you what you posted on social media exactly one year ago, two years ago, etc.",
-    cause_of_death: "Competition — Facebook, Snapchat, and Google Photos all shipped native 'memories' features killing the standalone app",
-    cause_category: "competition",
-    year_closed: 2021,
-    raised: "$12M",
-    sources: ["https://techcrunch.com/2022/01/20/timehop-is-shutting-down/"]
   }
 ];

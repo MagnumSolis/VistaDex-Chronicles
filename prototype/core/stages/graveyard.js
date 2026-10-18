@@ -3,7 +3,7 @@
 
 import { lexicalSimilarity } from "../providers/embed.js";
 
-// Calibrated for TF-IDF cosine on the 20-entry seed set (see tests/graveyard.test.js).
+// Calibrated for TF-IDF cosine on the seed set (18 entries; re-checked after removing BrightRoll and Timehop) (see tests/stages.test.js).
 // Re-calibrate when switching to MiniLM embeddings — their scale is different.
 export const MATCH_THRESHOLD = 0.15;
 export const MAX_MATCHES = 3;

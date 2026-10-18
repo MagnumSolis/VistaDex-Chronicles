@@ -8,14 +8,13 @@ interface Entry {
 }
 const ENTRIES = GRAVEYARD_DB as Entry[];
 
-type Cause = "all" | "unit-economics" | "timing" | "competition" | "regulation" | "pivot";
+type Cause = "all" | "unit-economics" | "timing" | "competition" | "regulation";
 const CAUSES: { value: Cause; label: string }[] = [
   { value: "all", label: "All" },
   { value: "unit-economics", label: "Unit economics" },
   { value: "timing", label: "Bad timing" },
   { value: "competition", label: "Competition" },
   { value: "regulation", label: "Regulation" },
-  { value: "pivot", label: "Pivot / acquired" },
 ];
 const causeLabel = (c: string) => CAUSES.find(x => x.value === c)?.label ?? c;
 
@@ -33,7 +32,7 @@ export function Graveyard() {
         title="Graveyard DB"
         aside={<span className="rounded-full bg-card px-4 py-2 text-sm font-medium shadow-card"><span className="font-mono">{ENTRIES.length}</span> seed entries</span>}
       >
-        Startups that failed, pivoted or were acquired. Ideas are matched against these as leads to check.
+        Startups that shut down. Ideas are matched against these as leads to check.
       </PageHeader>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

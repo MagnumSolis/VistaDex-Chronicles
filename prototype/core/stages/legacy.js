@@ -2,25 +2,6 @@
 // Kept only so the app keeps working while stages are replaced one by one.
 // Still contains Math.random(); deleted once Stages 1–4 are rewritten.
 
-export function legacyExtract(ideaText) {
-  const k = ideaText.toLowerCase();
-  if (k.includes("mental health") || k.includes("therapy") || k.includes("journal")) {
-    return [
-      { claim: "No AI journaling app currently detects depression/anxiety risk and routes to therapists automatically", type: "novelty" },
-      { claim: "The mental health app market is worth $5.8B globally, growing at 20% annually", type: "market_size" },
-      { claim: "Existing apps (Calm, Headspace) only provide passive content — none proactively detect clinical risk", type: "novelty" },
-      { claim: "The AI model trained on 50,000 therapy transcripts constitutes a defensible data moat", type: "defensibility" },
-      { claim: "A $30/month price point is viable for active clinical monitoring with therapist routing", type: "other" },
-    ];
-  }
-  const sentences = ideaText.split(/[.!?]+/).filter(s => s.trim().length > 30);
-  return [
-    { claim: sentences[0]?.trim() || "The core product has no direct competitors in this market", type: "novelty" },
-    { claim: sentences[1]?.trim() || "The addressable market exceeds $1B annually", type: "market_size" },
-    { claim: sentences[2]?.trim() || "Proprietary data or technology provides a defensible moat", type: "defensibility" },
-  ];
-}
-
 export function legacyClassify(claim) {
   const text = claim.claim.toLowerCase();
   let status = "unverified";

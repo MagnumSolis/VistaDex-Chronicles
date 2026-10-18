@@ -5,7 +5,8 @@ import { toContract } from "./contract.js";
 import { createTrace } from "./trace.js";
 import { createLLM } from "./providers/llm.js";
 import { mockRetrieval } from "./providers/retrieval.js";
-import { legacyExtract, legacyClassify, legacyGraveyard, legacyObjector } from "./stages/legacy.js";
+import { extractClaims } from "./stages/extract.js";
+import { legacyClassify, legacyGraveyard, legacyObjector } from "./stages/legacy.js";
 
 // deps: { llmRoutes, retrieval, graveyard, onStage, mode }
 export async function runScreen(ideaText, deps = {}) {
@@ -18,7 +19,7 @@ export async function runScreen(ideaText, deps = {}) {
   trace.log("run_start", { retrieval: retrieval.name, llm_available: llm.available("default") });
 
   await onStage(1, "running");
-  const extracted = legacyExtract(ideaText);
+  const extracted = await extractClaims(ideaText, { llm, trace });
   await onStage(1, "done", `${extracted.length} claims extracted`);
 
   await onStage(2, "running");

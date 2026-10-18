@@ -117,10 +117,14 @@
           </div>
         </header>
 
+        <div class="study-bar" id="studyBar" style="display:none;"></div>
+
         <div class="screen-layout">
           <div class="screen-left">
+            <div class="card trust-card" id="trustPre" style="display:none;"></div>
             <div class="card input-card">
-              <label class="input-label">Idea Text</label>
+              <label class="input-label" for="ideaInput">Idea Text</label>
+              <div class="input-warning">Please don't include names, emails or confidential details.</div>
               <textarea id="ideaInput" class="idea-textarea" placeholder="Paste a startup or research idea here. Be specific — the more claims it makes, the more the verifier can check.
 
 Example: 'We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally. Big law firms cannot easily replicate this because their cost structure requires billing by hour.'"></textarea>
@@ -220,6 +224,11 @@ Example: 'We are building an AI-powered legal contract review tool for early-sta
       </button>
       <div id="modalContent"></div>
     </div>
+  </div>
+
+  <!-- STUDY CONSENT -->
+  <div id="consentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box consent-box" id="consentBox" role="dialog" aria-modal="true"></div>
   </div>
 
   <script type="module" src="ui/app.js"></script>

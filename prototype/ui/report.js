@@ -60,10 +60,23 @@ export function renderClaims(claims) {
         <span class="source-count">${sourceCount(c.source_urls)} independent source${sourceCount(c.source_urls) === 1 ? "" : "s"}</span>
       </div>
       <div class="claim-text" style="margin-bottom:10px;">${esc(c.claim)}</div>
-      <div class="claim-reasoning">${esc(c.reasoning)}</div>
-      <div class="claim-sources">${(c.source_urls || []).map(sourceChip).join("")}</div>
+      <button class="evidence-toggle" aria-expanded="false">Show evidence &amp; reasoning</button>
+      <div class="claim-evidence">
+        <div class="claim-reasoning">${esc(c.reasoning)}</div>
+        <div class="claim-sources">${(c.source_urls || []).map(sourceChip).join("")}</div>
+      </div>
     </div>`).join("");
 }
+
+// Evidence is collapsed by default; opening it is a study signal (claim_expanded).
+// Capture phase so the card is already toggled when other click handlers run.
+document.addEventListener("click", e => {
+  const toggle = e.target.closest(".evidence-toggle");
+  if (!toggle) return;
+  const open = toggle.closest(".claim-card").classList.toggle("expanded");
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.textContent = open ? "Hide evidence & reasoning" : "Show evidence & reasoning";
+}, true);
 
 export function renderGraveyardMatches(matches) {
   if (!matches.length) {

@@ -5,6 +5,7 @@ import { COHORT_IDEAS, SAMPLE_IDEA } from "../data/cohort.js";
 import { esc } from "./escape.js";
 import { renderReportBody, renderCountChips, renderEvidenceLine, sourceCount, statusCounts } from "./report.js";
 import { screenIdea, liveMode } from "./client.js";
+import * as study from "./study.js";
 
 // ── State ─────────────────────────────────────────────────────────────
 let currentStatusFilter = "all";
@@ -21,6 +22,7 @@ function showView(viewName) {
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
   document.getElementById(`view-${viewName}`).classList.add("active");
   document.getElementById(`nav-${viewName}`)?.classList.add("active");
+  study.onViewChanged(viewName);
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────
@@ -113,6 +115,7 @@ function openIdeaModal(ideaId) {
   const idea = COHORT_IDEAS.find(i => i.id === ideaId);
   if (!idea) return;
   const report = cohortReport(idea);
+  study.onCohortReportOpened(ideaId);
   document.getElementById("modalContent").innerHTML = `
     <div class="report-header">
       <div class="report-meta">
@@ -166,6 +169,7 @@ async function runPipeline() {
     alert("Please paste an idea first.");
     return;
   }
+  if (!study.canRun()) return;
   pipelineRunning = true;
   const runBtn = document.getElementById("runBtn");
   runBtn.disabled = true;
@@ -174,11 +178,15 @@ async function runPipeline() {
   document.getElementById("resultsPanel").style.display = "none";
   document.getElementById("reportView").innerHTML = "";
 
+  const runId = study.runStarted({ ideaText, mode: liveMode() ? "live" : "mock" });
+  const t0 = performance.now();
   try {
     const result = await screenIdea(ideaText, { onStage: animateStage });
     renderLiveReport(result);
+    study.runCompleted(runId, result, Math.round(performance.now() - t0));
   } catch (err) {
     console.error(err);
+    study.runFailed(runId, err);
     renderError(err);
   } finally {
     pipelineRunning = false;
@@ -263,6 +271,7 @@ function filterCause(btn, cause) {
 Object.assign(window, { showView, filterTable, filterStatus, openIdeaModal, closeModal, closeModalDirect, loadSample, runPipeline, filterGraveyard, filterCause });
 
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModalDirect(); });
+study.initStudy();
 document.getElementById("tableBody").addEventListener("click", e => {
   const row = e.target.closest("tr[data-idea-id]");
   if (row) openIdeaModal(row.dataset.ideaId);

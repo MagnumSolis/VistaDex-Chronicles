@@ -99,6 +99,27 @@ await run();
 await setProxy("");
 
 const ev = await events();
+
+// Tall-panel check (pilot-2 rule): on a small phone the objections panel is taller than twice
+// the viewport. pilot-1 never reported it; now it must report once it covers half the screen.
+const tall = { checked: false, panelHeight: 0, viewportHeight: 0, fired: false };
+{
+  const ph = await browser.newPage({ viewport: { width: 320, height: 400 }, isMobile: true });
+  await ph.goto(BASE); await ph.evaluate(() => localStorage.clear()); await ph.reload();
+  await ph.getByRole("navigation", { name: "Main" }).getByRole("button", { name: /Screen/ }).click();
+  await ph.getByRole("button", { name: "I agree — take part" }).click();
+  await ph.locator("#trustPreInput").fill("4");
+  await ph.fill("#ideaInput", IDEA);
+  await ph.getByRole("button", { name: "Run pipeline" }).click();
+  await ph.getByText("Screening report").waitFor({ timeout: 15000 });
+  const box = await ph.locator("#objections").evaluate(el => ({ h: el.getBoundingClientRect().height, vh: innerHeight }));
+  tall.panelHeight = Math.round(box.h); tall.viewportHeight = box.vh; tall.checked = box.h > 2 * box.vh;
+  // Scroll so the panel's middle fills the screen (less than 50 % of the panel visible).
+  await ph.locator("#objections").evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY + el.getBoundingClientRect().height / 2 - innerHeight / 2));
+  await ph.waitForTimeout(500);
+  tall.fired = await ph.evaluate(() => (JSON.parse(localStorage.getItem("vistadex.study.v1")).events || []).some(e => e.type === "objections_viewed"));
+  await ph.close();
+}
 await browser.close();
 
 // ── compare ──
@@ -134,6 +155,9 @@ if (JSON.stringify(versions) !== JSON.stringify([contract.study_version])) probl
 const tp = ev.find(e => e.type === "trust_pre");
 if (tp && JSON.stringify(tp.payload.scale) !== JSON.stringify(contract.values.scale)) problems.push("trust scale differs");
 
+if (!tall.checked) problems.push(`tall-panel check not exercised: panel ${tall.panelHeight}px vs viewport ${tall.viewportHeight}px`);
+else if (!tall.fired) problems.push(`objections_viewed did not fire for a ${tall.panelHeight}px panel in a ${tall.viewportHeight}px viewport`);
+else console.log(`tall panel: objections_viewed fired for a ${tall.panelHeight}px panel in a ${tall.viewportHeight}px viewport`);
 console.log(`events: ${ev.length}, types: ${Object.keys(keys).length}/${Object.keys(contract.payload_keys).length}, study_version: ${ev[0]?.study_version}`);
 console.log("sequence:", seq.join(", "));
 if (problems.length) { console.error("PARITY FAILED:\n- " + problems.join("\n- ")); process.exit(1); }

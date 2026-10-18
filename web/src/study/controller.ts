@@ -120,7 +120,7 @@ export function notesEdited(chars: number) {
   tm.log("notes_edited", { run_id: current.id, chars });
 }
 
-// Called by an IntersectionObserver (threshold 0.5) once per panel per run.
+// Called once per panel per run when the panel counts as viewed (rule: study/viewRule.ts).
 export function panelViewed(name: "objections_viewed" | "graveyard_viewed", runId: string) {
   const run = current;
   if (!run || run.id !== runId || run.seen.has(name)) return;

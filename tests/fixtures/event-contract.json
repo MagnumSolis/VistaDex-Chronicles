@@ -180,6 +180,9 @@
     "run_started",
     "run_failed"
   ],
-  "order_tolerance": "graveyard_viewed and objections_viewed depend on layout and scroll; each must appear exactly once per run, between that run's run_completed and the event that ends it. Their relative order may differ.",
-  "known_issue": "Panel-viewed events use IntersectionObserver threshold 0.5 of the panel's own height, so a panel taller than twice the viewport (e.g. on phones) never reports as viewed. Recorded as-is; fix pending a decision."
+  "order_tolerance": "graveyard_viewed and objections_viewed depend on layout and scroll; each appears at most once per run (only if the panel was viewed), between that run's run_completed and the event that ends it. Their relative order may differ.",
+  "panel_viewed_rule": {
+    "2026-10-pilot-1": "IntersectionObserver threshold 0.5 of the panel's own height. A panel taller than twice the viewport never reported (measurement bug).",
+    "2026-10-pilot-2": "A panel counts as viewed when at least 50% of its own height OR at least 50% of the viewport is covered by it (web/src/study/viewRule.ts). Event names and payload fields unchanged. Checked by web/scripts/parity.mjs (tall-panel check at 320x400) and web/src/study/viewRule.test.ts."
+  }
 }

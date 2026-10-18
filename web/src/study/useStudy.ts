@@ -1,5 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 import * as study from "./controller";
+import { isPanelViewed, OBSERVER_THRESHOLDS } from "./viewRule";
 
 // Re-render when consent, trust or run state changes.
 export function useStudyState() {
@@ -13,7 +14,8 @@ export function useStudyState() {
   };
 }
 
-// Reports a panel as viewed once it is ≥ 50 % visible (same rule as the vanilla UI).
+// Reports a panel as viewed once per run, using the rule in viewRule.ts
+// (≥ 50 % of the panel OR ≥ 50 % of the viewport covered by it).
 export function usePanelViewed(ref: RefObject<HTMLElement | null>, name: "objections_viewed" | "graveyard_viewed", runId: string | null) {
   const done = useRef(false);
   useEffect(() => {
@@ -23,11 +25,17 @@ export function usePanelViewed(ref: RefObject<HTMLElement | null>, name: "object
     const io = new IntersectionObserver(entries => {
       for (const en of entries) {
         if (!en.isIntersecting || done.current) continue;
+        const viewed = isPanelViewed({
+          visibleHeight: en.intersectionRect.height,
+          panelHeight: en.boundingClientRect.height,
+          viewportHeight: en.rootBounds?.height ?? window.innerHeight,
+        });
+        if (!viewed) continue;
         done.current = true;
         study.panelViewed(name, runId);
         io.disconnect();
       }
-    }, { threshold: 0.5 });
+    }, { threshold: OBSERVER_THRESHOLDS });
     io.observe(el);
     return () => io.disconnect();
   }, [ref, name, runId]);

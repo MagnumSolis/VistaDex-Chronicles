@@ -24,16 +24,19 @@ export function ConsentDialog({ open, onDone }: { open: boolean; onDone: () => v
         showCloseButton={false}
         onEscapeKeyDown={e => e.preventDefault()}
         onInteractOutside={e => e.preventDefault()}
-        className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+        className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl sm:p-0"
       >
-        <DialogHeader>
-          <DialogTitle className="text-[1.75rem] sm:text-3xl">{CONSENT.title}</DialogTitle>
-          <DialogDescription className="sr-only">Study information and consent</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 text-[0.9375rem] leading-relaxed">
-          {CONSENT.paragraphs.map((p: string) => <p key={p}>{p}</p>)}
+        {/* The text scrolls; the two choices stay visible underneath it. */}
+        <div className="overflow-y-auto p-6 sm:p-8">
+          <DialogHeader>
+            <DialogTitle className="text-[1.75rem] sm:text-3xl">{CONSENT.title}</DialogTitle>
+            <DialogDescription className="sr-only">Study information and consent</DialogDescription>
+          </DialogHeader>
+          <div className="mt-5 space-y-4 text-[0.9375rem] leading-relaxed">
+            {CONSENT.paragraphs.map((p: string) => <p key={p}>{p}</p>)}
+          </div>
         </div>
-        <DialogFooter className="mt-2 flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <DialogFooter className="m-0 shrink-0 flex-col-reverse gap-3 sm:m-0 sm:flex-row sm:justify-end">
           <Button variant="outline" size="lg" onClick={() => { study.declineConsent(); onDone(); }}>{CONSENT.decline}</Button>
           <Button size="lg" onClick={() => { study.giveConsent(); onDone(); }}>{CONSENT.agree}</Button>
         </DialogFooter>

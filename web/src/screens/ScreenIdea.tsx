@@ -61,32 +61,32 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Screen an idea</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Paste the idea text. VistaDex checks each claim against independent sources, looks for similar startups that failed, and lists objections.
-          It produces evidence for you to judge — never a verdict.
+    <div className="space-y-6 sm:space-y-8">
+      <header className="pt-2">
+        <h1 className="font-display text-[2.75rem] font-bold leading-[0.95] tracking-tight sm:text-[3.5rem]">Screen an idea</h1>
+        <p className="mt-3 max-w-[62ch] text-[1.0625rem] leading-relaxed text-muted-foreground">
+          Paste an idea. VistaDex checks its claims against independent sources, finds similar startups that failed, and lists objections. You make the decision.
         </p>
       </header>
 
       {studySlotTop}
-      <div className={needsTrust ? "rounded-lg ring-2 ring-sev-medium ring-offset-2 ring-offset-background" : undefined}>{studySlotBeforeInput}</div>
+      <div className={needsTrust ? "rounded-panel ring-2 ring-sev-medium ring-offset-4 ring-offset-background" : undefined}>{studySlotBeforeInput}</div>
 
-      <div className="rounded-lg border bg-card p-4 sm:p-5">
-        <Label htmlFor="ideaInput" className="text-sm font-semibold">Idea text</Label>
-        <p className="mt-1 text-xs text-muted-foreground">Please don&apos;t include names, emails or confidential details.</p>
+      <div className="rounded-panel bg-card p-5 shadow-panel sm:p-7">
+        <Label htmlFor="ideaInput" className="font-display text-xl font-bold">Idea text</Label>
+        <p id="ideaHint" className="mt-1 text-sm text-muted-foreground">Please don&apos;t include names, emails or confidential details.</p>
         <Textarea
           id="ideaInput"
           value={idea}
           onChange={e => setIdea(e.target.value)}
-          className="mt-2 min-h-40 text-[0.9375rem] leading-relaxed"
+          aria-describedby="ideaHint"
+          className="mt-4 min-h-44 text-base leading-relaxed md:text-base"
           placeholder="Example: We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally."
         />
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <Button variant="outline" size="lg" onClick={() => setIdea(SAMPLE_IDEA)} disabled={running}>Load sample idea</Button>
           <Button size="lg" onClick={run} disabled={running} aria-describedby={needsTrust ? "trust-needed" : undefined}>
-            <Play aria-hidden /> {running ? "Running…" : "Run pipeline"}
+            <Play aria-hidden className="fill-current" /> {running ? "Running…" : "Run pipeline"}
           </Button>
         </div>
         {needsTrust && participating && (
@@ -97,7 +97,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
       <PipelineProgress stages={stages} />
 
       {error && (
-        <div role="alert" className="flex gap-3 rounded-lg border border-st-contradicted-rule bg-card p-4">
+        <div role="alert" className="flex gap-3 rounded-card bg-card p-5 shadow-card">
           <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />
           <div>
             <p className="text-sm font-semibold">The screening run failed</p>
@@ -107,7 +107,7 @@ export function ScreenIdea({ studySlotTop, studySlotBeforeInput, studySlotAfterR
       )}
 
       {result && (
-        <div ref={reportRef} tabIndex={-1} className="space-y-6 outline-none" aria-live="polite">
+        <div ref={reportRef} tabIndex={-1} className="space-y-10 pt-2 outline-none" aria-live="polite">
           <Report report={result.data.report} mode={result.data.mode} runId={result.runId} rateable={participating} />
           {participating && studySlotAfterReport?.(result.runId)}
         </div>

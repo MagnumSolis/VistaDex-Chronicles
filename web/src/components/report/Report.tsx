@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { cn } from "@/lib/utils";
 import { STATUS, STATUS_ORDER } from "@/components/status";
 import { Section } from "@/components/Section";
 import { ClaimCard, sourceCount } from "./ClaimCard";
@@ -10,10 +11,10 @@ import { usePanelViewed } from "@/study/useStudy";
 import * as study from "@/study/controller";
 import type { Report as ReportT, RunMode } from "@/types";
 
-const MODE_LINE: Record<RunMode, string> = {
-  live: "Live run — evidence retrieved from the web",
-  mock: "Key-free mock run — no live evidence, so claims stay unverified",
-  "proxy-mock": "Key-free mock run — no live evidence, so claims stay unverified",
+const MODE_LABEL: Record<RunMode, string> = {
+  live: "Live run",
+  mock: "Mock run, no live evidence",
+  "proxy-mock": "Mock run, no live evidence",
 };
 
 export function Report({ report, mode, runId, rateable, demo = false }: {
@@ -28,35 +29,45 @@ export function Report({ report, mode, runId, rateable, demo = false }: {
   const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-lg border bg-card p-4 sm:p-6">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {demo ? "Demo data — hand-written, not re-checked" : mode ? MODE_LINE[mode] : ""}
-        </p>
-        <h2 className="mt-1.5 text-xl font-semibold tracking-tight">Screening report</h2>
-        <blockquote className="mt-2 line-clamp-3 border-l-2 pl-3 text-sm leading-relaxed text-muted-foreground">{report.idea_text}</blockquote>
+    <div className="space-y-10">
+      <header className="rounded-panel bg-card p-6 shadow-panel sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-[2.25rem] font-bold leading-none tracking-tight sm:text-[2.75rem]">Screening report</h2>
+          <span className="rounded-full bg-muted px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted-foreground">
+            {demo ? "Demo data, not re-checked" : mode ? MODE_LABEL[mode] : ""}
+          </span>
+        </div>
+        <p className="mt-4 line-clamp-3 max-w-[70ch] text-[0.9375rem] leading-relaxed text-muted-foreground">{report.idea_text}</p>
 
-        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t pt-4 text-sm sm:flex sm:flex-wrap">
+        {/* Counts, not a score: one tile per status, icon + word + number. */}
+        <dl className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {STATUS_ORDER.map(st => {
-            const Icon = STATUS[st].icon;
+            const meta = STATUS[st];
+            const Icon = meta.icon;
+            const zero = counts[st] === 0;
             return (
-              <div key={st} className="flex items-center gap-1.5">
-                <Icon aria-hidden className={`size-4 ${STATUS[st].text}`} />
-                <dt className="sr-only">{STATUS[st].label}</dt>
-                <dd><span className="font-mono font-medium">{counts[st]}</span> {STATUS[st].label.toLowerCase()}</dd>
+              <div key={st} className="flex flex-col justify-between gap-5 rounded-card bg-muted p-5">
+                <dt className="flex items-center gap-2.5 text-[0.9375rem] font-medium">
+                  <span className={cn("inline-flex size-9 items-center justify-center rounded-full", meta.bg, meta.text)}>
+                    <Icon aria-hidden className="size-5" strokeWidth={2} />
+                  </span>
+                  {meta.label}
+                </dt>
+                <dd className={cn("font-mono text-5xl font-medium leading-none tracking-tight", zero && "text-muted-foreground")}>{counts[st]}</dd>
               </div>
             );
           })}
         </dl>
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-          {report.claims.length} claim{report.claims.length === 1 ? "" : "s"} checked · {sources} independent source{sources === 1 ? "" : "s"} cited.
-          A status needs at least 2 independent sources; it never comes from the model&apos;s own confidence. There is no overall score — you make the decision.
+
+        <p className="mt-5 text-sm text-muted-foreground">
+          <span className="font-mono text-foreground">{sources}</span> independent source{sources === 1 ? "" : "s"} across {report.claims.length} claim{report.claims.length === 1 ? "" : "s"}.
+          A status needs at least two. There is no overall score: you decide.
         </p>
 
-        {/* Jump links: on phones the three sections stack, so make the others one tap away. */}
-        <nav aria-label="Report sections" className="mt-4 flex flex-wrap gap-2 lg:hidden">
-          {[["claims", "Claims", report.claims.length], ["objections", "Objections", report.objections.length], ["leads", "Graveyard leads", report.graveyard_matches.length]].map(([id, label, n]) => (
-            <a key={id as string} href={`#${id}`} className="rounded-md border bg-background px-3 py-1.5 text-sm hover:bg-muted">
+        {/* On phones the sections stack, so the other two are one tap away. */}
+        <nav aria-label="Report sections" className="mt-5 flex flex-wrap gap-2 lg:hidden">
+          {([["claims", "Claims", report.claims.length], ["objections", "Objections", report.objections.length], ["leads", "Leads", report.graveyard_matches.length]] as const).map(([id, label, n]) => (
+            <a key={id} href={`#${id}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-input px-4 text-sm font-medium hover:bg-muted">
               {label} <span className="font-mono text-muted-foreground">{n}</span>
             </a>
           ))}
@@ -64,29 +75,28 @@ export function Report({ report, mode, runId, rateable, demo = false }: {
       </header>
 
       {/* Claims and objections side by side at equal weight; leads under the objections. */}
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-        <Section id="claims" title="Claims" count={report.claims.length} aside="Each with its sources and independent-source count">
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-8">
+        <Section id="claims" title="Claims" count={report.claims.length}>
           {report.claims.length === 0 ? (
-            <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">No checkable claims were found in the idea text.</p>
+            <p className="rounded-card bg-card p-6 text-[0.9375rem] shadow-card">No checkable claims were found in the idea text.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {report.claims.map((c, i) => <ClaimCard key={`${runId}-${i}`} claim={c} index={i} rateable={rateable} />)}
             </div>
           )}
         </Section>
-        <div className="space-y-6">
+        <div className="space-y-10">
           <Objections ref={objectionsRef} objections={report.objections} />
           <GraveyardLeads ref={leadsRef} matches={report.graveyard_matches} />
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 sm:p-5">
-        <Label htmlFor={`notes-${runId ?? "demo"}`} className="text-sm font-semibold">Reviewer notes</Label>
-        <p className="mt-1 text-xs text-muted-foreground">Your own notes. Only their length is recorded in the study.</p>
+      <div className="rounded-card bg-card p-5 shadow-card sm:p-6">
+        <Label htmlFor={`notes-${runId ?? "demo"}`} className="font-display text-xl font-bold">Your notes</Label>
         <Textarea
           id={`notes-${runId ?? "demo"}`}
-          className="mt-2 min-h-24"
-          placeholder="Add your own notes…"
+          className="mt-3 min-h-28"
+          placeholder="Anything you want to remember about this idea"
           onBlur={e => study.notesEdited(e.currentTarget.value.length)}
         />
       </div>

@@ -40,7 +40,7 @@ export function StatusTag({ status, className }: { status: ClaimStatus; classNam
   const Icon = s.icon;
   return (
     <span
-      className={cn("inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 text-[0.8125rem] font-medium leading-5", s.text, s.bg, s.rule, className)}
+      className={cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.8125rem] font-semibold leading-5", s.text, s.bg, s.rule, className)}
       title={s.help}
     >
       <Icon aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
@@ -59,7 +59,7 @@ const SEVERITY: Record<Severity, { label: string; level: number; text: string }>
 export function SeverityTag({ severity }: { severity: Severity }) {
   const s = SEVERITY[severity] ?? SEVERITY.low;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide", s.text)}>
+    <span className={cn("inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-[0.8125rem] font-semibold", s.text)}>
       <span aria-hidden className="inline-flex items-end gap-px">
         {[1, 2, 3].map(n => (
           <span key={n} className={cn("w-1 rounded-[1px]", n <= s.level ? "bg-current" : "bg-border-strong")} style={{ height: 4 + n * 3 }} />

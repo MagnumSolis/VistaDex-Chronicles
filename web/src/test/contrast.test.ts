@@ -31,6 +31,9 @@ const PAIRS: [string, string, number][] = [
   ["st-disputed", "st-disputed-bg", 4.5], ["st-disputed", "card", 4.5],
   ["st-unverified", "st-unverified-bg", 4.5], ["st-unverified", "card", 4.5],
   ["sev-high", "card", 4.5], ["sev-medium", "card", 4.5], ["sev-low", "card", 4.5], ["sev-medium", "background", 4.5],
+  ["sev-high", "muted", 4.5], ["sev-medium", "muted", 4.5], ["sev-low", "muted", 4.5], ["foreground", "muted", 4.5],
+  ["st-confirmed", "muted", 4.5], ["st-contradicted", "muted", 4.5], ["st-disputed", "muted", 4.5], ["st-unverified", "muted", 4.5],
+  ["primary", "accent", 4.5], ["card", "foreground", 4.5],
   ["ring", "background", 3], ["border-strong", "card", 1.5],
 ];
 

@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { ChevronDown, ChevronUp, ExternalLink, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CLAIM_TYPE_LABEL, STATUS, StatusTag } from "@/components/status";
+import { CardLabel } from "@/components/Section";
 import { independentSourceCount, registrableDomain, studyConfig } from "@/proto";
 import * as study from "@/study/controller";
 import type { Claim } from "@/types";
@@ -24,50 +25,46 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
   };
 
   return (
-    <article className={cn("rounded-lg border border-l-4 bg-card", s.rule)} aria-label={`Claim ${index + 1}: ${s.label}`}>
-      <div className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Claim {index + 1} · {CLAIM_TYPE_LABEL[claim.type] ?? claim.type}
-          </span>
+    <article className="rounded-card bg-card shadow-card" aria-label={`Claim ${index + 1}: ${s.label}`}>
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <CardLabel n={index + 1}>{CLAIM_TYPE_LABEL[claim.type] ?? claim.type}</CardLabel>
           <StatusTag status={claim.status} />
         </div>
 
-        <p className="mt-3 text-[0.9375rem] leading-relaxed text-foreground">{claim.claim}</p>
+        <p className="mt-4 text-[1.0625rem] leading-relaxed text-foreground">{claim.claim}</p>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-            <Link2 aria-hidden className="size-3.5" />
-            {n} independent source{n === 1 ? "" : "s"}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Link2 aria-hidden className="size-4" />
+            <span><span className="font-mono font-medium text-foreground">{n}</span> independent source{n === 1 ? "" : "s"}</span>
           </span>
           <button
             type="button"
             onClick={toggle}
             aria-expanded={open}
             aria-controls={evidenceId}
-            className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-primary hover:underline"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input px-4 text-sm font-medium text-primary transition-colors duration-150 hover:bg-accent"
           >
-            {open ? "Hide evidence & reasoning" : "Show evidence & reasoning"}
+            {open ? "Hide evidence" : "Show evidence"}
             {open ? <ChevronUp aria-hidden className="size-4" /> : <ChevronDown aria-hidden className="size-4" />}
           </button>
         </div>
 
-        <div id={evidenceId} hidden={!open} className="mt-3 space-y-3 rounded-md bg-muted/60 p-3.5">
-          <p className="text-sm leading-relaxed text-foreground/90">{claim.reasoning}</p>
-          {claim.source_urls.length > 0 ? (
-            <ul className="space-y-1.5">
+        <div id={evidenceId} hidden={!open} className="mt-4 space-y-3 rounded-inner bg-muted p-4">
+          <p className="text-[0.9375rem] leading-relaxed">{claim.reasoning}</p>
+          {claim.source_urls.length > 0 && (
+            <ul className="space-y-2 border-t pt-3">
               {claim.source_urls.map(url => <SourceItem key={url} url={url} claimIndex={index} />)}
             </ul>
-          ) : (
-            <p className="text-xs text-muted-foreground">No sources were cited for this claim.</p>
           )}
         </div>
       </div>
 
       {rateable && (
-        <fieldset className="grid grid-cols-3 gap-2 border-t px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:px-5">
+        <fieldset className="grid grid-cols-3 gap-2 border-t px-5 py-4 sm:px-6">
           <legend className="sr-only">{studyConfig.CLAIM_RATING.prompt} Claim {index + 1}</legend>
-          <span aria-hidden className="col-span-3 text-sm text-muted-foreground sm:col-auto sm:mr-1">{studyConfig.CLAIM_RATING.prompt}</span>
+          <span aria-hidden className="col-span-3 mb-1 text-sm font-medium">{studyConfig.CLAIM_RATING.prompt}</span>
           {studyConfig.CLAIM_RATING.options.map((o: { value: string; label: string }) => (
             <button
               key={o.value}
@@ -75,8 +72,8 @@ export function ClaimCard({ claim, index, rateable }: { claim: Claim; index: num
               aria-pressed={rating === o.value}
               onClick={() => { setRating(o.value); study.claimRated(index, claim.type, claim.status, o.value); }}
               className={cn(
-                "h-10 rounded-md border px-3 text-sm transition-colors duration-150 sm:h-9 sm:min-w-20",
-                rating === o.value ? "border-primary bg-accent font-medium text-accent-foreground" : "border-input bg-card text-foreground hover:bg-muted",
+                "h-10 rounded-full border px-3 text-sm transition-colors duration-150",
+                rating === o.value ? "border-foreground bg-foreground font-medium text-card" : "border-input bg-card hover:bg-muted",
               )}
             >
               {o.label}
@@ -93,24 +90,24 @@ function SourceItem({ url, claimIndex }: { url: string; claimIndex: number }) {
   const domain = registrableDomain(withScheme(url)) || url;
   if (!isLink) {
     return (
-      <li className="flex items-baseline gap-2 text-sm">
+      <li className="flex min-w-0 items-baseline gap-2 text-sm">
         <span className="font-medium">{domain}</span>
-        <span className="truncate text-xs text-muted-foreground" title="Reference from demo data — not a checked link">{url} · unchecked reference</span>
+        <span className="truncate text-muted-foreground" title="Reference from demo data — not a checked link">unchecked reference</span>
       </li>
     );
   }
   return (
-    <li className="text-sm">
+    <li className="min-w-0 text-sm">
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => study.sourceClicked(claimIndex, url)}
-        className="group inline-flex max-w-full items-baseline gap-2 rounded-sm text-primary"
+        className="group inline-flex max-w-full items-center gap-2 rounded-sm text-primary"
       >
         <span className="font-medium group-hover:underline">{domain}</span>
-        <span className="truncate text-xs text-muted-foreground">{url}</span>
-        <ExternalLink aria-hidden className="size-3 shrink-0 self-center" />
+        <span className="truncate text-muted-foreground">{url.replace(/^https?:\/\/(www\.)?/, "")}</span>
+        <ExternalLink aria-hidden className="size-3.5 shrink-0" />
         <span className="sr-only">(opens in a new tab)</span>
       </a>
     </li>

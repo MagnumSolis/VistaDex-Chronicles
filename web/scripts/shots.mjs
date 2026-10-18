@@ -22,14 +22,14 @@ for (const [name, vp] of Object.entries(VIEWPORTS)) {
   await page.fill("#ideaInput", IDEA);
   await page.click("text=Run pipeline");
   await page.waitForSelector("text=Screening report", { timeout: 15000 });
-  await page.getByRole("button", { name: "Show evidence & reasoning" }).first().click();
+  await page.getByRole("button", { name: "Show evidence" }).first().click();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(out, `${name}-report-mock.png`), fullPage: true });
 
   // 2. Style sample: demo cohort report with all four statuses, sources and a lead.
   await page.goto(`${BASE}?demo=idea-07`);
   await page.waitForSelector("text=Screening report");
-  const show = page.getByRole("button", { name: "Show evidence & reasoning" });
+  const show = page.getByRole("button", { name: "Show evidence" });
   while (await show.count()) await show.first().click();
   await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(out, `${name}-report-demo-statuses.png`), fullPage: true });

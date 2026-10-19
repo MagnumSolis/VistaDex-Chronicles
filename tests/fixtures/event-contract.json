@@ -38,9 +38,12 @@
       "screen"
     ],
     "run_started": [
+      "field_chars",
       "idea_chars",
+      "industries",
       "markets",
       "mode",
+      "role",
       "run_id",
       "sample"
     ],
@@ -259,7 +262,35 @@
       "no",
       null
     ],
-    "run_id": "r<n>, counting every run attempt in the page session"
+    "run_id": "r<n>, counting every run attempt in the page session",
+    "run_started.role": [
+      "founder",
+      "investor",
+      "accelerator",
+      null
+    ],
+    "run_started.industries": [
+      "AI/ML",
+      "SaaS/B2B",
+      "Fintech",
+      "Healthtech",
+      "Edtech",
+      "Consumer",
+      "E-commerce",
+      "Climate/Energy",
+      "Mobility",
+      "Agritech",
+      "Deeptech/Hardware",
+      "Media/Creator",
+      "Other"
+    ],
+    "run_started.field_chars": [
+      "moat",
+      "pitch",
+      "problem",
+      "solution",
+      "title"
+    ]
   },
   "controls": [
     "skip_to_content",
@@ -284,8 +315,15 @@
     "welcome_delete_confirm",
     "welcome_delete_cancel",
     "welcome_how_it_works",
-    "idea_text",
+    "idea_title",
+    "idea_pitch",
+    "idea_problem",
+    "idea_solution",
+    "idea_moat",
+    "form_error_link",
     "sample_load",
+    "industry_toggle",
+    "role_select",
     "market_toggle",
     "run_screening",
     "open_last_report",

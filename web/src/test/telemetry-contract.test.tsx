@@ -25,8 +25,8 @@ describe("control registry", () => {
       else if (/\.tsx?$/.test(n) && !n.endsWith("controls.ts")) src += readFileSync(p, "utf8");
     });
     walk(root);
-    // ids may be built from a prefix (nav_${id}, tab_${id})
-    const unused = CONTROLS.filter(id => !src.includes(`"${id}"`) && !/^(nav|tab)_/.test(id));
+    // ids may also be built from a template prefix (`nav_${id}`, `idea_${f.id}`)
+    const unused = CONTROLS.filter(id => !src.includes(`"${id}"`) && !src.includes("`" + id.split("_")[0] + "_${"));
     expect(unused).toEqual([]);
   });
 });
@@ -45,7 +45,7 @@ describe("every interactive element on every screen has a registered data-contro
     await screen.findByRole("button", { name: "Skip to the tool" });
     const missing = unregistered();
     fireEvent.click(screen.getByRole("button", { name: "Skip to the tool" }));
-    await screen.findByLabelText("Idea text");
+    await screen.findByLabelText(/^Idea title/);
     missing.push(...unregistered());
     for (const path of ["#/graveyard", "#/how-it-works", "#/feedback", "#/report", "#/running", "#/nope", "#/welcome"]) {
       go(path);

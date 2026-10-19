@@ -1,7 +1,7 @@
 // Pitch edition, in its own file so no public-edition modules from other tests share the window.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import { go, json, loadApp, PROXY_REPORT, stubFetch } from "./helpers";
+import { fillIdea, go, json, loadApp, PROXY_REPORT, stubFetch } from "./helpers";
 
 const run = () => fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
 
@@ -26,7 +26,8 @@ describe("pitch edition", () => {
     expect(await screen.findByRole("heading", { name: "LegalAI for Startups" })).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: /Show sources/ })[0]);
     go("#/screen");
-    fireEvent.change(await screen.findByLabelText("Idea text"), { target: { value: "We are building a thing. No such thing exists." } });
+    await screen.findByLabelText(/^Idea title/);
+    fillIdea();
     run();
     await waitFor(() => expect(location.hash).toMatch(/^#\/report\/r1$/), { timeout: 10000 });
     go("#/welcome");

@@ -2,7 +2,7 @@
 // the Run step, Resume tour after leaving, and position locked to the target in document coordinates.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import { go, json, loadApp, reportShown, stubFetch } from "./helpers";
+import { fillIdea, go, json, loadApp, reportShown, stubFetch } from "./helpers";
 
 const card = () => screen.queryByTestId("tour-card");
 const title = () => card()?.querySelector("h2")?.textContent;
@@ -12,11 +12,11 @@ const types = (tm: { events: () => { type: string }[] }) => tm.events().map(e =>
 async function startTour(opts: Parameters<typeof loadApp>[0] = {}) {
   const app = await loadApp(opts);
   fireEvent.click(await screen.findByRole("button", { name: "Start with walkthrough" }));
-  await waitFor(() => expect(title()).toBe("Paste an idea"));
+  await waitFor(() => expect(title()).toBe("Start from a sample"));
   return app;
 }
 async function toRunStep() {
-  next(); next(); next();
+  next(); next(); next(); next();
   await waitFor(() => expect(title()).toBe("Press Run"));
 }
 
@@ -27,9 +27,9 @@ describe("walkthrough gating", () => {
   it("Next is disabled on the Run step; Run hides the tour while running and resumes on the report", async () => {
     const { tm } = await startTour();
     next();
-    expect(title()).toBe("Or load a sample");
+    expect(title()).toBe("Name it and pitch it");
     fireEvent.click(screen.getByRole("button", { name: /Back/ }));
-    expect(title()).toBe("Paste an idea");
+    expect(title()).toBe("Start from a sample");
     fireEvent.click(screen.getByRole("button", { name: "Mental-health journaling app" })); // page stays usable
     await toRunStep();
     const nextBtn = screen.getByRole("button", { name: /^Next/ }) as HTMLButtonElement;
@@ -64,7 +64,7 @@ describe("walkthrough gating", () => {
   it("a failed run returns to the Run step", async () => {
     stubFetch(url => (url.endsWith("/screen") ? json({ error: "internal error" }, 500) : json({ stored: 1 })));
     await startTour({ proxy: true });
-    fireEvent.change(screen.getByLabelText("Idea text"), { target: { value: "We are building a thing. No such thing exists." } });
+    fillIdea();
     // Run pressed before reaching the gate step: the tour moves to the gate, then back to it after failing.
     fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
     expect(await screen.findByText("The screening did not finish")).toBeTruthy();
@@ -79,20 +79,20 @@ describe("walkthrough gating", () => {
     expect(card()).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Resume tour/ }));
     await waitFor(() => expect(location.hash).toBe("#/screen"));
-    await waitFor(() => expect(title()).toBe("Or load a sample"));
+    await waitFor(() => expect(title()).toBe("Name it and pitch it"));
   });
 
   it("replays from the ? button", async () => {
     await startTour();
     fireEvent.click(screen.getByRole("button", { name: /Skip tour/ }));
     fireEvent.click(screen.getAllByRole("button", { name: "Replay the walkthrough" })[0]);
-    await waitFor(() => expect(title()).toBe("Paste an idea"));
+    await waitFor(() => expect(title()).toBe("Start from a sample"));
   });
 });
 
 describe("walkthrough position", () => {
   it("highlight and card stay locked to the target in document coordinates through a scroll", async () => {
-    // Layout stand-in: the idea block sits at document y = 900, x = 40 (360 × 300).
+    // Layout stand-in: the samples block sits at document y = 900, x = 40 (360 × 300).
     let scrollY = 0;
     Object.defineProperty(window, "scrollY", { configurable: true, get: () => scrollY });
     Object.defineProperty(window, "innerHeight", { configurable: true, value: 900 });
@@ -100,7 +100,7 @@ describe("walkthrough position", () => {
     Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: 1280 });
     const real = Element.prototype.getBoundingClientRect;
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
-      if ((this as HTMLElement).dataset?.tour === "idea") return { top: 900 - scrollY, left: 40, width: 360, height: 300, bottom: 1200 - scrollY, right: 400, x: 40, y: 900 - scrollY, toJSON() {} } as DOMRect;
+      if ((this as HTMLElement).dataset?.tour === "samples") return { top: 900 - scrollY, left: 40, width: 360, height: 300, bottom: 1200 - scrollY, right: 400, x: 40, y: 900 - scrollY, toJSON() {} } as DOMRect;
       return real.call(this);
     });
     // Desktop width, so the card is placed next to the target rather than docked.

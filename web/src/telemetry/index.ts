@@ -7,7 +7,7 @@
 
 import * as tm from "@proto/ui/telemetry.js";
 import { features } from "@/edition";
-import type { ClaimStatus, ClaimType, Report, RunMode } from "@/types";
+import type { ClaimStatus, ClaimType, IdeaInput, Report, RunMode } from "@/types";
 import { isControl, type ControlId } from "./controls";
 
 if (!features.telemetry) tm.disable();
@@ -101,10 +101,12 @@ export const getScreen = () => currentScreen;
 
 // ── runs ──
 let runCount = 0;
-export function runStarted({ ideaChars, mode, markets, sample }: { ideaChars: number; mode: "mock" | "live"; markets: string[]; sample: string | null }) {
+// Field lengths and selections only — never the text.
+export function runStarted({ input, ideaChars, mode, sample }: { input: IdeaInput; ideaChars: number; mode: "mock" | "live"; sample: string | null }) {
   endReport("new_run");
   const id = `r${++runCount}`;
-  track("run_started", { run_id: id, mode, idea_chars: ideaChars, markets, sample });
+  const field_chars = { title: input.title.length, pitch: input.pitch.length, problem: input.problem.length, solution: input.solution.length, moat: input.moat.length };
+  track("run_started", { run_id: id, mode, idea_chars: ideaChars, field_chars, industries: input.industries, role: input.role, markets: input.markets, sample });
   return id;
 }
 export function runFailed(runId: string, code: string, message: string) {

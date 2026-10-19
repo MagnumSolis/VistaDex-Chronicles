@@ -31,7 +31,7 @@ export function titleFor(ideaText: string) {
 }
 
 export function addSessionReport(e: Omit<ReportEntry, "kind" | "title" | "category">) {
-  session = [{ ...e, kind: "session", title: titleFor(e.report.idea_text), category: null }, ...session];
+  session = [{ ...e, kind: "session", title: e.report.input?.title || titleFor(e.report.idea_text), category: null }, ...session];
   emit();
 }
 

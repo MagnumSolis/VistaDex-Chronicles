@@ -48,10 +48,12 @@ describe("edition checks live only in edition.ts", () => {
     }
   };
   walk(root);
-  it("no other source file mentions the pitch/public edition names or imports `edition`", () => {
+  // ("pitch" is also an input field name, so only comparisons with an edition name count.)
+  it("no other source file compares against an edition name or imports `edition`", () => {
     const offenders = files.filter(f => !f.endsWith("edition.ts")).filter(f => {
       const src = readFileSync(f, "utf8");
-      return /["'`](pitch|public)["'`]/.test(src) || /import\s*\{[^}]*\b(edition|Edition|featuresFor)\b[^}]*\}\s*from\s*["']@\/edition["']/.test(src);
+      return /[!=]==\s*["'`](pitch|public)["'`]|["'`](pitch|public)["'`]\s*[!=]==|\bedition\s*[!=]==/.test(src)
+        || /import\s*\{[^}]*\b(edition|Edition|featuresFor)\b[^}]*\}\s*from\s*["']@\/edition["']/.test(src);
     }).map(f => relative(root, f));
     expect(offenders).toEqual([]);
   });

@@ -13,7 +13,8 @@ export const CONTROLS = [
   "welcome_start_walkthrough", "welcome_skip", "welcome_no_recording", "welcome_continue", "welcome_start_recording",
   "welcome_delete_session", "welcome_delete_confirm", "welcome_delete_cancel", "welcome_how_it_works",
   // screen an idea
-  "idea_text", "sample_load", "market_toggle", "run_screening", "open_last_report",
+  "idea_title", "idea_pitch", "idea_problem", "idea_solution", "idea_moat", "form_error_link",
+  "sample_load", "industry_toggle", "role_select", "market_toggle", "run_screening", "open_last_report",
   // running
   "run_cancel", "running_back_to_edit", "running_go_screen",
   // report

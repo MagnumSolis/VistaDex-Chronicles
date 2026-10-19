@@ -20,9 +20,10 @@ import * as telemetry from "@/telemetry";
 
 export interface Step { id: string; route: "screen" | "report"; target?: string; title: string; body: string; gate?: "run" }
 export const STEPS: Step[] = [
-  { id: "idea", route: "screen", target: "[data-tour=idea]", title: "Paste an idea", body: "Write it the way you would pitch it: what you are building, for whom, and why nobody has done it. VistaDex looks for the claims in it." },
-  { id: "samples", route: "screen", target: "[data-tour=samples]", title: "Or load a sample", body: "No idea handy? Load one of the samples to see how a report looks." },
-  { id: "markets", route: "screen", target: "[data-tour=markets]", title: "Pick target markets", body: "Optional. The report's Legal section covers the markets you pick here." },
+  { id: "samples", route: "screen", target: "[data-tour=samples]", title: "Start from a sample", body: "No idea handy? Load one of the samples to see how a report looks, or fill in your own below." },
+  { id: "basics", route: "screen", target: "[data-tour=basics]", title: "Name it and pitch it", body: "A short title and the one sentence you would open a pitch with: what it is and who it is for." },
+  { id: "details", route: "screen", target: "[data-tour=details]", title: "Problem, solution, moat", body: "Write them the way you would argue them. VistaDex pulls the checkable claims out of these fields, so concrete statements get checked." },
+  { id: "context", route: "screen", target: "[data-tour=context]", title: "Industry, role and markets", body: "Optional. Industry and role help compare reports on the Reports page; the markets you pick shape the Legal section." },
   { id: "run", route: "screen", target: "[data-tour=run]", title: "Press Run", body: "The screening takes a few seconds. The tour carries on when the report is ready.", gate: "run" },
   { id: "summary", route: "report", target: "#section-summary", title: "Counts, not a score", body: "How many claims ended up in each status. There is no overall score or verdict: the report gives evidence and you decide." },
   { id: "claims", route: "report", target: "#section-claims", title: "Claims and their evidence", body: "Each claim shows its status, why it got it, and how many independent sources back it. Open the sources and read them yourself. Unverified is a normal result." },

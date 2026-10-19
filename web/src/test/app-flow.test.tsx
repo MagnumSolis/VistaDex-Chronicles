@@ -1,9 +1,9 @@
 // App flows: Welcome gate and telemetry, running a screening, refusals, cancel, report states, editions.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import { go, json, loadApp, PROXY_REPORT, reportShown, stubFetch } from "./helpers";
+import { fillIdea, go, json, loadApp, PROXY_REPORT, reportShown, stubFetch } from "./helpers";
 
-const ideaBox = () => screen.getByLabelText("Idea text") as HTMLTextAreaElement;
+const field = (label: RegExp) => screen.getByLabelText(label) as HTMLTextAreaElement;
 const run = () => fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
 const types = (tm: { events: () => { type: string }[] }) => tm.events().map(e => e.type);
 
@@ -36,7 +36,7 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     const { tm } = await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
     fireEvent.click(await screen.findByRole("button", { name: "AI contract review for startups" }));
-    const idea = ideaBox().value;
+    const pitch = field(/^One-line pitch/).value;
     fireEvent.click(screen.getByRole("button", { name: /^EU/ }));
     run();
     expect(await screen.findByRole("heading", { name: "Screening your idea" })).toBeTruthy();
@@ -46,10 +46,11 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     const completed = tm.events().find((e: { type: string }) => e.type === "run_completed");
     expect(Object.keys(completed.payload).sort()).toEqual(["counts", "duration_ms", "mode", "run_id", "trace_id"]);
     const all = JSON.stringify(tm.events());
-    expect(all).not.toContain(idea.slice(0, 40));
+    expect(all).not.toContain(pitch.slice(0, 40));
     expect(all).not.toContain("contract review tool"); // no claim text either
     const started = tm.events().find((e: { type: string }) => e.type === "run_started");
-    expect(started.payload).toMatchObject({ idea_chars: idea.length, markets: ["EU"], sample: "legal" });
+    expect(started.payload).toMatchObject({ markets: ["EU"], sample: null, role: "founder", industries: ["AI/ML", "SaaS/B2B"] });
+    expect(started.payload.field_chars.pitch).toBe(pitch.length);
     // mock mode: legal and market show clearly labelled sample data, only for the picked market
     expect(screen.getAllByText(/Sample data, not real/).length).toBe(2);
     expect(screen.getByRole("heading", { name: /European Union/ })).toBeTruthy();
@@ -66,16 +67,21 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     expect(tm.consentStatus()).toBe("declined");
   }, 20000);
 
-  it("an empty idea is not run; the idea text survives leaving and coming back", async () => {
+  it("required fields are checked inline; the draft survives leaving and coming back", async () => {
     await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
     run();
-    expect(await screen.findByText("Paste or type an idea first.")).toBeTruthy();
-    fireEvent.change(ideaBox(), { target: { value: "We are building a thing. No such thing exists." } });
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/Fill in these fields/);
+    for (const l of ["Idea title", "One-line pitch", "Problem", "Solution"]) expect(alert.textContent).toContain(l);
+    expect(field(/^Idea title/).getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("Idea title is required.")).toBeTruthy();
+    fillIdea();
+    expect(screen.queryByText("Idea title is required.")).toBeNull();
     go("#/graveyard");
     await screen.findByRole("heading", { name: "Startups that shut down" });
     go("#/screen");
-    expect((await screen.findByLabelText("Idea text") as HTMLTextAreaElement).value).toBe("We are building a thing. No such thing exists.");
+    expect((await screen.findByLabelText(/^Solution/) as HTMLTextAreaElement).value).toBe("No such thing exists.");
   });
 
   it("Cancel stops the run, keeps the text and logs run_cancelled", async () => {
@@ -85,7 +91,7 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     run();
     fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(location.hash).toBe("#/screen"), { timeout: 5000 });
-    expect(ideaBox().value).toMatch(/legal contract review/);
+    expect(field(/^One-line pitch/).value).toMatch(/legal contract review/);
     await waitFor(() => expect(types(tm)).toContain("run_cancelled"));
     expect(types(tm)).not.toContain("run_completed");
   }, 15000);
@@ -149,14 +155,14 @@ describe("refusals and failures show friendly messages on Screen an idea", () =>
     stubFetch(url => (url.endsWith("/screen") ? json(body, status) : json({ stored: 1 })));
     const { tm } = await loadApp({ proxy: true });
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
-    fireEvent.change(ideaBox(), { target: { value: "We are building a thing. No such thing exists." } });
+    fillIdea();
     run();
     return tm;
   };
   it("daily cap", async () => {
     const tm = await refuse(429, { error: "daily_cap" });
     expect(await screen.findByText("VistaDex has reached today's limit")).toBeTruthy();
-    expect(ideaBox().value).toMatch(/building a thing/);
+    expect(field(/^Problem/).value).toMatch(/building a thing/);
     const failed = tm.events().find((e: { type: string }) => e.type === "run_failed");
     expect(failed.payload.code).toBe("daily_cap");
   });
@@ -175,7 +181,7 @@ describe("live runs never get legal or market data", () => {
     stubFetch(url => (url.endsWith("/screen") ? json(PROXY_REPORT, 200, { "X-VistaDex-Mode": "live" }) : json({ stored: 1 })));
     await loadApp({ proxy: true });
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
-    fireEvent.change(ideaBox(), { target: { value: "We are building a thing. No such thing exists." } });
+    fillIdea();
     run();
     await reportShown();
     expect(screen.getAllByText("Not available in this version yet").length).toBe(2);

@@ -1,6 +1,6 @@
 // Shared helpers for app-level tests. Each test loads a fresh module graph, so the edition, the router,
 // telemetry and the session's reports all start clean.
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, vi } from "vitest";
 
 export async function loadApp({ edition = "public", hash = "", proxy = false }: { edition?: "public" | "pitch"; hash?: string; proxy?: boolean } = {}) {
@@ -20,6 +20,13 @@ export const go = (path: string) => act(() => {
   location.hash = path;
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 });
+
+/** Fills the required fields of the Screen an idea form. */
+export const IDEA_FIELDS = { title: "Thing", pitch: "A thing for people who need things", problem: "We are building a thing.", solution: "No such thing exists." };
+export function fillIdea(fields: Partial<typeof IDEA_FIELDS> = IDEA_FIELDS) {
+  const label: Record<string, RegExp> = { title: /^Idea title/, pitch: /^One-line pitch/, problem: /^Problem/, solution: /^Solution/ };
+  for (const [k, v] of Object.entries(fields)) fireEvent.change(screen.getByLabelText(label[k]), { target: { value: v } });
+}
 
 export const reportShown = () => waitFor(() => expect(screen.getByRole("heading", { name: "Your report" })).toBeTruthy(), { timeout: 10000 });
 

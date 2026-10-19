@@ -6,7 +6,8 @@ import { liveMode, screenIdea } from "@/proto";
 import { navigate, PATHS } from "@/router";
 import { addSessionReport } from "@/lib/reports";
 import * as telemetry from "@/telemetry";
-import type { Jurisdiction, ScreenResult, StageState } from "@/types";
+import { buildIdeaText } from "@proto/core/input.js";
+import type { IdeaInput, ScreenResult, StageState } from "@/types";
 
 export type StageKey = "split" | "check" | "graveyard" | "legal" | "objections";
 export const STAGES: { key: StageKey; name: string; desc: string }[] = [
@@ -49,10 +50,12 @@ export function useRun() {
 
 export const reportPath = (id: string) => (features.reportHistory ? `${PATHS.report}/${encodeURIComponent(id)}` : PATHS.report);
 
-export async function startRun({ ideaText, markets, sample }: { ideaText: string; markets: Jurisdiction[]; sample: string | null }) {
+export async function startRun({ input, sample }: { input: IdeaInput; sample: string | null }) {
+  const ideaText = buildIdeaText(input) as string;
+  const { markets } = input;
   if (state.status === "running") return;
   const live = liveMode();
-  const runId = telemetry.runStarted({ ideaChars: ideaText.length, mode: live ? "live" : "mock", markets, sample });
+  const runId = telemetry.runStarted({ input, ideaChars: ideaText.length, mode: live ? "live" : "mock", sample });
   controller = new AbortController();
   const signal = controller.signal;
   const stages = idleStages();
@@ -71,7 +74,7 @@ export async function startRun({ ideaText, markets, sample }: { ideaText: string
   };
 
   try {
-    const data = (await screenIdea(ideaText, { onStage, signal })) as ScreenResult;
+    const data = (await screenIdea(input, { onStage, signal })) as ScreenResult;
     if (signal.aborted) throw Object.assign(new Error("cancelled"), { code: "cancelled" });
     const report = data.report; // in mock mode the pipeline already carries the sample placeholders (sample_fields)
     addSessionReport({ id: runId, createdAt: new Date(), report, mode: data.mode, markets, traceId: data.traceId });

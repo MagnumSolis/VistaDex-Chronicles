@@ -1,7 +1,27 @@
 {
-  "exported_at": "2026-10-19T17:24:21.307Z",
-  "count": 20,
+  "exported_at": "2026-10-19T18:12:18.296Z",
+  "count": 40,
   "entries": [
+    {
+      "company_name": "Orbital Express",
+      "what_they_tried": "Orbital Express was a Danish logistics and delivery startup founded in 2016 that aimed to revolutionize last-mile delivery through a network of micro-fulfillment centers and autonomous delivery solutions. The company raised $120M from prominent European investors including Heartcore Capital, BGF, and Octopus to build infrastructure for ultra-fast delivery (sub-30 minute) in urban centers. Their value proposition centered on combining dark stores with proprietary routing algorithms and eventually autonomous vehicles to compete with traditional delivery services and emerging quick-commerce players. The 'why now' was the explosion of e-commerce post-2015, urbanization trends, and the promise of autonomous delivery technology maturing. However, the capital-intensive nature of physical infrastructure, combined with fierce competition from well-funded rivals like Gorillas, Getir, and Deliveroo",
+      "cause_of_death": "Orbital Express was a Danish logistics and delivery startup founded in 2016 that aimed to revolutionize last-mile delivery through a network of micro-fulfillment centers and autonomous delivery solutions. The company raised $120M from prominent European investors including Heartcore Capital, BGF, and Octopus to build infrastructure for ultra-fast delivery (sub-30 minute) in urban centers. Their va",
+      "cause_category": "other",
+      "year_closed": 2026,
+      "closure_date": null,
+      "raised": "$120.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2540-orbital-express",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
     {
       "company_name": "23andMe",
       "what_they_tried": "23andMe pioneered direct-to-consumer genetic testing, democratizing access to ancestry and health insights that previously required expensive clinical testing. Founded in 2006 during the genomics revolution following the Human Genome Project completion, they capitalized on plummeting sequencing costs (from $100M+ to under $1000) and consumer curiosity about personal genetics. The value proposition was transformative: spit in a tube, mail it in, and receive detailed ancestry breakdowns plus health risk assessments for conditions like Alzheimer's, Parkinson's, and BRCA cancer mutations. They positioned genetics as consumer empowerment rather than medical gatekeeping, riding the quantified-self movement alongside Fitbit and early health tech. The 'why now' was perfect timing: sequencing costs dropped 10,000x, social media enabled viral sharing of results, and consumers increasingly distrust",
@@ -63,6 +83,86 @@
       "source_verified": false
     },
     {
+      "company_name": "Lysto",
+      "what_they_tried": "Lysto was a social commerce platform launched in India in 2021 that aimed to democratize e-commerce by enabling micro-entrepreneurs, influencers, and small sellers to create their own online storefronts without technical expertise. The platform provided a no-code solution for individuals to curate product catalogs, share them via social media (primarily WhatsApp and Instagram), and earn commissions on sales. The 'Why Now' was compelling: India's digital payment infrastructure (UPI) had matured, smartphone penetration was exploding in tier-2/3 cities, and the COVID-19 pandemic had accelerated social commerce adoption. Lysto positioned itself as the 'Shopify for the next billion users' - targeting the long tail of sellers who couldn't afford traditional e-commerce infrastructure. With $12M from Tiger Global and Sequoia India, they built a mobile-first platform with integrated logistics, pa",
+      "cause_of_death": "Lysto was a social commerce platform launched in India in 2021 that aimed to democratize e-commerce by enabling micro-entrepreneurs, influencers, and small sellers to create their own online storefronts without technical expertise. The platform provided a no-code solution for individuals to curate product catalogs, share them via social media (primarily WhatsApp and Instagram), and earn commission",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$12.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2527-lysto",
+        "https://lysto.app/",
+        "https://lysto.gg/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Fermata",
+      "what_they_tried": "Fermata was an Israeli agtech startup that developed precision fermentation technology to produce sustainable, animal-free proteins and ingredients. Founded in 2019 by Alon Wallach, the company aimed to address the growing demand for alternative proteins by leveraging biotechnology to create dairy proteins, meat alternatives, and functional ingredients without animal agriculture. The timing seemed perfect: consumer demand for sustainable food was accelerating, climate concerns were mounting, and the alternative protein market was experiencing explosive investor interest. Fermata positioned itself in the intersection of biotech and food tech, promising to deliver products with identical nutritional profiles to animal-derived proteins but with dramatically lower environmental footprints. The company raised $5M from Precision Capital and Kibbutz Ketura, suggesting strong early validation of",
+      "cause_of_death": "Fermata was an Israeli agtech startup that developed precision fermentation technology to produce sustainable, animal-free proteins and ingredients. Founded in 2019 by Alon Wallach, the company aimed to address the growing demand for alternative proteins by leveraging biotechnology to create dairy proteins, meat alternatives, and functional ingredients without animal agriculture. The timing seemed",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$5.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Biotech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2528-fermata",
+        "https://www.merriam-webster.com/dictionary/shut",
+        "https://shutnyc.com/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Nirvana",
+      "what_they_tried": "Nirvana was a fintech infrastructure startup that aimed to modernize insurance distribution by building API-first connectivity between insurance carriers, MGAs (Managing General Agents), and distributors. Founded in 2019, they positioned themselves as the 'Stripe for insurance' - creating programmatic access to commercial insurance products through a unified API layer. The timing seemed perfect: insurance was one of the last major financial verticals to undergo digital transformation, embedded insurance was emerging as a category, and B2B2C distribution models were gaining traction. Nirvana raised $25M from top-tier investors (Inspired Capital, Eniac Ventures) to build the rails that would allow any company to embed insurance into their product experience. The value proposition was compelling: carriers got modern distribution channels without building tech, distributors got instant acces",
+      "cause_of_death": "Nirvana was a fintech infrastructure startup that aimed to modernize insurance distribution by building API-first connectivity between insurance carriers, MGAs (Managing General Agents), and distributors. Founded in 2019, they positioned themselves as the 'Stripe for insurance' - creating programmatic access to commercial insurance products through a unified API layer. The timing seemed perfect: i",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$25.0M",
+      "funding_rounds": [],
+      "sector": "Financials",
+      "product_type": "Financial &amp; Fintech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2531-nirvana",
+        "https://www.merriam-webster.com/dictionary/shut",
+        "https://shutnyc.com/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Dadao",
+      "what_they_tried": "Dadao was a Chinese PropTech platform founded in 2015 that aimed to revolutionize commercial real estate leasing by connecting landlords with tenants through a digital marketplace. The company raised $115M from top-tier investors including Sequoia China and Matrix Partners, positioning itself as the 'Airbnb for office space' during China's co-working and flexible office boom. Dadao's value proposition centered on solving information asymmetry in commercial real estate—traditionally an opaque, broker-dominated market with high transaction costs and long lead times. The platform promised landlords higher occupancy rates and better tenant matching, while offering tenants transparent pricing, virtual tours, and streamlined lease negotiations. The 'why now' was compelling: China's urbanization was accelerating, startups were proliferating post-2014, and WeWork's global success validated the f",
+      "cause_of_death": "Dadao was a Chinese PropTech platform founded in 2015 that aimed to revolutionize commercial real estate leasing by connecting landlords with tenants through a digital marketplace. The company raised $115M from top-tier investors including Sequoia China and Matrix Partners, positioning itself as the 'Airbnb for office space' during China's co-working and flexible office boom. Dadao's value proposi",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$115.0M",
+      "funding_rounds": [],
+      "sector": "Real Estate",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2536-dadao",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
       "company_name": "Thunder Power",
       "what_they_tried": "Thunder Power was a Chinese electric vehicle manufacturer founded in 2015 by Shen Wei with ambitious plans to compete in the premium EV segment. The company positioned itself as a luxury EV maker targeting European and Asian markets, unveiling concept vehicles at major auto shows including the 2015 Frankfurt Motor Show. Thunder Power promised cutting-edge battery technology, sleek design, and performance metrics comparable to Tesla. The 'Why Now' was compelling: EV adoption was accelerating globally, Chinese government subsidies were generous, and Tesla had validated the premium EV market. Thunder Power raised $100M to build manufacturing facilities and develop production vehicles. However, the company struggled to transition from concept to production, facing the brutal reality that automotive manufacturing requires exponentially more capital, supply chain expertise, and regulatory navi",
       "cause_of_death": "Thunder Power was a Chinese electric vehicle manufacturer founded in 2015 by Shen Wei with ambitious plans to compete in the premium EV segment. The company positioned itself as a luxury EV maker targeting European and Asian markets, unveiling concept vehicles at major auto shows including the 2015 Frankfurt Motor Show. Thunder Power promised cutting-edge battery technology, sleek design, and perf",
@@ -103,6 +203,86 @@
       "source_verified": false
     },
     {
+      "company_name": "Buzzer",
+      "what_they_tried": "Buzzer launched in 2020 as a sports streaming platform designed to deliver live game moments and highlights directly to fans through a mobile-first experience. The value proposition centered on solving cord-cutting friction for sports fans who wanted access to live games without expensive cable bundles or fragmented streaming services. Buzzer aimed to aggregate rights across leagues and deliver personalized, real-time notifications when key moments happened in games users cared about, allowing them to jump directly into live action. The timing seemed perfect: streaming was accelerating post-pandemic, younger audiences were abandoning traditional TV, and sports remained one of the last appointment-viewing categories. With backing from Sapphire Sport and Michael Jordan, Buzzer raised $44M to negotiate streaming rights, build technology infrastructure, and acquire users in a market where ES",
+      "cause_of_death": "Buzzer launched in 2020 as a sports streaming platform designed to deliver live game moments and highlights directly to fans through a mobile-first experience. The value proposition centered on solving cord-cutting friction for sports fans who wanted access to live games without expensive cable bundles or fragmented streaming services. Buzzer aimed to aggregate rights across leagues and deliver pe",
+      "cause_category": "other",
+      "year_closed": 2023,
+      "closure_date": null,
+      "raised": "$440.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "Mobile App",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2543-buzzer",
+        "https://frontofficesports.com/buzzer-the-gen-z-sports-app-backed-by-44-million-shuts-down/",
+        "https://www.sportico.com/business/tech/2023/buzzer-startup-failure-mobile-sports-streaming-1234730284/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Sleek",
+      "what_they_tried": "Sleek was a fintech startup that aimed to modernize expense management and corporate card solutions for small-to-medium businesses. Founded in 2019 by Spandana Nakka, the company raised $10M from prominent investors including Tiger Global and Westly Group. The value proposition centered on providing SMBs with intelligent spend management tools, real-time expense tracking, and corporate cards with built-in controls—essentially competing in the crowded space dominated by Brex, Ramp, and Divvy. The timing seemed right: SMBs were digitizing financial operations post-COVID, and venture capital was flooding into fintech infrastructure. However, Sleek entered a market that had already consolidated around 2-3 dominant players with massive war chests, superior unit economics, and deeply entrenched banking partnerships. The company struggled to differentiate beyond feature parity, and the 2022-202",
+      "cause_of_death": "Sleek was a fintech startup that aimed to modernize expense management and corporate card solutions for small-to-medium businesses. Founded in 2019 by Spandana Nakka, the company raised $10M from prominent investors including Tiger Global and Westly Group. The value proposition centered on providing SMBs with intelligent spend management tools, real-time expense tracking, and corporate cards with",
+      "cause_category": "other",
+      "year_closed": 2023,
+      "closure_date": null,
+      "raised": "$10.0M",
+      "funding_rounds": [],
+      "sector": "Financials",
+      "product_type": "Financial &amp; Fintech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2529-sleek",
+        "https://sleek.com/sg/resources/how-to-close-a-singapore-company/",
+        "https://www.reddit.com/r/MakeupRehab/comments/1q0rvsj/brands_that_shuttered_since_2016/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Xiaohe",
+      "what_they_tried": "Xiaohe was Alibaba Health's ambitious telemedicine platform launched in 2020, backed by $150M from Alibaba Health and Ant Group. The platform aimed to create a comprehensive digital healthcare ecosystem in China, connecting patients with doctors for online consultations, prescription fulfillment, and chronic disease management. The 'Why Now' was compelling: COVID-19 had accelerated digital health adoption in China, regulatory frameworks were evolving to support telemedicine, and China's aging population created massive demand for accessible healthcare. Xiaohe leveraged Alibaba's ecosystem advantages—integration with Alipay for payments, logistics infrastructure for medication delivery, and massive user base for distribution. The value proposition was a one-stop healthcare super-app: video consultations, AI-powered symptom checkers, prescription management, medication delivery within hour",
+      "cause_of_death": "Xiaohe was Alibaba Health's ambitious telemedicine platform launched in 2020, backed by $150M from Alibaba Health and Ant Group. The platform aimed to create a comprehensive digital healthcare ecosystem in China, connecting patients with doctors for online consultations, prescription fulfillment, and chronic disease management. The 'Why Now' was compelling: COVID-19 had accelerated digital health",
+      "cause_category": "other",
+      "year_closed": 2023,
+      "closure_date": null,
+      "raised": "$150.0M",
+      "funding_rounds": [],
+      "sector": "Health Care",
+      "product_type": "Medical",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2535-xiaohe",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Baqi (AgTech)",
+      "what_they_tried": "Baqi was a Chinese AgTech startup founded in 2016 that aimed to revolutionize agricultural supply chains through technology-enabled logistics and distribution networks. The company sought to connect farmers directly with buyers, reducing intermediaries and improving price transparency in China's fragmented agricultural market. Operating during China's peak AgTech investment boom (2016-2019), Baqi raised $38M from top-tier investors including GGV Capital and Source Code Capital. The timing seemed perfect: China's agricultural sector was ripe for digitization, with millions of smallholder farmers lacking efficient market access, and e-commerce giants like Alibaba and JD.com were validating farm-to-table models. Baqi's value proposition centered on building a tech-enabled logistics infrastructure that could handle the unique challenges of agricultural products—perishability, quality varianc",
+      "cause_of_death": "Baqi was a Chinese AgTech startup founded in 2016 that aimed to revolutionize agricultural supply chains through technology-enabled logistics and distribution networks. The company sought to connect farmers directly with buyers, reducing intermediaries and improving price transparency in China's fragmented agricultural market. Operating during China's peak AgTech investment boom (2016-2019), Baqi",
+      "cause_category": "other",
+      "year_closed": 2023,
+      "closure_date": null,
+      "raised": "$38.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2539-baqi-agtech",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
       "company_name": "Weidai",
       "what_they_tried": "Weidai was a Chinese peer-to-peer (P2P) lending platform founded in 2011 that connected individual borrowers with investors, focusing on microloans and consumer credit. The company emerged during China's fintech boom when traditional banks underserved small businesses and individuals, creating massive demand for alternative lending. Weidai raised $110M from investors including Crystal Stream, positioning itself as a technology-enabled credit intermediary. The platform used data analytics for credit scoring and automated loan matching. The 'why now' was compelling: China's credit gap, smartphone penetration, and regulatory tolerance for P2P lending created a perfect storm. However, Weidai operated in an increasingly crowded market with over 6,000 P2P platforms at peak, and the business model depended on continuous liquidity, borrower quality, and regulatory stability—all of which deterior",
       "cause_of_death": "Weidai was a Chinese peer-to-peer (P2P) lending platform founded in 2011 that connected individual borrowers with investors, focusing on microloans and consumer credit. The company emerged during China's fintech boom when traditional banks underserved small businesses and individuals, creating massive demand for alternative lending. Weidai raised $110M from investors including Crystal Stream, posi",
@@ -119,6 +299,106 @@
         "https://www.loot-drop.io/startup/2548-weidai",
         "https://ideaproof.io/failure/weidai-china-p2p",
         "https://faildex.com/en/company/14b9efb1-dc6d-450d-ad38-a0b6eccc6d18/weidai"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Hantoo",
+      "what_they_tried": "Hantoo was a Chinese hospitality startup backed by travel giant Ctrip and tech titan Tencent with $55M in funding. Launched in 2016, it aimed to modernize China's fragmented budget hotel market through technology-driven standardization and brand consolidation. The 'Why Now' was compelling: China's domestic travel boom (pre-COVID) created massive demand for affordable, consistent lodging experiences. Ctrip's distribution power combined with Tencent's WeChat ecosystem positioning suggested a winning formula—leverage existing traffic to aggregate independent hotels under a unified brand with operational playbooks, digital booking infrastructure, and quality standards. The value proposition targeted both travelers (predictable experiences at budget prices) and hotel owners (increased occupancy through platform distribution, operational support, reduced customer acquisition costs). However, H",
+      "cause_of_death": "Hantoo was a Chinese hospitality startup backed by travel giant Ctrip and tech titan Tencent with $55M in funding. Launched in 2016, it aimed to modernize China's fragmented budget hotel market through technology-driven standardization and brand consolidation. The 'Why Now' was compelling: China's domestic travel boom (pre-COVID) created massive demand for affordable, consistent lodging experience",
+      "cause_category": "other",
+      "year_closed": 2022,
+      "closure_date": null,
+      "raised": "$55.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2537-hantoo",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Hujiang",
+      "what_they_tried": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and proprietary learning apps. The company raised $187M from top-tier investors including Baidu and SIG China, capitalizing on China's explosive demand for English proficiency and professional skills training during the country's economic boom. Hujiang's 'Why Now' was compelling: China's middle class was expanding rapidly, internet penetration was accelerating, and parents were willing to pay premium prices for children's education. The platform aggregated thousands of teachers, offered courses in languag",
+      "cause_of_death": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and propri",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$187.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2556-hujiang",
+        "https://ideaproof.io/failure/hujiang-china",
+        "https://cn.hujiang.com/new/p525861"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "VIPKid",
+      "what_they_tried": "VIPKid pioneered online English education for Chinese children (ages 4-15) by connecting them with North American teachers via 1-on-1 video lessons. Founded in 2013 by Cindy Mi, the company capitalized on China's massive demand for English proficiency, parental willingness to pay premium prices for native speakers, and the rise of mobile internet penetration. The timing was perfect: China's middle class was exploding, regulatory pressure on traditional tutoring centers created demand for flexible alternatives, and video streaming technology had matured enough for real-time education. VIPKid's model was simple but powerful—parents paid $15-20 per 25-minute lesson, teachers earned $14-22/hour working from home, and VIPKid took a 20-30% cut. At its peak in 2019, the company served 700,000+ students, employed 100,000+ teachers, and achieved a $4.5B valuation with $1.1B in total funding from",
+      "cause_of_death": "VIPKid pioneered online English education for Chinese children (ages 4-15) by connecting them with North American teachers via 1-on-1 video lessons. Founded in 2013 by Cindy Mi, the company capitalized on China's massive demand for English proficiency, parental willingness to pay premium prices for native speakers, and the rise of mobile internet penetration. The timing was perfect: China's middle",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$1.1B",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2522-vipkid",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Zuoyebang",
+      "what_they_tried": "Zuoyebang was China's largest online education platform, offering homework help, live tutoring, and AI-powered learning tools to K-12 students. Founded in 2015 by Hou Jianbin (former Baidu executive), it leveraged photo-based question answering and live-streaming classes to capture 170+ million monthly active users at peak. The 'Why Now' was perfect: China's education arms race, mobile penetration hitting critical mass, and parental willingness to pay premium prices for academic advantage. Zuoyebang raised $2.9B from Alibaba, SoftBank, and Sequoia, reaching a $10B+ valuation by 2020. The platform combined freemium homework help (user acquisition) with high-margin live courses (monetization), creating a flywheel where free users converted to paying customers. However, the business model was entirely dependent on regulatory tolerance for private tutoring—a systemic risk that materialized c",
+      "cause_of_death": "Zuoyebang was China's largest online education platform, offering homework help, live tutoring, and AI-powered learning tools to K-12 students. Founded in 2015 by Hou Jianbin (former Baidu executive), it leveraged photo-based question answering and live-streaming classes to capture 170+ million monthly active users at peak. The 'Why Now' was perfect: China's education arms race, mobile penetration",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$2.9B",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2523-zuoyebang",
+        "https://ideaproof.io/failure/zuoyebang",
+        "https://technode.com/2021/08/26/china-edtech-giants-cut-tens-of-thousands-of-jobs-report/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Magic Ears",
+      "what_they_tried": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculum, gamified learning experiences, and 1-to-4 teacher-student ratios that balanced personalization with unit economics. The 'Why Now' was compelling: China's rising middle class, regulatory push for English proficiency, mobile internet penetration reaching tier-2/3 cities, and parental anxiety about educational competitiveness. The platform raised $50M from ZhenFund and others, riding the wave of online education that saw competitors like VIPKid and VIPKID raise billions. However, Magic Ears oper",
+      "cause_of_death": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculu",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$50.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2559-magic-ears",
+        "https://www.merriam-webster.com/dictionary/shut",
+        "https://shutnyc.com/"
       ],
       "source_verified": false
     },
@@ -143,22 +423,42 @@
       "source_verified": false
     },
     {
-      "company_name": "Hujiang",
-      "what_they_tried": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and proprietary learning apps. The company raised $187M from top-tier investors including Baidu and SIG China, capitalizing on China's explosive demand for English proficiency and professional skills training during the country's economic boom. Hujiang's 'Why Now' was compelling: China's middle class was expanding rapidly, internet penetration was accelerating, and parents were willing to pay premium prices for children's education. The platform aggregated thousands of teachers, offered courses in languag",
-      "cause_of_death": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and propri",
+      "company_name": "Koolearn (K-12)",
+      "what_they_tried": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching resources to deliver test prep, subject tutoring, and enrichment courses across China's massive K-12 market. The 'Why Now' was compelling: China's education-obsessed middle class was rapidly adopting smartphones and broadband, creating unprecedented demand for scalable, affordable tutoring that could reach second and third-tier cities. Tencent's $164M investment validated the thesis that online education could democratize access to elite instruction while achieving superior unit economics versus",
+      "cause_of_death": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching r",
       "cause_category": "other",
       "year_closed": 2021,
       "closure_date": null,
-      "raised": "$187.0M",
+      "raised": "$164.0M",
       "funding_rounds": [],
       "sector": "Communication Services",
       "product_type": "EdTech",
       "country": null,
       "registry_record": null,
       "source_urls": [
-        "https://www.loot-drop.io/startup/2556-hujiang",
-        "https://ideaproof.io/failure/hujiang-china",
-        "https://cn.hujiang.com/new/p525861"
+        "https://www.loot-drop.io/startup/2550-koolearn-k-12",
+        "https://pdf.dfcfw.com/pdf/H3_AP202009181414361222_1.pdf",
+        "https://www.fool.com/earnings/call-transcripts/2020/07/28/new-oriental-education-technology-group-inc-edu-q4.aspx"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Lekee",
+      "what_they_tried": "Lekee was a Chinese hotel SaaS platform founded in 2015 that aimed to digitize and modernize hotel operations for small-to-medium independent hotels across China. The company raised $42M from top-tier investors IDG Capital and Matrix Partners to build a comprehensive property management system (PMS) that handled reservations, front desk operations, housekeeping, revenue management, and guest engagement. The timing seemed perfect: China's hospitality industry was fragmented with thousands of independent hotels still using paper-based systems or outdated software, and the rise of OTAs like Ctrip and Meituan created urgent need for digital infrastructure. Lekee positioned itself as the all-in-one operating system for independent hotels, promising to increase occupancy rates through better channel management, reduce operational costs through automation, and improve guest satisfaction through",
+      "cause_of_death": "Lekee was a Chinese hotel SaaS platform founded in 2015 that aimed to digitize and modernize hotel operations for small-to-medium independent hotels across China. The company raised $42M from top-tier investors IDG Capital and Matrix Partners to build a comprehensive property management system (PMS) that handled reservations, front desk operations, housekeeping, revenue management, and guest engag",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$42.0M",
+      "funding_rounds": [],
+      "sector": "Information Technology",
+      "product_type": "SaaS (B2B)",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2538-lekee",
+        "https://ideaproof.io/failure/lekee-china-2",
+        "https://www.lekeelekee.com/post/01a10052-bced-703e-b250-3035ff709e54"
       ],
       "source_verified": false
     },
@@ -199,6 +499,26 @@
         "https://www.loot-drop.io/startup/2554-codemao",
         "https://downdetector.com/",
         "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Yuanfudao",
+      "what_they_tried": "Yuanfudao was China's most valuable EdTech unicorn, reaching a $15.5B valuation at its peak. Founded in 2012 by Li Yong, it evolved from a question-and-answer app into a comprehensive online K-12 tutoring platform offering live classes, AI-powered homework assistance, and test prep. The 'Why Now' was perfect: China's hyper-competitive education system (gaokao exam pressure), rising middle-class spending on education ($120B+ market), smartphone penetration enabling mobile-first learning, and parental anxiety driving demand for supplemental tutoring. Yuanfudao capitalized on COVID-19, scaling to 400M+ users and 5M+ paying students during lockdowns. However, the company didn't technically 'fail' in the traditional startup sense—it was legislated out of existence. In July 2021, China's 'Double Reduction' policy banned for-profit tutoring in core K-12 subjects, effectively destroying the $100",
+      "cause_of_death": "Yuanfudao was China's most valuable EdTech unicorn, reaching a $15.5B valuation at its peak. Founded in 2012 by Li Yong, it evolved from a question-and-answer app into a comprehensive online K-12 tutoring platform offering live classes, AI-powered homework assistance, and test prep. The 'Why Now' was perfect: China's hyper-competitive education system (gaokao exam pressure), rising middle-class sp",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$4.1B",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2542-yuanfudao",
+        "https://medium.com/illumination/the-15-5-billion-unicorn-that-vanished-overnight-f71a34f80a77",
+        "https://equalocean.com/analysis/201901161294-yuanfudao-terminates-its-one-one-online-education-section"
       ],
       "source_verified": false
     },
@@ -263,46 +583,6 @@
       "source_verified": false
     },
     {
-      "company_name": "Koolearn (K-12)",
-      "what_they_tried": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching resources to deliver test prep, subject tutoring, and enrichment courses across China's massive K-12 market. The 'Why Now' was compelling: China's education-obsessed middle class was rapidly adopting smartphones and broadband, creating unprecedented demand for scalable, affordable tutoring that could reach second and third-tier cities. Tencent's $164M investment validated the thesis that online education could democratize access to elite instruction while achieving superior unit economics versus",
-      "cause_of_death": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching r",
-      "cause_category": "other",
-      "year_closed": 2021,
-      "closure_date": null,
-      "raised": "$164.0M",
-      "funding_rounds": [],
-      "sector": "Communication Services",
-      "product_type": "EdTech",
-      "country": null,
-      "registry_record": null,
-      "source_urls": [
-        "https://www.loot-drop.io/startup/2550-koolearn-k-12",
-        "https://pdf.dfcfw.com/pdf/H3_AP202009181414361222_1.pdf",
-        "https://www.fool.com/earnings/call-transcripts/2020/07/28/new-oriental-education-technology-group-inc-edu-q4.aspx"
-      ],
-      "source_verified": false
-    },
-    {
-      "company_name": "Magic Ears",
-      "what_they_tried": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculum, gamified learning experiences, and 1-to-4 teacher-student ratios that balanced personalization with unit economics. The 'Why Now' was compelling: China's rising middle class, regulatory push for English proficiency, mobile internet penetration reaching tier-2/3 cities, and parental anxiety about educational competitiveness. The platform raised $50M from ZhenFund and others, riding the wave of online education that saw competitors like VIPKid and VIPKID raise billions. However, Magic Ears oper",
-      "cause_of_death": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculu",
-      "cause_category": "other",
-      "year_closed": 2021,
-      "closure_date": null,
-      "raised": "$50.0M",
-      "funding_rounds": [],
-      "sector": "Communication Services",
-      "product_type": "EdTech",
-      "country": null,
-      "registry_record": null,
-      "source_urls": [
-        "https://www.loot-drop.io/startup/2559-magic-ears",
-        "https://www.merriam-webster.com/dictionary/shut",
-        "https://shutnyc.com/"
-      ],
-      "source_verified": false
-    },
-    {
       "company_name": "Chuming",
       "what_they_tried": "Chuming was a Chinese startup that operated from 2000 to 2021, raising $67M over two decades. While specific product details are limited, the timeline suggests it was an early internet-era company that survived the dot-com crash but ultimately failed to adapt through multiple technology paradigm shifts. The 21-year lifespan indicates it found some product-market fit initially but couldn't evolve its business model or technology stack to remain competitive. The substantial funding and long runway suggest the failure wasn't immediate capital exhaustion but rather a slow decline as the market moved past its original value proposition. Given the China market context and timeline, it likely competed in e-commerce, social networking, or digital services during a period of explosive growth by Alibaba, Tencent, and ByteDance.",
       "cause_of_death": "Chuming was a Chinese startup that operated from 2000 to 2021, raising $67M over two decades. While specific product details are limited, the timeline suggests it was an early internet-era company that survived the dot-com crash but ultimately failed to adapt through multiple technology paradigm shifts. The 21-year lifespan indicates it found some product-market fit initially but couldn't evolve i",
@@ -319,6 +599,26 @@
         "https://www.loot-drop.io/startup/2547-chuming",
         "https://downdetector.com/",
         "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Yiguo E-commerce",
+      "what_they_tried": "Yiguo E-commerce was China's pioneering fresh produce e-commerce platform, founded in 2005 by Jin Guanglei with a vision to revolutionize how Chinese consumers purchased fruits, vegetables, and perishable goods online. The company aimed to solve critical pain points in China's fragmented agricultural supply chain: inconsistent quality, food safety concerns, and the inconvenience of traditional wet markets. Yiguo built an end-to-end cold chain logistics network, established direct relationships with farms, and promised next-day delivery of fresh produce to urban consumers. The timing seemed perfect—China's middle class was exploding, smartphone penetration was accelerating, and consumers were increasingly willing to pay premiums for quality and convenience. With backing from heavyweight investors including Alibaba, KKR, and Goldman Sachs, Yiguo raised $900M to build what many believed wou",
+      "cause_of_death": "Yiguo E-commerce was China's pioneering fresh produce e-commerce platform, founded in 2005 by Jin Guanglei with a vision to revolutionize how Chinese consumers purchased fruits, vegetables, and perishable goods online. The company aimed to solve critical pain points in China's fragmented agricultural supply chain: inconsistent quality, food safety concerns, and the inconvenience of traditional wet",
+      "cause_category": "other",
+      "year_closed": 2020,
+      "closure_date": null,
+      "raised": "$900.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2541-yiguo-e-commerce",
+        "https://www.preqin.com/data/profile/asset/shanghai-yiguo-e-commerce-co-ltd/189325",
+        "https://www.bloomberg.com/profile/company/1395763D:CH"
       ],
       "source_verified": false
     },
@@ -343,6 +643,26 @@
       "source_verified": false
     },
     {
+      "company_name": "Gogohire",
+      "what_they_tried": "Gogohire was a recruiting automation platform that emerged during the mid-2010s wave of HR tech innovation. Founded in 2014 by Kevin Lord and backed by Y Combinator and 500 Global with $2M in funding, Gogohire aimed to streamline the hiring process for small and medium-sized businesses through automated candidate sourcing, screening, and workflow management. The value proposition centered on reducing time-to-hire and eliminating manual recruiting tasks that plagued growing companies without dedicated HR teams. The timing seemed right: the gig economy was exploding, remote work was gaining traction, and SMBs were struggling with talent acquisition in a competitive market. Gogohire positioned itself as the recruiting co-pilot that would democratize enterprise-grade hiring tools for companies that couldn't afford dedicated recruiters or expensive ATS systems. The platform promised to automa",
+      "cause_of_death": "Gogohire was a recruiting automation platform that emerged during the mid-2010s wave of HR tech innovation. Founded in 2014 by Kevin Lord and backed by Y Combinator and 500 Global with $2M in funding, Gogohire aimed to streamline the hiring process for small and medium-sized businesses through automated candidate sourcing, screening, and workflow management. The value proposition centered on reduc",
+      "cause_category": "other",
+      "year_closed": 2020,
+      "closure_date": null,
+      "raised": "$2.0M",
+      "funding_rounds": [],
+      "sector": "Information Technology",
+      "product_type": "SaaS (B2B)",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2530-gogohire",
+        "https://ideaproof.io/failure/gogohire",
+        "https://www.slideshare.net/slideshow/interview-guide-gogohire/62627811"
+      ],
+      "source_verified": false
+    },
+    {
       "company_name": "Qianhe",
       "what_they_tried": "Qianhe was a Chinese peer-to-peer (P2P) lending platform launched in 2014 during China's explosive fintech boom. The company facilitated direct lending between individuals and small businesses, bypassing traditional banks by offering higher returns to lenders and easier access to capital for borrowers. The 'Why Now' was compelling: China's underbanked SME sector desperately needed capital, traditional banks were risk-averse, and mobile internet penetration was skyrocketing. Qianhe raised $100M to build marketplace infrastructure, credit scoring algorithms, and customer acquisition engines. The value proposition was democratizing finance—connecting surplus capital with unmet demand through technology. However, the platform operated in a regulatory gray zone where oversight was minimal, risk management was immature, and the unit economics relied on continuous growth rather than sustainable",
       "cause_of_death": "Qianhe was a Chinese peer-to-peer (P2P) lending platform launched in 2014 during China's explosive fintech boom. The company facilitated direct lending between individuals and small businesses, bypassing traditional banks by offering higher returns to lenders and easier access to capital for borrowers. The 'Why Now' was compelling: China's underbanked SME sector desperately needed capital, traditi",
@@ -359,6 +679,26 @@
         "https://www.loot-drop.io/startup/2545-qianhe",
         "https://www.tshe.org/ea/pdf/EA14(3)/EA14(3)_01.pdf",
         "https://us.trip.com/moments/detail/chongqing-158-147923749/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Zesty",
+      "what_they_tried": "Zesty was a corporate catering marketplace that connected offices with local restaurants for daily lunch delivery. Founded in 2013, they aimed to solve the 'what's for lunch?' problem for companies by offering curated menus from quality restaurants delivered at scheduled times. The value proposition was threefold: employees got variety and quality meals without leaving the office, restaurants gained predictable bulk orders during slower lunch hours, and companies could offer a perk without managing logistics. The timing seemed right as the gig economy was exploding, food delivery was becoming normalized, and companies were competing for talent with better perks. Zesty raised $20M from top-tier investors including Y Combinator and Index Ventures, suggesting strong early traction and a compelling pitch around the massive corporate food services market.",
+      "cause_of_death": "Zesty was a corporate catering marketplace that connected offices with local restaurants for daily lunch delivery. Founded in 2013, they aimed to solve the 'what's for lunch?' problem for companies by offering curated menus from quality restaurants delivered at scheduled times. The value proposition was threefold: employees got variety and quality meals without leaving the office, restaurants gain",
+      "cause_category": "other",
+      "year_closed": 2018,
+      "closure_date": null,
+      "raised": "$20.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2532-zesty",
+        "https://restauranttechnologynews.com/2026/04/doordash-shuts-down-zesty-and-brings-restaurant-ai-discovery-into-core-app/",
+        "https://www.nrn.com/restaurant-technology/doordash-winds-down-restaurant-discovery-app-zesty"
       ],
       "source_verified": false
     },
@@ -399,6 +739,66 @@
         "https://www.loot-drop.io/startup/2561-xiaoming-bike",
         "https://ideaproof.io/failure/xiaoming-bike",
         "https://www.chinatravelnews.com/article/107040/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Metao",
+      "what_they_tried": "Metao was a Chinese social commerce platform that attempted to blend social networking with e-commerce, allowing users to discover and purchase products through social interactions and recommendations. Founded in 2014 during China's mobile internet boom, Metao raised $35M from top-tier VCs including Matrix Partners China and Morningside. The platform aimed to capitalize on the convergence of social media and shopping behavior, particularly among younger Chinese consumers who were increasingly comfortable with mobile payments and social sharing. The timing seemed perfect: WeChat had proven social commerce viability, Alibaba and JD.com were dominant but left room for niche plays, and mobile penetration was exploding. Metao positioned itself as a discovery-first platform where social graphs would drive purchasing decisions, theoretically solving the product discovery problem that plagued tr",
+      "cause_of_death": "Metao was a Chinese social commerce platform that attempted to blend social networking with e-commerce, allowing users to discover and purchase products through social interactions and recommendations. Founded in 2014 during China's mobile internet boom, Metao raised $35M from top-tier VCs including Matrix Partners China and Morningside. The platform aimed to capitalize on the convergence of socia",
+      "cause_category": "other",
+      "year_closed": 2016,
+      "closure_date": null,
+      "raised": "$35.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Social Media",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2524-metao",
+        "https://www.bloomberg.com/quote/METAO:SP",
+        "https://find-and-update.company-information.service.gov.uk/company/15230570/more"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "24quan",
+      "what_they_tried": "24quan was China's ambitious answer to Groupon, launching in 2010 during the global daily deals gold rush. Founded by Du Yinan with $10M from Vertex Ventures, it aimed to capture China's emerging middle class hunger for discounted local services—restaurants, spas, entertainment. The 'Why Now' was compelling: smartphone penetration was accelerating, digital payments were maturing via Alipay, and Chinese consumers were price-sensitive yet eager to try new experiences. 24quan positioned itself as a curated marketplace connecting merchants desperate for foot traffic with deal-hungry urbanites. The platform promised merchants customer acquisition at scale while offering consumers 50-90% discounts on experiences they'd never tried. However, they entered a market that would see over 5,000 Groupon clones emerge in China within 18 months, creating a catastrophic race to the bottom.",
+      "cause_of_death": "24quan was China's ambitious answer to Groupon, launching in 2010 during the global daily deals gold rush. Founded by Du Yinan with $10M from Vertex Ventures, it aimed to capture China's emerging middle class hunger for discounted local services—restaurants, spas, entertainment. The 'Why Now' was compelling: smartphone penetration was accelerating, digital payments were maturing via Alipay, and Ch",
+      "cause_category": "other",
+      "year_closed": 2013,
+      "closure_date": null,
+      "raised": "$10.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2525-24quan",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "MySee",
+      "what_they_tried": "MySee was a pioneering peer-to-peer video streaming platform launched in China in 2004, attempting to become the 'YouTube of China' before YouTube itself gained global dominance. Founded by Gao Ran with $2M from SAIF Partners and Steamboat Ventures (Disney's VC arm), MySee leveraged P2P technology to distribute video content efficiently in an era of expensive bandwidth and limited CDN infrastructure in China. The timing seemed perfect: China's internet population was exploding (from 94M in 2004 to 210M by 2007), broadband penetration was accelerating, and user-generated content was emerging as a paradigm shift. MySee's value proposition was threefold: (1) Enable users to upload and share video content in a bandwidth-constrained environment using P2P distribution, (2) Provide live streaming capabilities for events and TV content, and (3) Build a community around video consumption before m",
+      "cause_of_death": "MySee was a pioneering peer-to-peer video streaming platform launched in China in 2004, attempting to become the 'YouTube of China' before YouTube itself gained global dominance. Founded by Gao Ran with $2M from SAIF Partners and Steamboat Ventures (Disney's VC arm), MySee leveraged P2P technology to distribute video content efficiently in an era of expensive bandwidth and limited CDN infrastructu",
+      "cause_category": "other",
+      "year_closed": 2007,
+      "closure_date": null,
+      "raised": "$2.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "SaaS (B2C)",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2526-mysee",
+        "https://mysee.sealedair.com/",
+        "http://www.mysee.org.my/"
       ],
       "source_verified": false
     }

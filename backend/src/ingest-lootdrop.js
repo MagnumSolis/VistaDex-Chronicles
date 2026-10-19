@@ -107,7 +107,8 @@ async function main() {
         { upsert: true }
       );
       ok++;
-      if (ok % 25 === 0) console.log(`  ${ok} ingested…`);
+      const total = targets.length;
+      if (ok % 5 === 0 || ok === total) console.log(`  [${ok}/${total}] ${entry.company_name} (${entry.year_closed})`);
     } catch (e) {
       failed++;
       console.error(`✗ ${slug}: ${e.message}`);

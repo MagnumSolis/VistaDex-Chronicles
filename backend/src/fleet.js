@@ -70,7 +70,8 @@ export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCom
   await runAgentQueries("news-scout", QUERIES.newsScout);
   await runAgentQueries("post-mortem-miner", QUERIES.postMortemMiner);
   // Death Watcher: re-check known staging entries for a second source
-  const candidatesPending = await staging.find({ death_status: "candidate" }).limit(20).toArray();
+  const WATCHER_LIMIT = Number(process.env.WATCHER_LIMIT || 20);
+  const candidatesPending = await staging.find({ death_status: "candidate" }).limit(WATCHER_LIMIT).toArray();
   for (const entry of candidatesPending) {
     try {
       const results = await tf.search(`"${entry.company_name}" shut down OR closing OR dissolved`, 10);

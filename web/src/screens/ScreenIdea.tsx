@@ -117,11 +117,11 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
           {errors.length > 0 && (
             <div ref={summaryRef} tabIndex={-1} role="alert" className="mt-4 rounded-inner border-2 border-foreground bg-card p-4 outline-none">
               <p className="font-semibold">Fill in {errors.length === 1 ? "this field" : "these fields"} to run the screening:</p>
-              <ul className="mt-1 list-disc pl-5 text-[0.9375rem]">
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-[0.9375rem]">
                 {errors.map(f => (
                   <li key={f}>
                     <a href={`#field-${f}`} onClick={e => { e.preventDefault(); document.getElementById(`field-${f}`)?.focus(); }}
-                      data-control="form_error_link" data-control-value={f} className="text-link underline underline-offset-4">
+                      data-control="form_error_link" data-control-value={f} className="inline-flex min-h-7 items-center text-link underline underline-offset-4">
                       {FIELDS.find(x => x.id === f)!.label}
                     </a>
                   </li>

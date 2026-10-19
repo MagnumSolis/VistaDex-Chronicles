@@ -1,10 +1,11 @@
 // ── How it works — the method, the statuses, the evidence rule, data sources and honest limitations ──
 import type { ReactNode } from "react";
-import { ExternalLink, Ghost, Hourglass, Link2, MessageSquareWarning, ScanText } from "lucide-react";
+import { ClipboardList, ExternalLink, Ghost, Hourglass, Link2, MessageSquareWarning, ScanText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTitle, Panel, Tile } from "@/components/ui-vd";
 import { STATUS, STATUS_ORDER, StatusTag } from "@/components/status";
 import { GRAVEYARD_DB, liveMode } from "@/proto";
+import { BIG_TECH_COMPANIES, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE, NOVELTY, DEFENSIBILITY, OVERLAP, WEIGHTS } from "@proto/core/scoring-config.js";
 import { navigate, PATHS } from "@/router";
 
 const SEED = GRAVEYARD_DB as { source_verified?: boolean }[];
@@ -34,20 +35,21 @@ export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
   return (
     <div className="space-y-6 md:space-y-8">
       <PageTitle eyebrow="How it works" title="Evidence first. You decide.">
-        VistaDex never says whether an idea is good and never gives a score. It shows what the evidence says about each claim, which startups failed trying something similar, and the best arguments against it.
+VistaDex shows what the evidence says about each claim, who already does something similar, which startups failed trying it, and the best arguments against it, then sums that up in a score you can take apart. It never calls an idea good or bad.
       </PageTitle>
 
       <Panel as="section" tab="The method" tabId="how-method" aria-labelledby="how-method">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-center">
           <ol className="grid gap-3 sm:grid-cols-2">
-            <li><Tile icon={ScanText} label="1 · Split into claims" className="bg-lime text-on-lime">Pulls the statements the idea depends on (“no tool does this”, “the market is worth $27B”) out of your text, keeping only ones that could be checked.</Tile></li>
-            <li><Tile icon={Link2} label="2 · Check each claim" className="bg-card">Searches the web for each claim, reads the pages, and counts independent sources that support or contradict it.</Tile></li>
-            <li><Tile icon={Ghost} label="3 · Search the graveyard" className="bg-card">Compares the idea with startups that shut down, so you can see who tried before and why they failed.</Tile></li>
-            <li><Tile icon={MessageSquareWarning} label="4 · Argue against it" className="bg-lime text-on-lime">Writes objections using what was found. They get the same space as the claims.</Tile></li>
+            <li className="sm:col-span-2"><Tile icon={ClipboardList} label="0 · Describe the idea" className="bg-card">Title, one-line pitch, problem, solution and what makes it different (the moat), plus industry, your role and target markets. Title, pitch, problem and solution are required.</Tile></li>
+            <li><Tile icon={ScanText} label="1 · Split into claims" className="bg-lime text-on-lime">Pulls the statements the idea depends on (“no tool does this”, “the market is worth $27B”, “we have 1,200 paying users”) out of your text, keeping only ones that could be checked.</Tile></li>
+            <li><Tile icon={Link2} label="2 · Check each claim" className="bg-card">Searches the web for each claim, reads the pages, and counts independent sources that support or contradict it. A separate search looks for products already doing something similar, and for Big Tech.</Tile></li>
+            <li><Tile icon={Ghost} label="3 · Search the graveyard" className="bg-card">Inside every report, the idea is compared with startups that shut down, so you can see who tried before and why they failed.</Tile></li>
+            <li><Tile icon={MessageSquareWarning} label="4 · Argue against it" className="bg-lime text-on-lime">Writes objections using what was found. They get the same space as the claims. Then the score is computed in code from all of it.</Tile></li>
             <li className="sm:col-span-2">
               <div className="flex items-start gap-3 rounded-card border-2 border-dashed border-border-strong p-5 text-[0.9375rem] leading-relaxed">
                 <Hourglass aria-hidden className="mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
-                <p><span className="font-semibold">Planned: legal and market.</span> Registries and rules for each target market, and a ballpark market size. Not produced in this version; reports say so.</p>
+                <p><span className="font-semibold">Partly built: legal and market.</span> The total market size (TAM) is read from a verified source quote when a market-size claim is confirmed. Registries, rules, SAM and SOM are not produced in this version; reports say so.</p>
               </div>
             </li>
           </ol>
@@ -77,6 +79,43 @@ export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
         </ul>
       </Panel>
 
+      <Panel as="section" tab="The VistaDex Score" tabId="how-score" aria-labelledby="how-score">
+        <p className="max-w-[70ch] text-[1.0625rem] leading-relaxed">
+          Five axes, each out of 100 and computed in code from the report, never by a model. Each one shows its inputs and what was searched in the report's “How this was calculated”. An axis without enough data says so and is left out, never guessed.
+        </p>
+        <ul className="mt-5 grid gap-3 md:grid-cols-2">
+          <Axis name="Novelty" weight={WEIGHTS.novelty}>Starts at 100. Each distinct competitor found on a fetched page costs {NOVELTY.perCompetitor} (at most {NOVELTY.maxCompetitorsCounted} counted); each disputed novelty claim costs {NOVELTY.disputed}; each confirmed one adds {NOVELTY.confirmed}. A contradicted novelty claim costs {NOVELTY.contradicted} and caps the axis at {NOVELTY.contradictedCap}. Finding no competitors caps it at {NOVELTY.noCompetitorsCap}: not finding any is not proof there are none.</Axis>
+          <Axis name="Market" weight={WEIGHTS.market}>The total market size (TAM) on a log scale: $10M or less is 0, $1B or more is 100. The TAM must come from a verified quote on a source page, never from the idea text. No TAM, no value.</Axis>
+          <Axis name="Defensibility" weight={WEIGHTS.defensibility}>Starts at {DEFENSIBILITY.base}; a stated moat adds at most {DEFENSIBILITY.moatBonus}. Each confirmed defensibility claim adds {DEFENSIBILITY.confirmed}, a disputed one costs {DEFENSIBILITY.disputed}, a contradicted one {DEFENSIBILITY.contradicted}. Objections about the moat cost {DEFENSIBILITY.moatObjection.high} / {DEFENSIBILITY.moatObjection.medium} / {DEFENSIBILITY.moatObjection.low} by severity. A stated moat alone is not data.</Axis>
+          <Axis name="Graveyard distance" weight={WEIGHTS.graveyard}>100 × (1 − the strongest word overlap with a shut-down startup). No match at all gives 100. Shown with the number of entries checked and whether the seed was verified.</Axis>
+          <Axis name="Evidence quality" weight={WEIGHTS.evidence}>The share of claims that got a status (not unverified) backed by at least 2 independent sources.</Axis>
+          <Axis name="Big Tech safety" weight={WEIGHTS.big_tech}>Low risk 100, medium 50, high 0. Shown, but not counted in this version: what evidence a low risk needs is still being defined, and “unverified” is never counted.</Axis>
+        </ul>
+        <p className="mt-5 max-w-[70ch] text-[0.9375rem] leading-relaxed">
+          The VistaDex Score is the weighted mean of the axes that have a value, with the weights re-scaled over them. It needs at least {MIN_SCORE_AXES} axes and {Math.round(MIN_SCORE_WEIGHT_SHARE * 100)}% of the weight; otherwise the report says “Not enough data”. It describes the evidence that was found, not whether the idea will work. In mock mode, axes built on sample data are marked as such.
+        </p>
+      </Panel>
+
+      <Panel as="section" tab="Overlap and Big Tech risk" tabId="how-risk" aria-labelledby="how-risk">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-card bg-card p-5">
+            <p className="font-semibold">Overlap band</p>
+            <ul className="mt-2 space-y-1.5 text-[0.9375rem] leading-relaxed">
+              <li><span className="font-medium">Clear</span>: strongest graveyard match below {OVERLAP.caution} and fewer than {OVERLAP.highCompetitors} competitors.</li>
+              <li><span className="font-medium">Caution</span>: a graveyard match from {OVERLAP.caution} to {OVERLAP.high}.</li>
+              <li><span className="font-medium">High</span>: a match of {OVERLAP.high} or more, or {OVERLAP.highCompetitors}+ competitors.</li>
+            </ul>
+            <p className="mt-2 text-sm text-muted-foreground">These edges are provisional and will be tuned.</p>
+          </div>
+          <div className="rounded-card bg-card p-5">
+            <p className="font-semibold">Big Tech risk</p>
+            <p className="mt-2 text-[0.9375rem] leading-relaxed">
+              Searches for {BIG_TECH_COMPANIES.length} large companies ({BIG_TECH_COMPANIES.join(", ")}). Same rule as claims: a company counts only when 2 independent sources show it doing something similar (high if directly competing, medium if related). Fewer sources: unverified. Pages read and none mentioned: none found, which is not proof of safety.
+            </p>
+          </div>
+        </div>
+      </Panel>
+
       <Panel as="section" tab="Where the data comes from" tabId="how-data" aria-labelledby="how-data">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-card bg-card p-5">
@@ -86,9 +125,9 @@ export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
             </p>
           </div>
           <div className="rounded-card bg-card p-5">
-            <p className="font-semibold">The graveyard</p>
+            <p className="font-semibold">The graveyard (inside reports)</p>
             <p className="mt-2 text-[0.9375rem] leading-relaxed">
-              {SEED.length} startups that shut down, taken from public shutdown reports. Each entry links its sources; the team has checked <span className="font-mono">{verified}</span> of {SEED.length} so far, and each lead says whether its source was checked.
+              {SEED.length} startups that shut down, taken from public shutdown reports, matched against every idea in its report's Leads to check. Each entry links its sources; the team has checked <span className="font-mono">{verified}</span> of {SEED.length} so far, and each lead says whether its source was checked.
             </p>
           </div>
           <div className="rounded-card bg-card p-5">
@@ -122,7 +161,8 @@ export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
           <li>Graveyard matching is currently <span className="font-semibold">word overlap</span>: two ideas worded alike match even if the businesses differ, and a real lookalike worded differently can be missed.</li>
           <li>The graveyard is small ({SEED.length} startups) and {verified === 0 ? "none" : `only ${verified}`} of its closure sources {verified === 1 ? "has" : "have"} been checked by the team so far.</li>
           <li>Market size: SAM and SOM are estimates built on assumptions. They are listed so you can disagree with them.</li>
-          <li>Legal and market sections are not produced yet. In mock mode they show sample placeholders, clearly marked.</li>
+          <li>The score is a summary of what was found, built on simple formulas and provisional weights. Read the breakdown before trusting the number.</li>
+          <li>Legal output, SAM and SOM are not produced yet. In mock mode, competitors, Big Tech risk, market and legal show sample placeholders, clearly marked, and so do the scores built on them.</li>
           <li>On the live server the steps run together, so the progress screen can&apos;t show each one as it happens.</li>
         </ul>
       </Panel>
@@ -132,6 +172,15 @@ export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
         {onReplay && <Button size="lg" variant="outline-page" onClick={onReplay} data-control="how_replay_walkthrough">Replay the walkthrough</Button>}
       </div>
     </div>
+  );
+}
+
+function Axis({ name, weight, children }: { name: string; weight: number; children: ReactNode }) {
+  return (
+    <li className="rounded-card bg-card p-5">
+      <p className="flex items-baseline justify-between gap-3"><span className="font-semibold">{name}</span><span className="font-mono text-sm text-muted-foreground">weight {weight}</span></p>
+      <p className="mt-2 text-[0.9375rem] leading-relaxed">{children}</p>
+    </li>
   );
 }
 

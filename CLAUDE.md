@@ -1,16 +1,16 @@
 # VistaDex — working rules
 
-VistaDex is an evidence-linked idea screener. Someone pastes a startup idea; it (1) splits it into checkable claims, (2) checks each claim against independent web sources and labels it confirmed / contradicted / disputed / unverified, (3) matches it against a "graveyard" of startups that shut down, and (4) lists objections. **It never says "good idea" and never gives a score: the person decides.**
+VistaDex is an evidence-linked idea screener. Someone describes a startup idea (title, pitch, problem, solution, moat, industry, role, markets); it (1) splits it into checkable claims, (2) checks each claim against independent web sources and labels it confirmed / contradicted / disputed / unverified, (3) looks for competitors and Big Tech activity, (4) matches it against a "graveyard" of startups that shut down, and (5) lists objections, then (6) computes an **explainable** VistaDex Score in code. **It never says "good idea" or "bad idea": the person decides.**
 
 One app, one build, **two editions** (`web/src/edition.ts` is the only place that knows which one is running; components read `features`, and a test fails if any other file names an edition):
 
 | | Public demo (default) | Pitch / internal |
 |---|---|---|
 | Who | Anyone from the LinkedIn link | The team, in pitches and for testing |
-| Home | Welcome (first visit), then Screen an idea | Dashboard |
+| Start page | Home (landing); the LinkedIn link is #/screen | Reports (on a fresh load) |
 | Walkthrough · Feedback | Yes | No |
 | Telemetry | Yes, after the Welcome notice | **None**: telemetry.js is disabled, nothing is logged or uploaded |
-| Reports | Only the report just run (memory only, no URLs) | Every session run + the demo cohort |
+| Reports page | Reports this browser ran (localStorage, clearable) | Session runs (memory) + the demo cohort |
 
 The pitch edition is opened with `#edition=pitch&code=…` (client-side only; TODO(team): enforce a separate pitch code in the Worker). A "Pitch edition" badge is always shown in it.
 
@@ -19,18 +19,20 @@ The pitch edition is opened with `#edition=pitch&code=…` (client-side only; TO
 - Ask before the first push. Never commit secrets (`.env` is ignored; see `.env.example`).
 
 ## Frozen unless explicitly asked
-- Pipeline logic (`prototype/core/`), the POST /screen contract, the key-free mock path, the proxy (`worker/`).
+- Pipeline logic (`prototype/core/`), the POST /screen contract, the key-free mock path, the proxy (`worker/`). Round 2 (2026-10-20) changed them deliberately: structured input, traction claims, competitors, Big Tech risk, TAM from verified quotes, scores. Every weight and threshold lives in `prototype/core/scoring-config.js`, pinned by `tests/scoring-config.test.js`.
 - Telemetry: `tests/fixtures/event-contract.json` is the contract (event types, payload keys, enum values, control ids). The UI must reproduce it; `npm run parity` checks it in Chrome. Bump `STUDY_VERSION` (prototype/ui/study-config.js) whenever the visitor-facing UI or the telemetry changes, and record it in the fixture.
 - No idea text and no report content in telemetry; runs are described by lengths and counts. Feedback is sent under its own random id, never with the usage session.
 - Everything must run end-to-end with zero API keys and deploy as a static site (GitHub Pages).
 - The BITS F364 study UI (consent dialog, trust sliders, per-claim rating, notes, survey) is retired to `web/src/retired/study/` (not routed). The public demo is not used for the F364 paper.
 
 ## Product principles (they override any visual reference)
-- No overall score, verdict, grade or confidence percentage anywhere.
+- **Every score is explainable.** The VistaDex Score and each axis are computed in code from the report, never by a model. The breakdown — each axis's value, inputs, search boundary (what was searched or checked), weight and the formula — is always one tap away ("How this was calculated").
+- **Absence never scores as a good result.** An axis without enough data shows "Not enough data" and is left out of the score, never guessed or drawn as zero. Finding nothing is said as "nothing found in N sources", with a cap where it would otherwise flatter (Novelty with no competitors found ≤ 70). A stated moat alone is not data.
+- Never "good idea" / "bad idea" wording, no grades, no confidence percentages. Scores are ink numbers, never coloured good/bad.
 - Status colour is used only for statuses. Every status is readable without colour: a text label **and** an icon, always.
 - "Unverified" is a normal state with equal visual presence, never styled as an error. No celebratory styling for "confirmed" (no green, no glow, no animation).
 - Objections get equal visual weight to claims (same card, type size and spacing). Graveyard matches are framed as "Leads to check", with cause of death, the shared words and a plain match strength, never a verdict.
-- Do not invent facts, data, sources or metrics. Data the pipeline does not produce (legal, market, per-source quotes) shows "Not available in this version yet"; only the in-browser mock mode shows clearly labelled sample placeholders (`web/src/fixtures/`).
+- Do not invent facts, data, sources or metrics. Anything the live pipeline cannot produce shows "Not available in this version yet"; only the in-browser mock mode carries clearly labelled sample placeholders (`prototype/data/samples.js`, listed in `sample_fields`), and scores built on them say "sample data". The same two-source rule applies to Big Tech risk: fewer than 2 independent sources → "unverified"; searched and nothing found → "none found".
 
 ## Design brief (applies to every UI change)
 Derived from the reference screenshots as principles, not layouts:
@@ -41,7 +43,9 @@ Derived from the reference screenshots as principles, not layouts:
 - **Shape ladder.** Panels 28px, cards and tiles 20px, nested surfaces 14px, controls 6px. Buttons are rectangles (solid deep green with lime label on light surfaces; solid lime or cream outline on the page), never pills.
 - **Lines and diagrams.** Thin dark-outline line art (the How it works stack), legends as small rounded squares with uppercase labels.
 - **Density.** Low: one idea per panel, comfortable line length (≤ 70ch).
-- **Navigation.** Floating inset cream header bar with text links on desktop; compact top bar plus a fixed bottom tab bar on phones. The report has a sticky section jump nav (side rail on desktop, horizontal chips on phones).
+- **Navigation.** Home · Screen an idea · Reports · How it works · Contact us (+ Feedback button and "?" in public). Floating inset cream header bar with text links on desktop; compact top bar plus a fixed bottom tab bar on phones. The report has a sticky section jump nav (side rail on desktop, horizontal chips on phones): Summary · Profile · Claims · Leads to check · Objections · Big Tech risk · Legal · Market.
+- **Charts.** Hand-written SVG, each with a caption and a visually hidden data table. The radar marks axes without data as n/a (dashed, not plotted) and its labels never clip at 360px; the donut uses the status palette with gaps and a label + icon legend; bars are ink; category charts (industry pie) use the brand-green lightness ramp `--cat-1…6`, never status hues.
+- **Landing page (Home).** Built from the team's Figma draft with our tokens; product screens are the real components rendered with sample data, scaled and inert.
 - **Motion.** Minimal, short colour transitions only; the running spinner and the walkthrough outline are the only movement, and nothing moves under `prefers-reduced-motion`.
 - **Accessibility.** WCAG 2.2 AA: contrast for every token pair, fully keyboard navigable, visible focus (ink ring on light surfaces, lime ring on the page), focus never hidden under the sticky header or tab bar.
 - **Responsive.** Mobile-first; every screen works at 360px (and 320px) with no horizontal scroll. Each screen has empty, loading, error (pipeline failed, rate limit, daily cap) and phone states.
@@ -67,6 +71,7 @@ AA verified in `web/src/test/contrast.test.ts`; status hues verified distinguish
 | Disputed | `--st-disputed` / `-bg` | `#705713` / `#FBE2A3` |
 | Confirmed | `--st-confirmed` / `-bg` | `#084BC9` / `#CAD6F7` |
 | Unverified | `--st-unverified` / `-bg` | `#661A58` / `#F6DAEF` |
+| Chart categories (industry pie) | `--cat-1` … `--cat-6` | `#0B3B2C` `#2E6B4D` `#5E9474` `#9DBF7A` `#CBEF6A` `#F9FBF4` (ΔE2000 ≥ 10 apart under all three colour-vision simulations) |
 
 **Colour rules**
 - **Status hues only for status**: status tags, status count tiles, status icons. Never for body text, objections, severity, errors, the brand or decoration. No status hue is green, so the brand never reads as "confirmed".
@@ -78,7 +83,7 @@ AA verified in `web/src/test/contrast.test.ts`; status hues verified distinguish
 ## Telemetry rules (public edition)
 - Every interactive control carries `data-control="<id>"` from `web/src/telemetry/controls.ts` (same list as the contract); a test fails if a rendered button, link or field has none. Text fields log their length only, when left.
 - Time per screen, per report section (in view by the panel-viewed rule: ≥ 50 % of the section or ≥ 50 % of the viewport) and per walkthrough step.
-- Nothing before the Welcome notice is answered; nothing after "Use without recording"; nothing ever in the pitch edition.
+- Nothing before the Welcome notice is answered (Home, How it works and Contact us are readable without it); nothing after "Use without recording"; nothing ever in the pitch edition.
 
 ## Commands
 - `npm test` — node tests (pipeline, proxy, telemetry, study_version guard). `npm run test:web` — web tests (contrast, colour vision, editions, flows, telemetry contract, pitch sends zero events).

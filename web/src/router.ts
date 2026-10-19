@@ -25,14 +25,18 @@ export function parse(hash: string): Route {
 }
 
 let current = parse(location.hash);
+// How the current route was reached: "replace" for redirects (which must not move focus), else "push".
+let lastKind: "push" | "replace" = "push";
+export const lastNavigation = () => lastKind;
 const listeners = new Set<() => void>();
-function update() {
+function update(kind: "push" | "replace" = "push") {
   const next = parse(location.hash);
   if (next.path === current.path) return;
   current = next;
+  lastKind = kind;
   listeners.forEach(l => l());
 }
-addEventListener("hashchange", update);
+addEventListener("hashchange", () => update("push"));
 
 export function subscribe(l: () => void) {
   listeners.add(l);
@@ -50,7 +54,7 @@ export function navigate(path: string, { replace = false } = {}) {
   if (location.hash === hash) return;
   if (replace) history.replaceState(history.state, "", `${location.pathname}${location.search}${hash}`);
   else location.hash = hash;
-  update();
+  update(replace ? "replace" : "push");
 }
 
 export const href = (path: string) => `#${path}`;

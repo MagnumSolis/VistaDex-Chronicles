@@ -3,7 +3,7 @@
 // the X-VistaDex-Access header; /events uploads carry access_code (never inside an event); 401 and the
 // daily-cap 429 show friendly messages on Screen an idea and fire run_failed. The proxy is stubbed.
 // Usage: node scripts/access-e2e.mjs   (dev server on :5173 or VD_BASE=<url>). Exit 1 on failure.
-import { BASE, events, flush, launch, openApp, runIdea, useStubProxy } from "./lib.mjs";
+import { BASE, events, flush, IDEA_FIELDS, launch, openApp, runIdea, useStubProxy } from "./lib.mjs";
 
 const CODE = "K7Q2-MX9P";
 const IDEA = "The legal-tech market is worth $27B globally. No such tool exists today.";
@@ -13,8 +13,9 @@ const check = (ok, msg) => { if (!ok) problems.push(msg); };
 const browser = await launch();
 
 async function visitor(hash, reply, { inPage = false } = {}) {
-  const { ctx, page } = await openApp(browser, { hash: inPage ? "" : hash });
+  const { ctx, page } = await openApp(browser, { hash: inPage ? "#/screen" : `${hash}` });
   if (inPage) { await page.getByRole("heading", { name: /See the evidence/ }).waitFor(); await page.evaluate(h => { location.hash = h; }, hash); await page.waitForTimeout(150); }
+  if (!(await page.getByRole("button", { name: "Skip to the tool" }).isVisible().catch(() => false))) await page.evaluate(() => { location.hash = "#/screen"; });
   await page.getByRole("button", { name: "Skip to the tool" }).click();
   const seen = await useStubProxy(page, { screen: reply });
   return { ctx, page, seen };
@@ -26,7 +27,7 @@ for (const inPage of [false, true]) {
   const { ctx, page, seen } = await visitor(`#code=${CODE}`, () => ({ status: 200, body: REPORT }), { inPage });
   check(!(await page.evaluate(() => location.href)).includes(CODE), `${label}: code still visible in the URL`);
   check(await page.evaluate(() => sessionStorage.getItem("vistadex.access")) === CODE, `${label}: code not kept in sessionStorage`);
-  await runIdea(page, IDEA);
+  await runIdea(page);
   check(await page.getByRole("heading", { name: "Your report" }).isVisible(), `${label}: report did not render with a valid code`);
   check(seen.screenHeaders[0] === CODE, `${label}: /screen header was ${seen.screenHeaders[0]}`);
   await flush(page);
@@ -45,7 +46,7 @@ for (const inPage of [false, true]) {
   check(!href.includes(CODE) && !href.includes("edition="), `pitch: fragment not scrubbed (${href})`);
   const seen = await useStubProxy(page, { screen: () => ({ status: 200, body: REPORT }) });
   await page.locator("[data-control=nav_screen]").click();
-  await runIdea(page, IDEA);
+  await runIdea(page);
   check(seen.screenHeaders[0] === CODE, `pitch: /screen header was ${seen.screenHeaders[0]}`);
   await flush(page);
   check(seen.eventBodies.length === 0, "pitch: events were uploaded");
@@ -55,9 +56,9 @@ for (const inPage of [false, true]) {
 // 3. Daily cap: 429 → friendly message on Screen an idea, idea kept, run_failed with code daily_cap
 {
   const { ctx, page } = await visitor(`#code=${CODE}`, () => ({ status: 429, body: { error: "daily_cap", message: "paused" } }));
-  await runIdea(page, IDEA);
+  await runIdea(page);
   check(await page.getByText("VistaDex has reached today's limit").isVisible(), "daily-cap message not shown");
-  check((await page.locator("#ideaInput").inputValue()) === IDEA, "idea text lost after the daily cap");
+  check((await page.locator("#field-pitch").inputValue()) === IDEA_FIELDS.pitch, "idea text lost after the daily cap");
   const failed = (await events(page)).find(e => e.type === "run_failed");
   check(failed?.payload.code === "daily_cap", "run_failed not fired with code daily_cap");
   await ctx.close();
@@ -66,7 +67,7 @@ for (const inPage of [false, true]) {
 // 4. Link without a code: 401 → friendly message, run_failed
 {
   const { ctx, page, seen } = await visitor("", () => ({ status: 401, body: { error: "access_code_required" } }));
-  await runIdea(page, IDEA);
+  await runIdea(page);
   check(seen.screenHeaders[0] === null, "a code was sent although the link had none");
   check(await page.getByText("This link is missing its access code").isVisible(), "401 message not shown");
   check((await events(page)).some(e => e.type === "run_failed" && e.payload.code === "access"), "run_failed not fired on 401");

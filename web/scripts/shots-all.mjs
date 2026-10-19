@@ -2,7 +2,7 @@
 // Usage: node scripts/shots-all.mjs <outDir>   (dev server on :5173 or VD_BASE=<url>, installed Chrome)
 import fs from "node:fs";
 import path from "node:path";
-import { launch, LEGAL_IDEA, openApp, setProxy, STUB } from "./lib.mjs";
+import { fillIdea, launch, openApp, setProxy, STUB } from "./lib.mjs";
 
 const out = path.resolve(process.argv[2] || "screenshots");
 fs.mkdirSync(out, { recursive: true });
@@ -15,7 +15,12 @@ for (const [name, [viewport, isMobile]] of Object.entries(VIEWPORTS)) {
     await page.screenshot({ path: path.join(out, `${name}-${label}.png`), fullPage: full });
   };
   {
-    const { ctx, page } = await openApp(browser, { viewport, isMobile });
+    const { ctx, page } = await openApp(browser, { viewport, isMobile, hash: "#/" });
+    await page.getByRole("heading", { name: /already died once/ }).waitFor();
+    await shot(page, "00-home");
+    await page.evaluate(() => { location.hash = "#/contact"; });
+    await shot(page, "00-contact");
+    await page.evaluate(() => { location.hash = "#/screen"; });
     await page.getByRole("heading", { name: /See the evidence/ }).waitFor();
     await shot(page, "01-welcome");
     await page.getByRole("button", { name: "Start with walkthrough" }).click();
@@ -23,7 +28,7 @@ for (const [name, [viewport, isMobile]] of Object.entries(VIEWPORTS)) {
     await page.locator("[data-control=walkthrough_skip]").click();
     await page.route(`${STUB}/**`, r => r.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: "daily_cap" }), headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access" } }));
     await setProxy(page, STUB);
-    await page.locator("#ideaInput").fill(LEGAL_IDEA);
+    await fillIdea(page);
     await page.getByRole("button", { name: /^Run$/ }).click();
     await page.getByText("VistaDex has reached today's limit").waitFor();
     await shot(page, "03-screen-daily-cap");
@@ -37,12 +42,9 @@ for (const [name, [viewport, isMobile]] of Object.entries(VIEWPORTS)) {
     await page.emulateMedia({ media: "print" });
     await shot(page, "06-report-print");
     await page.emulateMedia({ media: "screen" });
-    await page.evaluate(() => { location.hash = "#/graveyard"; });
-    await page.getByRole("heading", { name: "Startups that shut down" }).waitFor();
-    await shot(page, "07-graveyard");
-    await page.locator("[data-control=graveyard_entry_open]").first().click();
-    await shot(page, "08-graveyard-sheet", false);
-    await page.keyboard.press("Escape");
+    await page.evaluate(() => { location.hash = "#/reports"; });
+    await page.getByText("Ideas analysed").waitFor();
+    await shot(page, "07-reports");
     await page.evaluate(() => { location.hash = "#/how-it-works"; });
     await shot(page, "09-how-it-works");
     await page.evaluate(() => { location.hash = "#/feedback"; });
@@ -52,8 +54,8 @@ for (const [name, [viewport, isMobile]] of Object.entries(VIEWPORTS)) {
   {
     const { ctx, page } = await openApp(browser, { viewport, isMobile, hash: "#edition=pitch" });
     await page.getByRole("heading", { name: "Screened ideas" }).waitFor();
-    await shot(page, "11-pitch-dashboard");
-    await page.locator("[data-control=dashboard_open_report]").first().click();
+    await shot(page, "11-pitch-reports");
+    await page.locator("[data-control=reports_open]").first().click();
     await page.getByRole("button", { name: /Show sources/ }).first().click();
     await shot(page, "12-pitch-demo-report");
     await ctx.close();

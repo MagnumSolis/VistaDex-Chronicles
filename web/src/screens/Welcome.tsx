@@ -44,7 +44,7 @@ export function Welcome({ onStartWalkthrough }: { onStartWalkthrough: () => void
           </h1>
           <p className="mt-5 max-w-[56ch] text-[1.0625rem] leading-relaxed">
             Paste an idea. VistaDex splits it into checkable claims, checks each one against independent web sources,
-            finds startups that tried something similar and shut down, and lists objections. It never scores the idea. You decide.
+            finds startups that tried something similar and shut down, and lists objections. Then it gives a score you can take apart: every number shows where it came from. You decide.
           </p>
           <p className="mt-5 inline-flex rounded-control bg-page px-3 py-2 text-sm font-medium text-on-page">
             This is a prototype. Reports can be wrong, so open the sources yourself.

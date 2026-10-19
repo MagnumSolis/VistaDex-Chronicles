@@ -3,7 +3,7 @@ import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageTitle } from "@/components/ui-vd";
 import { features } from "@/edition";
-import { navigate, PATHS, useRoute, type Route, type RouteName } from "@/router";
+import { lastNavigation, navigate, PATHS, useRoute, type Route, type RouteName } from "@/router";
 import { Shell } from "@/shell/Shell";
 import * as telemetry from "@/telemetry";
 import { Welcome } from "@/screens/Welcome";
@@ -62,7 +62,8 @@ export function App() {
   useEffect(() => {
     const from = previous.current;
     previous.current = route.name;
-    if (from === null) return; // first load
+    // First load, and redirects (replace), keep focus where it is: the skip link stays the first Tab stop.
+    if (from === null || lastNavigation() === "replace") return;
     document.getElementById("main")?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [route.path]);

@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-public-1). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-10-public-1",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-public-2). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-10-public-2",
   "envelope": [
     "session_id",
     "seq",
@@ -402,7 +402,9 @@
     "section_time": "Time a report section is in view by the panel-viewed rule (≥ 50% of the section OR ≥ 50% of the viewport), summed per run and section, sent when the report ends (new run, page hidden, withdrawn). Only while the tab is visible and the report screen is shown.",
     "screen_time": "Visible time on a screen, sent when the visitor leaves it or the page is hidden.",
     "field_edited": "Sent when a text field loses focus; carries the length only, never the text.",
-    "uploads": "Batched: at most one /events request per 10 s while events arrive, at most 200 events per request, plus a beacon on page hide (Worker limits: 60 requests/min/IP, 200 events/request)."
+    "uploads": "Batched: at most one /events request per 10 s while events arrive, at most 200 events per request, plus a beacon on page hide (Worker limits: 60 requests/min/IP, 200 events/request).",
+    "run_started": "Lengths of the five text fields and the selected industries, role and markets; never the text.",
+    "select": "A <select> logs control_pressed with its new value on change."
   },
   "history": {
     "2026-10-pilot-2": {

@@ -27,8 +27,9 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     await screen.findByRole("button", { name: "Skip to the tool" });
     go("#/how-it-works");
     expect(await screen.findByRole("heading", { name: "Evidence first. You decide." })).toBeTruthy();
-    expect(screen.getByText(/at least two independent sources/)).toBeTruthy();
-    expect(screen.getByText(/word overlap/)).toBeTruthy();
+    expect(screen.getAllByText(/at least two independent sources/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/word overlap/).length).toBeGreaterThan(0);
+    expect(screen.getByText("The VistaDex Score")).toBeTruthy();
     expect(tm.events()).toEqual([]);
   });
 

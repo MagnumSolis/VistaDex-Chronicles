@@ -2,7 +2,7 @@
 
 > *"Every other tool tells you if your idea looks good today. We tell you if it already died once — and we're honest about how sure we actually are."*
 
-VistaDex is an idea-novelty and overlap screener for **accelerators, universities, and VC funds**. A person submits an idea; VistaDex produces an evidence-linked report; **a human reviewer always makes the final decision — VistaDex never gives a verdict.**
+VistaDex is an idea-novelty and overlap screener for **founders, VCs, accelerators and universities**. A person describes an idea; VistaDex produces an evidence-linked report with an **explainable VistaDex Score** (every axis, input, search boundary and weight one tap away; axes without enough data are left out, never guessed); **a human always makes the decision — VistaDex never calls an idea good or bad.**
 
 One app, two editions: a **public demo** (the LinkedIn link: Welcome notice, walkthrough, usage telemetry, feedback) and a **pitch / internal** edition (`#edition=pitch&code=…`: Dashboard of every screened idea, no telemetry at all). The BITS F364 study UI is retired from the routes (`web/src/retired/study/`).
 
@@ -27,16 +27,17 @@ With no configuration the whole pipeline runs **key-free in the browser**: deter
 
 | Route | Screen | Edition |
 |---|---|---|
-| `#/welcome` | What VistaDex does, prototype warning, what is recorded, delete-my-session; "Start with walkthrough" / "Skip to the tool" / "Use without recording" | public (first visit) |
-| `#/screen` | Idea text with counter, three sample ideas, EU / USA / India target markets, Run; refusal and daily-cap messages | both |
+| `#/` | Home: the landing page (hero, the problem, what's in a report, product screens, who it's for, try the prototype, the team) | both (pitch opens on Reports) |
+| `#/welcome` | What VistaDex does, prototype warning, what is recorded, delete-my-session; "Start with walkthrough" / "Skip to the tool" / "Use without recording" | public (first visit to a recording page) |
+| `#/screen` | The form: title, pitch, problem, solution, moat, industry, role, markets; three samples; Run; refusal and daily-cap messages | both (the LinkedIn link) |
 | `#/running` | Five-stage tracker with Cancel | both |
-| `#/report` · `#/report/:id` | One long page: Summary (status counts, no score) · Claims & evidence · Leads to check · Objections · Legal · Market; Save as PDF, Screen another idea | public: the latest run only · pitch: any |
-| `#/dashboard` | Every screened idea (session runs + 8 demo ideas): summary tiles, search, status and category filters | pitch (home) |
-| `#/graveyard` | 18 shut-down startups, search + cause filter, detail sheet | both |
-| `#/how-it-works` | Method, statuses, evidence rule, data sources, limitations | both |
+| `#/report/:id` | One long page: Summary (VistaDex Score + "How this was calculated", overlap band, status counts) · Profile (radar + donut) · Claims & evidence · Leads to check (competitors + graveyard) · Objections · Big Tech risk · Legal · Market; Save as PDF, Screen another idea | both |
+| `#/reports` | Summary blocks (ideas, overlap bands, contradicted claim types, industry mix), sortable and filterable list | public: this browser's reports · pitch: session + demo |
+| `#/how-it-works` | Method, statuses, evidence rule, the score and its formulas, overlap and Big Tech risk, data sources, limitations | both |
+| `#/contact` | Who we are, email, feedback, data requests, source code | both |
 | `#/feedback` | Short feedback form | public |
 
-The pipeline does not produce legal or market output yet: live reports show "Not available in this version yet"; mock mode shows clearly labelled sample placeholders.
+Live mode never fabricates: competitor search, Big Tech risk and the TAM need live retrieval and a reader; SAM, SOM and legal output are not produced yet ("Not available in this version yet"). The in-browser mock mode shows clearly labelled sample placeholders for them.
 
 ---
 
@@ -101,23 +102,24 @@ The proxy adds `X-VistaDex-Trace-Id` and `X-VistaDex-Mode` (`live` | `mock`) res
 web/                        frontend: Vite + React + TS + Tailwind + shadcn/ui (static build → web/dist)
   src/edition.ts            the only module that knows the edition (features)
   src/router.ts src/boot.ts hash routes; link fragments (#edition=, #code=) captured first
-  src/screens/              Welcome, ScreenIdea, Running, ReportScreen, Dashboard, Graveyard, HowItWorks, Feedback
-  src/components/report/    report sections: summary, claims, leads, objections, legal, market
+  src/screens/              Home, Welcome, ScreenIdea, Running, ReportScreen, Reports, HowItWorks, Contact, Feedback
+  src/components/report/    report sections: summary + score, profile, claims, leads, objections, Big Tech, legal, market
+  src/components/charts/    Radar, Donut, Bars, Pie (SVG, with hidden data tables)
   src/telemetry/            the only caller of telemetry.js; controls.ts = control ids (contract)
   src/walkthrough/          coach-mark walkthrough
-  src/lib/                  run controller, session reports, samples, word overlap
-  src/fixtures/             sample legal/market placeholders (mock mode only)
+  src/lib/                  run controller, report store, Reports sorting/filtering, samples, word overlap
   src/retired/study/        retired BITS F364 study UI (not routed)
   src/index.css             design tokens (colours, radii, fonts, print)
   scripts/                  parity.mjs, a11y.mjs, access-e2e.mjs, shots-all.mjs (drive the installed Chrome)
 prototype/                  shared, framework-free code (imported by web/ and the Worker)
   config.js                 PROXY_URL (public URL only — never keys)
   core/                     pure ES modules shared by browser and Worker
-    pipeline.js             runScreen(ideaText, deps) → { report, trace }
-    contract.js rules.js evidence.js trace.js
-    stages/                 extract.js classify.js graveyard.js objector.js
+    pipeline.js             runScreen(input | ideaText, deps) → { report, trace }
+    contract.js rules.js evidence.js quotes.js trace.js input.js finalize.js
+    scoring.js scoring-config.js   explainable scores; every weight and threshold (pinned by a test)
+    stages/                 extract.js classify.js competitors.js bigtech.js market.js graveyard.js objector.js
     providers/              llm.js (Groq, Mistral, fallback) retrieval.js (TinyFish) embed.js
-  data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea)
+  data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea), samples.js (mock-mode placeholders)
   ui/                       client.js (proxy vs mock), telemetry.js (event log, export, withdraw),
                             study-config.js (notice + feedback wording, open decisions, STUDY_VERSION)
 worker/                     Cloudflare Worker proxy: /screen /events /session/:id /export

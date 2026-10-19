@@ -7,6 +7,13 @@ import { fileURLToPath } from "node:url";
 export const BASE = (process.env.VD_BASE || "http://localhost:5173/").replace(/\/?$/, "/");
 export const contract = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../tests/fixtures/event-contract.json", import.meta.url)), "utf8"));
 export const LEGAL_IDEA = "We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally.";
+// The Screen an idea form's required fields (the legal idea split across them).
+export const IDEA_FIELDS = {
+  title: "LegalAI for Startups",
+  pitch: "We are building an AI-powered legal contract review tool for early-stage startups.",
+  problem: "No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month.",
+  solution: "The legal-tech market is worth $27B globally.",
+};
 const cfgPath = fileURLToPath(new URL("../../prototype/config.js", import.meta.url)).replace(/\\/g, "/");
 const telPath = fileURLToPath(new URL("../../prototype/ui/telemetry.js", import.meta.url)).replace(/\\/g, "/");
 export const STUB = "http://stub-proxy.test";
@@ -14,8 +21,8 @@ const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers
 
 export const launch = () => chromium.launch({ channel: "chrome", headless: true });
 
-/** A fresh context (empty storage). `edition: "pitch"` opens the pitch link. */
-export async function openApp(browser, { viewport = { width: 1280, height: 900 }, hash = "", isMobile = false } = {}) {
+/** A fresh context (empty storage). Default: the public LinkedIn link (#/screen → Welcome first). */
+export async function openApp(browser, { viewport = { width: 1280, height: 900 }, hash = "#/screen", isMobile = false } = {}) {
   const ctx = await browser.newContext({ viewport, isMobile, hasTouch: isMobile, deviceScaleFactor: isMobile ? 2 : 1 });
   const page = await ctx.newPage();
   page.on("pageerror", e => console.error("page error:", e.message));
@@ -45,9 +52,13 @@ export const setProxy = (page, url) => page.evaluate(async ([p, u]) => { (await 
 export const flush = page => page.evaluate(async p => (await import("/@fs/" + p)).flush(), telPath);
 export const events = page => page.evaluate(() => JSON.parse(localStorage.getItem("vistadex.study.v1") || "{}").events || []);
 
-/** Fills the idea box and presses Run; resolves when the report (or an error on Screen) is shown. */
-export async function runIdea(page, idea = LEGAL_IDEA, { markets = [] } = {}) {
-  await page.locator("#ideaInput").fill(idea);
+export async function fillIdea(page, fields = IDEA_FIELDS) {
+  for (const [k, v] of Object.entries(fields)) await page.locator(`#field-${k}`).fill(v);
+}
+
+/** Fills the form and presses Run; resolves when the report (or an error on Screen) is shown. */
+export async function runIdea(page, fields = IDEA_FIELDS, { markets = [] } = {}) {
+  await fillIdea(page, fields);
   for (const m of markets) await page.locator(`[data-control=market_toggle][data-control-value=${m}]`).click();
   await page.getByRole("button", { name: /^Run$/ }).click();
   await page.waitForFunction(() => location.hash === "#/report" || /^#\/report\//.test(location.hash) || (location.hash === "#/screen" && document.querySelector("[role=alert]")), null, { timeout: 20000 });

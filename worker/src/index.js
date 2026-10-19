@@ -1,11 +1,18 @@
 // ── VistaDex proxy — Cloudflare Worker ──
 // Holds the provider keys (Worker secrets) so they never reach the browser.
 //   POST   /screen          { idea_text } → POST /screen contract; X-VistaDex-Trace-Id / X-VistaDex-Mode headers
-//   POST   /events          { session_id, events[] } → stored in D1 (consented study telemetry)
-//   DELETE /session/:id     withdraw: deletes the session's events and traces
+//                           needs the study access code in the X-VistaDex-Access header
+//   POST   /events          { session_id, events[], access_code } → stored in D1 (consented study telemetry)
+//   DELETE /session/:id     withdraw: deletes the session's events and traces (no access code needed —
+//                           withdrawing must always work; the random session id protects it)
 //   GET    /export          researchers only (Authorization: Bearer EXPORT_TOKEN); ?table=events|traces&format=json|csv
 // Runs the same core pipeline as the browser. With no keys set it serves the
-// deterministic mock path. Nothing here reads or stores IP or user-agent headers.
+// deterministic mock path. The client IP (CF-Connecting-IP) is read only as the rate-limiter key;
+// it is never stored, logged or traced. User-agent headers are not read.
+//
+// Abuse controls (see docs/DEPLOY.md): a shared access code (ACCESS_CODES secret, enforced when
+// ACCESS_REQUIRED="true"), per-IP rate limits (SCREEN_LIMITER, EVENTS_LIMITER bindings) and a
+// global daily cap on /screen (SCREEN_DAILY_CAP, counted in D1).
 
 import { runScreen } from "../../prototype/core/pipeline.js";
 import { routesFromEnv } from "../../prototype/core/providers/llm.js";
@@ -35,7 +42,7 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
 
   try {
     if (request.method === "POST" && url.pathname === "/screen") return await screen(request, env, { store, fetchImpl, now, cors });
-    if (request.method === "POST" && url.pathname === "/events") return await saveEvents(request, { store, now, cors });
+    if (request.method === "POST" && url.pathname === "/events") return await saveEvents(request, env, { store, now, cors });
     const del = url.pathname.match(/^\/session\/([^/]+)$/);
     if (request.method === "DELETE" && del) return await withdraw(decodeURIComponent(del[1]), { store, now, cors });
     if (request.method === "GET" && isExport) return await exportData(request, url, env, { store });
@@ -48,10 +55,24 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
 }
 
 async function screen(request, env, { store, fetchImpl, now, cors }) {
+  const denied = checkAccess(env, request.headers.get("X-VistaDex-Access"), cors)
+    || await rateLimited(env.SCREEN_LIMITER, request, cors);
+  if (denied) return denied;
   const body = await readJSON(request);
   const ideaText = typeof body?.idea_text === "string" ? body.idea_text.trim() : "";
   if (!ideaText) return json({ error: "idea_text is required" }, 400, cors);
   if (ideaText.length > MAX_IDEA_CHARS) return json({ error: `idea_text is longer than ${MAX_IDEA_CHARS} characters` }, 413, cors);
+
+  // Global daily cap, counted after validation so malformed requests don't use it up.
+  const cap = Number(env.SCREEN_DAILY_CAP || 0);
+  if (cap > 0) {
+    const stamp = now();
+    const { allowed } = await store.takeDailyScreen(stamp.slice(0, 10), cap);
+    if (!allowed) {
+      return json({ error: "daily_cap", message: "The study is paused for today. Please try again tomorrow." }, 429,
+        { ...cors, "Retry-After": String(secondsUntilUtcMidnight(stamp)) });
+    }
+  }
 
   const llmRoutes = routesFromEnv(env, fetchImpl);
   const retrieval = retrievalFromEnv(env, fetchImpl);
@@ -66,8 +87,11 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
   });
 }
 
-async function saveEvents(request, { store, now, cors }) {
+async function saveEvents(request, env, { store, now, cors }) {
   const body = await readJSON(request);
+  // The code comes in the body (beacons cannot set headers); it is not stored with the events.
+  const denied = checkAccess(env, body?.access_code, cors) || await rateLimited(env.EVENTS_LIMITER, request, cors);
+  if (denied) return denied;
   const id = body?.session_id;
   if (typeof id !== "string" || !UUID.test(id)) return json({ error: "invalid session_id" }, 400, cors);
   if (await store.isWithdrawn(id)) return json({ error: "session withdrawn" }, 410, cors);
@@ -99,6 +123,33 @@ async function exportData(request, url, env, { store }) {
   return json(rows.map(r => ({ ...r, ...(r.payload ? { payload: parse(r.payload) } : {}), ...(r.trace ? { trace: parse(r.trace) } : {}) })), 200);
 }
 
+// ── access code, rate limits, daily cap ──
+// Enforced when ACCESS_REQUIRED is "true" (set in wrangler.toml) or when codes are configured.
+// Required but no codes configured → 503, so a forgotten secret fails closed, not open.
+function checkAccess(env, code, cors) {
+  const codes = String(env.ACCESS_CODES || "").split(",").map(c => c.trim()).filter(Boolean);
+  const required = String(env.ACCESS_REQUIRED || "").toLowerCase() === "true" || codes.length > 0;
+  if (!required) return null;
+  if (!codes.length) return json({ error: "misconfigured", message: "Access codes are required but none are configured." }, 503, cors);
+  if (typeof code === "string" && codes.some(c => timingSafeEqual(code.trim(), c))) return null;
+  return json({ error: "access_code_required", message: "This study link is missing its access code." }, 401, cors);
+}
+
+// Workers Rate Limiting API binding ({ limit({ key }) → { success } }). Absent binding = no limit
+// (local dev, tests). The IP is only the limiter key and is never stored or logged.
+async function rateLimited(limiter, request, cors) {
+  if (!limiter?.limit) return null;
+  const key = request.headers.get("CF-Connecting-IP") || "unknown";
+  const { success } = await limiter.limit({ key });
+  return success ? null : json({ error: "rate_limited", message: "Too many requests. Please wait a minute and try again." }, 429, { ...cors, "Retry-After": "60" });
+}
+
+function secondsUntilUtcMidnight(isoNow) {
+  const t = new Date(isoNow);
+  const midnight = Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() + 1);
+  return Math.max(1, Math.ceil((midnight - t.getTime()) / 1000));
+}
+
 // ── helpers ──
 function corsHeaders(origin, env) {
   const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
@@ -106,7 +157,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

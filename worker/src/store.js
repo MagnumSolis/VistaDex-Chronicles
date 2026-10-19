@@ -4,6 +4,7 @@
 //   saveTrace(traceId, mode, trace, now)
 //   deleteSession(sessionId, now)           → { events, traces }
 //   exportEvents() / exportTraces()         → rows
+//   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
 
 export function d1Store(db) {
   return {
@@ -35,6 +36,14 @@ export function d1Store(db) {
       const out = await db.batch(stmts);
       return { events: out[1].meta?.changes || 0, traces: traceIds.length };
     },
+    // One atomic statement: insert the day's first screen, or increment only while below the cap.
+    // When the cap is reached the UPDATE's WHERE fails, nothing is returned, and the request is refused.
+    async takeDailyScreen(day, cap) {
+      const row = await db.prepare(
+        "INSERT INTO daily_counters (day, screens) VALUES (?1, 1) ON CONFLICT(day) DO UPDATE SET screens = screens + 1 WHERE screens < ?2 RETURNING screens",
+      ).bind(day, cap).first();
+      return row ? { allowed: true, count: row.screens } : { allowed: false, count: cap };
+    },
     async exportEvents() {
       const { results } = await db.prepare("SELECT session_id, seq, ts, type, study_version, payload, received_at FROM events ORDER BY session_id, seq").all();
       return results;
@@ -50,6 +59,7 @@ export function memoryStore() {
   const events = new Map(); // `${id}:${seq}` → row
   const traces = new Map();
   const withdrawn = new Set();
+  const daily = new Map();
   return {
     _events: events, _traces: traces,
     async isWithdrawn(id) { return withdrawn.has(id); },
@@ -75,6 +85,12 @@ export function memoryStore() {
         n++;
       }
       return { events: n, traces: t };
+    },
+    async takeDailyScreen(day, cap) {
+      const n = daily.get(day) || 0;
+      if (n >= cap) return { allowed: false, count: n };
+      daily.set(day, n + 1);
+      return { allowed: true, count: n + 1 };
     },
     async exportEvents() { return [...events.values()].sort((a, b) => a.session_id.localeCompare(b.session_id) || a.seq - b.seq); },
     async exportTraces() { return [...traces.values()]; },

@@ -4,6 +4,7 @@ import { CONFIG } from "../config.js";
 import { runScreen } from "../core/pipeline.js";
 import { validateContract } from "../core/contract.js";
 import { GRAVEYARD_DB } from "../data/graveyard.js";
+import { ACCESS_HEADER, getAccessCode, refusalMessage } from "./access.js";
 
 export function liveMode() {
   return Boolean(CONFIG.PROXY_URL);
@@ -19,12 +20,17 @@ export async function screenIdea(ideaText, { onStage } = {}) {
 async function screenViaProxy(ideaText, onStage = async () => {}) {
   // The proxy runs all stages server-side; the UI marks them in sequence once it answers.
   await onStage(1, "running");
+  const code = getAccessCode();
   const res = await fetch(`${CONFIG.PROXY_URL.replace(/\/$/, "")}/screen`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // The access code travels in a header so the request body stays exactly the contract's { idea_text }.
+    headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}) },
     body: JSON.stringify({ idea_text: ideaText }),
   });
-  if (!res.ok) throw new Error(`proxy returned HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(refusalMessage(res.status, body) || `proxy returned HTTP ${res.status}`);
+  }
   const report = await res.json();
   const problems = validateContract(report);
   if (problems.length) throw new Error(`proxy response broke the contract: ${problems.join("; ")}`);

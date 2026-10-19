@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS traces (
   trace       TEXT NOT NULL               -- JSON
 );
 
+-- Global daily cap on /screen (SCREEN_DAILY_CAP). One row per UTC day.
+CREATE TABLE IF NOT EXISTS daily_counters (
+  day      TEXT PRIMARY KEY,              -- YYYY-MM-DD (UTC)
+  screens  INTEGER NOT NULL
+);
+
 -- Withdrawn sessions: late uploads for these IDs are refused.
 CREATE TABLE IF NOT EXISTS withdrawals (
   session_id    TEXT PRIMARY KEY,

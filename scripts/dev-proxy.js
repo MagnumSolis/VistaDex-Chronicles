@@ -9,7 +9,8 @@ import { handle } from "../worker/src/index.js";
 import { memoryStore } from "../worker/src/store.js";
 
 const port = Number(process.argv[2]) || 8787;
-const env = { ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173", ...readDotEnv(".env") };
+// Access codes are off locally unless ACCESS_CODES is set in .env (then they are enforced).
+const env = { ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173", ACCESS_REQUIRED: "false", ...readDotEnv(".env") };
 const store = memoryStore();
 
 http.createServer(async (req, res) => {

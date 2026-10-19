@@ -99,7 +99,7 @@ export function ScreenIdea({ onReadStudyInfo }: { onReadStudyInfo: () => void })
         <div role="alert" className="flex gap-3 rounded-card bg-card p-5 shadow-card">
           <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-foreground" />
           <div>
-            <p className="text-sm font-semibold">The screening run failed</p>
+            <p className="text-sm font-semibold">The screening did not run</p>
             <p className="mt-1 text-sm text-muted-foreground">{error}</p>
           </div>
         </div>

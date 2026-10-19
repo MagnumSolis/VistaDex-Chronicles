@@ -6,6 +6,7 @@
 
 import { CONFIG } from "../config.js";
 import { STUDY_VERSION } from "./study-config.js";
+import { getAccessCode } from "./access.js";
 
 const KEY = "vistadex.study.v1";
 const FLUSH_DELAY_MS = 2000;
@@ -69,7 +70,9 @@ export async function flush({ beacon = false } = {}) {
   const base = proxyBase();
   if (!base || state.consent !== "given" || state.sent >= state.events.length) return;
   const batch = state.events.slice(state.sent);
-  const body = JSON.stringify({ session_id: state.session_id, events: batch });
+  // access_code rides in the upload body (beacons cannot set headers); it is never part of an event.
+  const code = getAccessCode();
+  const body = JSON.stringify({ session_id: state.session_id, events: batch, ...(code ? { access_code: code } : {}) });
   if (beacon && navigator.sendBeacon) {
     if (navigator.sendBeacon(`${base}/events`, new Blob([body], { type: "text/plain" }))) {
       state.sent += batch.length;

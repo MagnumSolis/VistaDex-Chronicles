@@ -12,16 +12,18 @@ import { Running } from "@/screens/Running";
 import { ReportScreen } from "@/screens/ReportScreen";
 import { Dashboard } from "@/screens/Dashboard";
 import { Graveyard } from "@/screens/Graveyard";
+import { HowItWorks } from "@/screens/HowItWorks";
 
 // Routes an edition does not have.
 function available(name: RouteName) {
   if (name === "dashboard") return features.dashboard;
   if (name === "welcome") return features.welcome;
-  if (name === "feedback" || name === "how") return false; // added in later screens
+  if (name === "feedback") return false; // added in a later screen
   return true;
 }
-// Before the Welcome notice is answered (public, first visit), only Welcome is shown.
-const beforeNotice = (name: RouteName) => name !== "welcome";
+// Before the Welcome notice is answered (public, first visit), only Welcome and How it works
+// (linked from the notice, for reading first) are shown.
+const beforeNotice = (name: RouteName) => name !== "welcome" && name !== "how";
 
 export function App() {
   const route = useRoute();
@@ -67,6 +69,7 @@ function Screen({ route }: { route: Route }) {
     case "report": return <ReportScreen param={route.param} />;
     case "dashboard": return <Dashboard />;
     case "graveyard": return <Graveyard />;
+    case "how": return <HowItWorks />;
     case "notfound": return <NotFound />;
     default: return null;
   }

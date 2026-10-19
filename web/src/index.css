@@ -177,6 +177,23 @@
   }
 }
 
+/* ── Save as PDF (print) ──
+   Ink on white, no page frame, no navigation or buttons, every claim's sources expanded,
+   sections kept whole where they fit. */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #fff !important; color: var(--foreground) !important; }
+  .bg-page, .bg-background, .bg-card, .bg-muted, .bg-charcoal { background: #fff !important; }
+  .on-page, .text-on-page, .text-on-page-muted { color: var(--foreground) !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  [data-print-expand][hidden] { display: block !important; }
+  section, article, li { break-inside: avoid-page; }
+  .rounded-card, .rounded-inner { border: 1px solid var(--border-strong); }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75rem; word-break: break-all; color: var(--muted-foreground); }
+  .tab-notch::after { display: none; }
+  [class*="st-"] { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
 @layer components {
   /* Folder-tab title (design brief P4): the tab joins the panel with an inward-curved corner. */
   .tab-notch::after {

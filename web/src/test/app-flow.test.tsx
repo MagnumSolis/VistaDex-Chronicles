@@ -22,6 +22,16 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     expect(calls).toEqual([]);
   });
 
+  it("How it works can be read before answering the notice, and is not recorded", async () => {
+    const { tm } = await loadApp();
+    await screen.findByRole("button", { name: "Skip to the tool" });
+    go("#/how-it-works");
+    expect(await screen.findByRole("heading", { name: "Evidence first. You decide." })).toBeTruthy();
+    expect(screen.getByText(/at least two independent sources/)).toBeTruthy();
+    expect(screen.getByText(/word overlap/)).toBeTruthy();
+    expect(tm.events()).toEqual([]);
+  });
+
   it("Skip to the tool → sample → Run → report; idea text and report content never reach telemetry", async () => {
     const { tm } = await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));

@@ -259,6 +259,12 @@ async function runPipelineOn(ideaText) {
       setStage(4, "done", `${(result.objections || []).length} objections raised`);
       return result;
     } catch (e) {
+      // Key-free smoke path: if the backend has no LLM keys configured,
+      // transparently fall back to the DEMO pipeline so the app is always usable.
+      if (e.message === 'no_llm_configured') {
+        window.DEMO_MODE = true;
+        return runDemoPipeline(ideaText);
+      }
       [1,2,3,4].forEach(i => setStage(i, "idle"));
       throw e;
     }

@@ -67,8 +67,11 @@ export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCom
     }
   };
 
-  await runAgentQueries("news-scout", QUERIES.newsScout);
-  await runAgentQueries("post-mortem-miner", QUERIES.postMortemMiner);
+  const watcherOnly = String(process.env.FLEET_MODE || "") === "watcher";
+  if (!watcherOnly) {
+    await runAgentQueries("news-scout", QUERIES.newsScout);
+    await runAgentQueries("post-mortem-miner", QUERIES.postMortemMiner);
+  }
   // Death Watcher: re-check known staging entries for a second source
   const WATCHER_LIMIT = Number(process.env.WATCHER_LIMIT || 20);
   const candidatesPending = await staging.find({ death_status: "candidate" }).limit(WATCHER_LIMIT).toArray();

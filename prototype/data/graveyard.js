@@ -1,4 +1,8 @@
 // ── graveyard.js — Graveyard seed set (mirrors the planned MongoDB schema) ──
+// Provenance: entries and source URLs come from the original prototype (commit a8b2510,
+// 2026-09-16). None has been checked against its source yet.
+// source_verified: set to true only after a person has opened the source and confirmed it
+// documents the closure. TODO(team): an inclusion rule (what counts as a failure) is pending.
 
 export const GRAVEYARD_DB = [
   {
@@ -9,7 +13,8 @@ export const GRAVEYARD_DB = [
     cause_category: "unit-economics",
     year_closed: 2020,
     raised: "$75M",
-    sources: ["https://techcrunch.com/2020/03/03/atrium-is-shutting-down/", "https://failory.com/cemetery/atrium"]
+    sources: ["https://techcrunch.com/2020/03/03/atrium-is-shutting-down/", "https://failory.com/cemetery/atrium"],
+    source_verified: false
   },
   {
     id: "sprig",
@@ -19,7 +24,8 @@ export const GRAVEYARD_DB = [
     cause_category: "unit-economics",
     year_closed: 2017,
     raised: "$56.7M",
-    sources: ["https://techcrunch.com/2017/05/27/sprig-shutting-down/", "https://failory.com/cemetery/sprig"]
+    sources: ["https://techcrunch.com/2017/05/27/sprig-shutting-down/", "https://failory.com/cemetery/sprig"],
+    source_verified: false
   },
   {
     id: "homejoy",
@@ -29,7 +35,8 @@ export const GRAVEYARD_DB = [
     cause_category: "regulation",
     year_closed: 2015,
     raised: "$38M",
-    sources: ["https://techcrunch.com/2015/07/31/homejoy-shuts-down/"]
+    sources: ["https://techcrunch.com/2015/07/31/homejoy-shuts-down/"],
+    source_verified: false
   },
   {
     id: "quibi",
@@ -39,7 +46,8 @@ export const GRAVEYARD_DB = [
     cause_category: "timing",
     year_closed: 2020,
     raised: "$1.75B",
-    sources: ["https://variety.com/2020/digital/news/quibi-shutting-down-1234809229/"]
+    sources: ["https://variety.com/2020/digital/news/quibi-shutting-down-1234809229/"],
+    source_verified: false
   },
   {
     id: "juicero",
@@ -49,7 +57,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2017,
     raised: "$120M",
-    sources: ["https://www.bloomberg.com/news/features/2017-04-19/silicon-valley-s-400-juicer-may-be-a-solution-to-problem-that-doesn-t-exist"]
+    sources: ["https://www.bloomberg.com/news/features/2017-04-19/silicon-valley-s-400-juicer-may-be-a-solution-to-problem-that-doesn-t-exist"],
+    source_verified: false
   },
   {
     id: "theranos",
@@ -59,7 +68,8 @@ export const GRAVEYARD_DB = [
     cause_category: "regulation",
     year_closed: 2018,
     raised: "$945M",
-    sources: ["https://www.wsj.com/articles/theranos-has-struggled-with-blood-tests-1444881901"]
+    sources: ["https://www.wsj.com/articles/theranos-has-struggled-with-blood-tests-1444881901"],
+    source_verified: false
   },
   {
     id: "vine",
@@ -69,7 +79,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2017,
     raised: "Acquired by Twitter for ~$30M",
-    sources: ["https://techcrunch.com/2016/10/27/vine-is-shutting-down/"]
+    sources: ["https://techcrunch.com/2016/10/27/vine-is-shutting-down/"],
+    source_verified: false
   },
   {
     id: "yik-yak",
@@ -79,7 +90,8 @@ export const GRAVEYARD_DB = [
     cause_category: "regulation",
     year_closed: 2017,
     raised: "$73.5M",
-    sources: ["https://techcrunch.com/2017/04/28/yik-yak-shuts-down/"]
+    sources: ["https://techcrunch.com/2017/04/28/yik-yak-shuts-down/"],
+    source_verified: false
   },
   {
     id: "rdio",
@@ -89,7 +101,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2015,
     raised: "$125.5M",
-    sources: ["https://techcrunch.com/2015/11/23/rdio-shuts-down/"]
+    sources: ["https://techcrunch.com/2015/11/23/rdio-shuts-down/"],
+    source_verified: false
   },
   {
     id: "meerkat",
@@ -99,7 +112,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2016,
     raised: "$14.3M",
-    sources: ["https://techcrunch.com/2016/09/30/meerkat-is-officially-dead/"]
+    sources: ["https://techcrunch.com/2016/09/30/meerkat-is-officially-dead/"],
+    source_verified: false
   },
   {
     id: "zirtual",
@@ -109,7 +123,8 @@ export const GRAVEYARD_DB = [
     cause_category: "unit-economics",
     year_closed: 2015,
     raised: "$5.5M",
-    sources: ["https://techcrunch.com/2015/08/10/zirtual-shuts-down-overnight/"]
+    sources: ["https://techcrunch.com/2015/08/10/zirtual-shuts-down-overnight/"],
+    source_verified: false
   },
   {
     id: "washio",
@@ -119,7 +134,8 @@ export const GRAVEYARD_DB = [
     cause_category: "unit-economics",
     year_closed: 2016,
     raised: "$16.7M",
-    sources: ["https://techcrunch.com/2016/08/30/washio-is-shutting-down/"]
+    sources: ["https://techcrunch.com/2016/08/30/washio-is-shutting-down/"],
+    source_verified: false
   },
   {
     id: "springpad",
@@ -129,7 +145,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2014,
     raised: "$8.5M",
-    sources: ["https://techcrunch.com/2014/06/04/springpad-shuts-down/"]
+    sources: ["https://techcrunch.com/2014/06/04/springpad-shuts-down/"],
+    source_verified: false
   },
   {
     id: "google-plus",
@@ -139,7 +156,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2019,
     raised: "Internal Google project",
-    sources: ["https://techcrunch.com/2018/10/08/google-plus-is-dying/"]
+    sources: ["https://techcrunch.com/2018/10/08/google-plus-is-dying/"],
+    source_verified: false
   },
   {
     id: "daqri",
@@ -149,7 +167,8 @@ export const GRAVEYARD_DB = [
     cause_category: "timing",
     year_closed: 2019,
     raised: "$275M",
-    sources: ["https://techcrunch.com/2019/09/27/daqri-a-once-high-flying-ar-startup-is-shutting-down/"]
+    sources: ["https://techcrunch.com/2019/09/27/daqri-a-once-high-flying-ar-startup-is-shutting-down/"],
+    source_verified: false
   },
   {
     id: "jawbone",
@@ -159,7 +178,8 @@ export const GRAVEYARD_DB = [
     cause_category: "competition",
     year_closed: 2017,
     raised: "$930M",
-    sources: ["https://techcrunch.com/2017/07/06/jawbone-is-dead/"]
+    sources: ["https://techcrunch.com/2017/07/06/jawbone-is-dead/"],
+    source_verified: false
   },
   {
     id: "circa",
@@ -169,7 +189,8 @@ export const GRAVEYARD_DB = [
     cause_category: "timing",
     year_closed: 2015,
     raised: "$5M",
-    sources: ["https://techcrunch.com/2015/06/01/circa-closes-down/"]
+    sources: ["https://techcrunch.com/2015/06/01/circa-closes-down/"],
+    source_verified: false
   },
   {
     id: "shyp",
@@ -179,6 +200,7 @@ export const GRAVEYARD_DB = [
     cause_category: "unit-economics",
     year_closed: 2018,
     raised: "$62.1M",
-    sources: ["https://techcrunch.com/2018/03/27/shyp-is-shutting-down/"]
+    sources: ["https://techcrunch.com/2018/03/27/shyp-is-shutting-down/"],
+    source_verified: false
   }
 ];

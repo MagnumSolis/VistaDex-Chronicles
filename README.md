@@ -4,7 +4,7 @@
 
 VistaDex is an idea-novelty and overlap screener for **accelerators, universities, and VC funds**. A person submits an idea; VistaDex produces an evidence-linked report; **a human reviewer always makes the final decision — VistaDex never gives a verdict.**
 
-It is also our BITS F364 (Human-AI Interaction) course project; the prototype includes consent-gated study instrumentation for real participants.
+One app, two editions: a **public demo** (the LinkedIn link: Welcome notice, walkthrough, usage telemetry, feedback) and a **pitch / internal** edition (`#edition=pitch&code=…`: Dashboard of every screened idea, no telemetry at all). The BITS F364 study UI is retired from the routes (`web/src/retired/study/`).
 
 ---
 
@@ -19,17 +19,24 @@ npm test                   # pipeline, proxy and telemetry tests — no keys or 
 npm run build              # static site in web/dist (GitHub Pages)
 ```
 
-`npm run parity` and `npm run a11y` (with the dev server running) check telemetry against the recorded event contract and run the accessibility pass. See [`CLAUDE.md`](CLAUDE.md) for the UI design rules.
+`npm run parity` and `npm run a11y` (with the dev server running) check telemetry against the event contract (and that the pitch edition sends nothing) and run the accessibility pass at 1280/375/360/320 px. See [`CLAUDE.md`](CLAUDE.md) for the UI design rules.
 
 With no configuration the whole pipeline runs **key-free in the browser**: deterministic, same idea → same report. There's no live evidence in this mode, so claims honestly stay `unverified`. Real providers are used only through the proxy (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
 
-### Three screens
+### Screens (`#/…` hash routes)
 
-| Screen | Description |
-|--------|-------------|
-| **Cohort Dashboard** | 8 hand-written **demo** ideas (fictional submitters). Status counts and graveyard leads, sorted by contradicted + disputed claims; each opens a demo report |
-| **Screen an Idea** | Paste idea text → 4-stage pipeline → claims with evidence, graveyard leads, Objector. Study consent, trust sliders, per-claim agreement and survey live here |
-| **Graveyard DB** | 18 seed entries (startups that shut down) with cause-of-death filters |
+| Route | Screen | Edition |
+|---|---|---|
+| `#/welcome` | What VistaDex does, prototype warning, what is recorded, delete-my-session; "Start with walkthrough" / "Skip to the tool" / "Use without recording" | public (first visit) |
+| `#/screen` | Idea text with counter, three sample ideas, EU / USA / India target markets, Run; refusal and daily-cap messages | both |
+| `#/running` | Five-stage tracker with Cancel | both |
+| `#/report` · `#/report/:id` | One long page: Summary (status counts, no score) · Claims & evidence · Leads to check · Objections · Legal · Market; Save as PDF, Screen another idea | public: the latest run only · pitch: any |
+| `#/dashboard` | Every screened idea (session runs + 8 demo ideas): summary tiles, search, status and category filters | pitch (home) |
+| `#/graveyard` | 18 shut-down startups, search + cause filter, detail sheet | both |
+| `#/how-it-works` | Method, statuses, evidence rule, data sources, limitations | both |
+| `#/feedback` | Short feedback form | public |
+
+The pipeline does not produce legal or market output yet: live reports show "Not available in this version yet"; mock mode shows clearly labelled sample placeholders.
 
 ---
 
@@ -92,11 +99,17 @@ The proxy adds `X-VistaDex-Trace-Id` and `X-VistaDex-Mode` (`live` | `mock`) res
 
 ```
 web/                        frontend: Vite + React + TS + Tailwind + shadcn/ui (static build → web/dist)
-  src/screens/              Dashboard, ScreenIdea, Graveyard
-  src/components/report/    report: status counts, claims, objections, graveyard leads
-  src/study/                controller.ts (all telemetry calls), StudyUI.tsx (consent, sliders, survey)
-  src/index.css             design tokens (colours, radii, shadows, fonts)
-  scripts/                  parity.mjs, a11y.mjs, shots-all.mjs (drive the installed Chrome)
+  src/edition.ts            the only module that knows the edition (features)
+  src/router.ts src/boot.ts hash routes; link fragments (#edition=, #code=) captured first
+  src/screens/              Welcome, ScreenIdea, Running, ReportScreen, Dashboard, Graveyard, HowItWorks, Feedback
+  src/components/report/    report sections: summary, claims, leads, objections, legal, market
+  src/telemetry/            the only caller of telemetry.js; controls.ts = control ids (contract)
+  src/walkthrough/          coach-mark walkthrough
+  src/lib/                  run controller, session reports, samples, word overlap
+  src/fixtures/             sample legal/market placeholders (mock mode only)
+  src/retired/study/        retired BITS F364 study UI (not routed)
+  src/index.css             design tokens (colours, radii, fonts, print)
+  scripts/                  parity.mjs, a11y.mjs, access-e2e.mjs, shots-all.mjs (drive the installed Chrome)
 prototype/                  shared, framework-free code (imported by web/ and the Worker)
   config.js                 PROXY_URL (public URL only — never keys)
   core/                     pure ES modules shared by browser and Worker
@@ -106,7 +119,7 @@ prototype/                  shared, framework-free code (imported by web/ and th
     providers/              llm.js (Groq, Mistral, fallback) retrieval.js (TinyFish) embed.js
   data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea)
   ui/                       client.js (proxy vs mock), telemetry.js (event log, export, withdraw),
-                            study-config.js (consent, survey wording, STUDY_VERSION)
+                            study-config.js (notice + feedback wording, open decisions, STUDY_VERSION)
 worker/                     Cloudflare Worker proxy: /screen /events /session/:id /export
   src/index.js src/store.js schema.sql wrangler.toml
 scripts/                    dev-proxy.js (Worker handler in Node)
@@ -118,15 +131,14 @@ docs/DEPLOY.md              deployment + data export
 
 ---
 
-## Research instrumentation
+## Telemetry (public edition only)
 
-- Consent screen before first use; declining keeps the tool usable and records nothing.
-- Pre-use and post-use trust sliders (1–7), agree / disagree / unsure on every claim status, a 5-item survey plus optional comments.
-- Timestamped events under a random anonymous session ID: claim expanded, source clicked, objections/graveyard viewed, time on report, ratings, survey.
-- No names, emails, IP addresses or user agents. Idea text is stored (participants are warned not to include identifying details).
-- Participants can download their data (JSON/CSV) and withdraw (local + server deletion). Researchers export from the Worker with a token.
-- Participant links carry a shared study access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen`. The code keeps out crawlers and casual visitors, not anyone who has the link — see `docs/DEPLOY.md` §3b.
-- Every event carries `study_version` (`2026-10-pilot-2` = redesigned UI). The event contract in `tests/fixtures/event-contract.json` is checked by `npm run parity`.
+- The Welcome notice comes first and nothing is recorded before the visitor chooses; "Use without recording" records nothing at all. Kept for 12 months under a random session ID; no names, emails, IP addresses or user agents.
+- Every button press / control (stable `data-control` ids), time per screen, per report section in view and per walkthrough step, and run events described by counts only: **the idea text and the report content are not logged**.
+- Batched uploads to `/events` (at most one request per 10 s, 200 events each). Visitors can delete their session (local + server, including linked traces). Feedback is sent under a separate random id.
+- The pitch edition sends **zero** events (`telemetry.js` is disabled at startup); tests and `npm run parity` check this.
+- Links carry a shared access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen` — see `docs/DEPLOY.md` §3b.
+- Every event carries `study_version` (`2026-10-public-1`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
 
 ---
 

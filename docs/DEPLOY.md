@@ -73,7 +73,8 @@ Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
    `https://magnumsolis.github.io/VistaDex-Chronicles/#code=K7Q2-MX9P`
    The fragment is never sent to GitHub Pages. The app keeps the code in `sessionStorage` for that tab, removes it from the address bar, and sends it to the proxy (header `X-VistaDex-Access` on `/screen`, field `access_code` in `/events` uploads). It is never stored with events, traces or logs.
 4. Withdrawal (`DELETE /session/:id`) does not need the code, so participants can always withdraw.
-5. Without the code a participant sees: "This study link is missing its access code. Please open the link you were given." (the existing `run_failed` event records it).
+4b. **Pitch edition link** (team only): `https://magnumsolis.github.io/VistaDex-Chronicles/#edition=pitch&code=K7Q2-MX9P`. It opens on the Dashboard, shows a "Pitch edition" badge and sends no telemetry. Both fragment parts are scrubbed from the address bar; the edition is kept for that tab only. **TODO(team):** this is client-side only — anyone who learns the fragment gets the pitch edition (which only turns telemetry off and shows the demo cohort). A separate pitch code enforced by the Worker is not built.
+5. Without the code a visitor sees "This link is missing its access code" on Screen an idea (`run_failed` records it with `code: "access"`).
 
 **Per-IP rate limits** — `/screen` 30 requests / 60 s, `/events` 60 / 60 s, using the Workers Rate Limiting API bindings `SCREEN_LIMITER` and `EVENTS_LIMITER` in `wrangler.toml`. Needs Wrangler 4.36 or later (pinned in `worker/package.json`). Limits are counted per Cloudflare location, not globally. The client IP is read only as the limiter key and is never stored or logged. Refused requests get **429** with `Retry-After: 60` and the participant sees "Too many requests right now. Please wait a minute and try again."
 

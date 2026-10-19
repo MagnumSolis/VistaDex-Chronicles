@@ -174,37 +174,29 @@ async function handleEvents(env, payload) {
   return json({ ok: true });
 }
 
-// ── Graveyard browse: GET /api/graveyard (public, confirmed+verified only) ──
+// ── Graveyard browse: GET /api/graveyard (public, confirmed entries only) ──
+// Serves from the exported snapshot (worker/data/graveyard.json) built by
+// `backend npm run db:export` — Mongo stays the system of record; the edge
+// serves the committed JSON so no database access is needed at runtime.
+import graveyardData from "./data/graveyard.json" with { type: "json" };
+
 async function handleGraveyard(env, url) {
-  if (env.MONGODB_DATA_API_URL && env.MONGODB_DATA_API_KEY) {
-    const q = url.searchParams.get("q") || "";
-    const cause = url.searchParams.get("cause") || "";
-    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
-    const limit = Math.min(50, Number(url.searchParams.get("limit")) || 50);
-    const filter = { death_status: "confirmed", source_verified: true };
-    if (q) filter.company_name = { $regex: q, $options: "i" };
-    if (cause) filter.cause_category = cause;
-    const res = await fetch(env.MONGODB_DATA_API_URL + "/action/find", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "api-key": env.MONGODB_DATA_API_KEY,
-      },
-      body: JSON.stringify({
-        database: env.MONGODB_DB || "vistadex",
-        collection: "graveyard",
-        filter,
-        sort: { year_closed: -1 },
-        limit,
-        skip: (page - 1) * limit,
-      }),
-    });
-    if (!res.ok) return json({ ok: false, error: "graveyard_query_failed" }, 502);
-    const data = await res.json();
-    return json({ ok: true, entries: data.documents || [], page, limit });
-  }
-  // No Mongo configured: serve the local seed (key-free path stays green)
-  return json({ ok: true, entries: GRAVEYARD_DB, page: 1, note: "local_seed" });
+  const q = (url.searchParams.get("q") || "").toLowerCase();
+  const cause = url.searchParams.get("cause") || "";
+  const sector = url.searchParams.get("sector") || "";
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const limit = Math.min(100, Number(url.searchParams.get("limit")) || 50);
+
+  let entries = graveyardData.count > 0 ? graveyardData.entries : GRAVEYARD_DB;
+  if (q) entries = entries.filter(e =>
+    e.company_name?.toLowerCase().includes(q) ||
+    e.what_they_tried?.toLowerCase().includes(q));
+  if (cause) entries = entries.filter(e => e.cause_category === cause);
+  if (sector) entries = entries.filter(e => e.sector === sector);
+
+  const total = entries.length;
+  entries = entries.slice((page - 1) * limit, (page - 1) * limit + limit);
+  return json({ ok: true, entries, total, page, limit, exported_at: graveyardData.exported_at || null });
 }
 
 // ── Session withdraw: POST /api/session/withdraw (no access code needed) ──
@@ -222,25 +214,19 @@ async function handleWithdraw(env, sessionId) {
 }
 
 // ── Export: GET /api/export (researcher token protected) ──
+// Telemetry export forwards to the EVENTS_SINK (Mongo Atlas HTTPS ingest via a
+// hook, or D1); the sink stores events, this endpoint proxies a protected dump.
 async function handleExport(env, request) {
   const auth = request.headers.get("authorization") || "";
   if (!env.RESEARCHER_EXPORT_TOKEN || auth !== `Bearer ${env.RESEARCHER_EXPORT_TOKEN}`) {
     return json({ ok: false, error: "unauthorized" }, 401);
   }
-  if (env.MONGODB_DATA_API_URL && env.MONGODB_DATA_API_KEY) {
-    const res = await fetch(env.MONGODB_DATA_API_URL + "/action/find", {
-      method: "POST",
-      headers: { "content-type": "application/json", "api-key": env.MONGODB_DATA_API_KEY },
-      body: JSON.stringify({
-        database: env.MONGODB_DB || "vistadex",
-        collection: "events",
-        filter: {},
-        limit: 10000,
-      }),
-    });
+  if (env.EVENTS_EXPORT_URL) {
+    const headers = { "content-type": "application/json" };
+    if (env.EVENTS_SINK_TOKEN) headers.authorization = `Bearer ${env.EVENTS_SINK_TOKEN}`;
+    const res = await fetch(env.EVENTS_EXPORT_URL, { headers });
     if (!res.ok) return json({ ok: false, error: "export_failed" }, 502);
-    const data = await res.json();
-    return json({ ok: true, events: data.documents || [] });
+    return new Response(res.body, { status: 200, headers: { "content-type": "application/json", ...CORS } });
   }
   return json({ ok: false, error: "no_sink_configured" }, 503);
 }

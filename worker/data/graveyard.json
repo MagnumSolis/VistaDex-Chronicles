@@ -1,0 +1,6 @@
+{
+  "exported_at": null,
+  "count": 0,
+  "entries": [],
+  "note": "Run backend `npm run db:export` (from a machine with Mongo access) to regenerate this snapshot from Atlas; commit and redeploy."
+}

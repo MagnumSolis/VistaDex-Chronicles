@@ -186,7 +186,7 @@ export function sourceClicked(runId: string | null, claimIndex: number, url: str
 
 // ── walkthrough ──
 let stepClock: { step: string; since: number | null; ms: number } | null = null;
-export function walkthroughStarted(from: "welcome" | "help") { track("walkthrough_started", { from }); }
+export function walkthroughStarted(from: "welcome" | "help" | "how_it_works") { track("walkthrough_started", { from }); }
 export function walkthroughStep(step: string) {
   walkthroughStepEnded("next");
   stepClock = { step, since: visible() ? performance.now() : null, ms: 0 };

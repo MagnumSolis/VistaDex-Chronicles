@@ -14,6 +14,7 @@ import { Dashboard } from "@/screens/Dashboard";
 import { Graveyard } from "@/screens/Graveyard";
 import { HowItWorks } from "@/screens/HowItWorks";
 import { Feedback } from "@/screens/Feedback";
+import { startWalkthrough, Walkthrough } from "@/walkthrough/Walkthrough";
 
 // Routes an edition does not have.
 function available(name: RouteName) {
@@ -54,8 +55,9 @@ export function App() {
   }, [route.path]);
 
   return (
-    <Shell route={route.name}>
+    <Shell route={route.name} onHelp={features.walkthrough ? () => startWalkthrough("help") : undefined}>
       <Screen route={route} />
+      {features.walkthrough && <Walkthrough route={route.name} />}
     </Shell>
   );
 }
@@ -64,13 +66,13 @@ const screenName = (n: RouteName) => (n === "how" ? "how_it_works" : n);
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
-    case "welcome": return <Welcome onStartWalkthrough={() => navigate(PATHS.screen)} />;
+    case "welcome": return <Welcome onStartWalkthrough={() => startWalkthrough("welcome")} />;
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;
     case "dashboard": return <Dashboard />;
     case "graveyard": return <Graveyard />;
-    case "how": return <HowItWorks />;
+    case "how": return <HowItWorks onReplay={features.walkthrough ? () => startWalkthrough("how_it_works") : undefined} />;
     case "feedback": return <Feedback />;
     case "notfound": return <NotFound />;
     default: return null;

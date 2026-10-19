@@ -23,12 +23,13 @@ export const CONTROLS = [
   // graveyard
   "graveyard_search", "graveyard_filter", "graveyard_entry_open", "graveyard_sheet_close", "graveyard_source_link", "graveyard_clear",
   // how it works
-  "how_registry_link", "how_try_it",
+  "how_replay_walkthrough", "how_registry_link", "how_try_it",
   // feedback
   "feedback_role", "feedback_useful", "feedback_section", "feedback_wrong", "feedback_would_use", "feedback_email", "feedback_submit", "feedback_screen_another",
   // dashboard (pitch edition only: never logged, registered so the coverage test covers it)
   "dashboard_search", "dashboard_filter_status", "dashboard_filter_category", "dashboard_open_report", "dashboard_clear",
   // walkthrough
+  "walkthrough_next", "walkthrough_back", "walkthrough_skip", "walkthrough_done", "walkthrough_how_it_works",
   // not found
   "notfound_home",
 ] as const;

@@ -204,7 +204,8 @@
     ],
     "walkthrough_started.from": [
       "welcome",
-      "help"
+      "help",
+      "how_it_works"
     ],
     "walkthrough_step_time.ended_by": [
       "next",
@@ -310,6 +311,7 @@
     "graveyard_sheet_close",
     "graveyard_source_link",
     "graveyard_clear",
+    "how_replay_walkthrough",
     "how_registry_link",
     "how_try_it",
     "feedback_role",
@@ -325,6 +327,11 @@
     "dashboard_filter_category",
     "dashboard_open_report",
     "dashboard_clear",
+    "walkthrough_next",
+    "walkthrough_back",
+    "walkthrough_skip",
+    "walkthrough_done",
+    "walkthrough_how_it_works",
     "notfound_home"
   ],
   "panel_viewed_rule": {

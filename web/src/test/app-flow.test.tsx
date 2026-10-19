@@ -101,6 +101,42 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
   });
 });
 
+describe("walkthrough", () => {
+  const card = () => screen.getByRole("dialog", { name: /./ });
+  it("starts from Welcome, never blocks the tool, follows the run to the report, and can be skipped and replayed", async () => {
+    const { tm } = await loadApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Start with walkthrough" }));
+    expect(await screen.findByRole("heading", { name: "Paste an idea" })).toBeTruthy();
+    expect(card().textContent).toContain("1 of 11");
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByRole("heading", { name: "Or load a sample" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    expect(screen.getByRole("heading", { name: "Paste an idea" })).toBeTruthy();
+    // The page stays usable while the tour is open.
+    fireEvent.click(screen.getByRole("button", { name: "Mental-health journaling app" }));
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByRole("heading", { name: "Press Run" })).toBeTruthy();
+    run();
+    expect(await screen.findByRole("heading", { name: "Five steps, in order" })).toBeTruthy();
+    await reportShown();
+    expect(await screen.findByRole("heading", { name: "Counts, not a score" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Skip tour/ }));
+    expect(screen.queryByRole("heading", { name: "Counts, not a score" })).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Replay the walkthrough" })[0]);
+    expect(await screen.findByRole("heading", { name: "Paste an idea" })).toBeTruthy();
+    expect(location.hash).toBe("#/screen");
+    const t = types(tm);
+    expect(t.filter(x => x === "walkthrough_started").length).toBe(2);
+    expect(t).toContain("walkthrough_step_time");
+    const ended = tm.events().find((e: { type: string }) => e.type === "walkthrough_ended");
+    expect(ended.payload).toEqual({ how: "skip", at_step: "summary" });
+    const back = tm.events().find((e: { type: string; payload: { ended_by?: string } }) => e.type === "walkthrough_step_time" && e.payload.ended_by === "back");
+    expect(back.payload.step).toBe("samples");
+  }, 20000);
+});
+
 describe("feedback", () => {
   it("is stored under its own random id, never with the usage events", async () => {
     const calls = stubFetch(() => json({ stored: 1 }));

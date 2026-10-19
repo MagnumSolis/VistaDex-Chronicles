@@ -1,7 +1,7 @@
 // Regression tests for "the idea text survives the consent dialog and the requested run happens".
 // Each test loads a fresh module graph, so telemetry starts with no consent recorded.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const loadApp = async () => {
   const { App } = await import("@/App");
@@ -10,17 +10,18 @@ const loadApp = async () => {
   return { App, SAMPLE_IDEA, study };
 };
 const ideaBox = () => screen.getByLabelText("Idea text") as HTMLTextAreaElement;
-const nav = (name: RegExp) => within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name });
+// Navigation is by hash route; the app re-renders on hashchange.
+const go = (path: string) => act(() => { location.hash = path; window.dispatchEvent(new HashChangeEvent("hashchange")); });
 const reportShown = () => waitFor(() => expect(screen.getByText("Screening report")).toBeTruthy(), { timeout: 8000 });
 
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); vi.resetModules(); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); history.replaceState(null, "", "/"); vi.resetModules(); });
 afterEach(() => cleanup());
 
 describe("consent dialog keeps the idea and the run", () => {
   it("decline on entering the screen → load sample → run works", async () => {
     const { App, SAMPLE_IDEA } = await loadApp();
     render(<App />);
-    fireEvent.click(nav(/Screen/));
+    go("#/screen");
     fireEvent.click(await screen.findByRole("button", { name: "Use without taking part" }));
     fireEvent.click(screen.getByRole("button", { name: "Load sample idea" }));
     fireEvent.click(screen.getByRole("button", { name: /Run pipeline/ }));
@@ -32,7 +33,7 @@ describe("consent dialog keeps the idea and the run", () => {
   it("agree on entering the screen → load sample → answer the pre-use question → run works", async () => {
     const { App, SAMPLE_IDEA } = await loadApp();
     render(<App />);
-    fireEvent.click(nav(/Screen/));
+    go("#/screen");
     fireEvent.click(await screen.findByRole("button", { name: "I agree — take part" }));
     fireEvent.click(screen.getByRole("button", { name: "Load sample idea" }));
     fireEvent.click(screen.getByRole("button", { name: /Run pipeline/ }));
@@ -50,7 +51,7 @@ describe("consent dialog keeps the idea and the run", () => {
       localStorage.clear(); vi.resetModules(); cleanup();
       const { App, SAMPLE_IDEA } = await loadApp();
       render(<App />);
-      fireEvent.click(nav(/Screen/));
+      go("#/screen");
       fireEvent.click(await screen.findByRole("button", { name: "Use without taking part" }));
       fireEvent.click(screen.getByRole("button", { name: "Load sample idea" }));
       fireEvent.click(screen.getByRole("button", { name: "Read the study information" }));
@@ -65,7 +66,7 @@ describe("consent from an earlier study version is asked again", () => {
     localStorage.setItem("vistadex.study.v1", JSON.stringify({ session_id: "s", consent: "given", consent_at: "t", seq: 1, sent: 0, events: [] }));
     const { App } = await loadApp();
     render(<App />);
-    fireEvent.click(nav(/Screen/));
+    go("#/screen");
     expect(await screen.findByRole("button", { name: "I agree — take part" })).toBeTruthy();
   }, 15000);
 });

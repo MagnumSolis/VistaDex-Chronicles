@@ -101,6 +101,38 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
   });
 });
 
+describe("feedback", () => {
+  it("is stored under its own random id, never with the usage events", async () => {
+    const calls = stubFetch(() => json({ stored: 1 }));
+    const { tm } = await loadApp({ proxy: true });
+    fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
+    go("#/feedback");
+    fireEvent.click(await screen.findByRole("button", { name: "Send feedback" }));
+    expect(await screen.findByText("Answer at least one question first.")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Investor"));
+    fireEvent.click(screen.getByLabelText("Objections"));
+    fireEvent.change(screen.getByLabelText("What was wrong or missing?"), { target: { value: "Needs EU sources" } });
+    fireEvent.change(screen.getByLabelText(/Email, if we may follow up/), { target: { value: "vc@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    expect(await screen.findByText("Your answers are saved. We read every one.")).toBeTruthy();
+    const sent = calls.map(c => JSON.parse(c.body)).find(b => b.events?.[0]?.type === "feedback_submitted");
+    expect(sent.session_id).not.toBe(tm.sessionId());
+    expect(sent.events[0].payload).toEqual({ role: "investor", useful: null, section: "objections", would_use: null, wrong: "Needs EU sources", email: "vc@example.com" });
+    const usage = JSON.stringify(tm.events());
+    expect(usage).not.toContain("vc@example.com");
+    expect(usage).not.toContain("Needs EU sources");
+  });
+
+  it("in mock mode says honestly that nothing was sent", async () => {
+    await loadApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
+    go("#/feedback");
+    fireEvent.click(await screen.findByLabelText("Founder"));
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    expect(await screen.findByText(/no server connected \(mock mode\)/)).toBeTruthy();
+  });
+});
+
 describe("refusals and failures show friendly messages on Screen an idea", () => {
   const refuse = async (status: number, body: unknown) => {
     stubFetch(url => (url.endsWith("/screen") ? json(body, status) : json({ stored: 1 })));

@@ -25,6 +25,7 @@ export const CONTROLS = [
   // how it works
   "how_registry_link", "how_try_it",
   // feedback
+  "feedback_role", "feedback_useful", "feedback_section", "feedback_wrong", "feedback_would_use", "feedback_email", "feedback_submit", "feedback_screen_another",
   // dashboard (pitch edition only: never logged, registered so the coverage test covers it)
   "dashboard_search", "dashboard_filter_status", "dashboard_filter_category", "dashboard_open_report", "dashboard_clear",
   // walkthrough

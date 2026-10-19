@@ -31,6 +31,8 @@ describe("pitch edition", () => {
     await waitFor(() => expect(location.hash).toMatch(/^#\/report\/r1$/), { timeout: 10000 });
     go("#/welcome");
     await waitFor(() => expect(location.hash).toBe("#/dashboard")); // no Welcome in pitch
+    go("#/feedback");
+    await waitFor(() => expect(location.hash).toBe("#/dashboard")); // no Feedback in pitch
     expect(await screen.findByText("Ideas screened")).toBeTruthy();
 
     window.dispatchEvent(new Event("pagehide"));

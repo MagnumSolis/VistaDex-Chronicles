@@ -64,7 +64,8 @@ export function installControlTracking() {
     if (!el) return;
     const control = el.dataset.control!;
     if (!isControl(control)) { console.warn(`telemetry: unregistered control "${control}"`); return; }
-    if (el instanceof HTMLInputElement && el.type === "text") return;
+    // Text fields report field_edited (length only) when left, not a press.
+    if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && ["text", "search", "email"].includes(el.type))) return;
     const value = el.dataset.controlValue;
     track("control_pressed", { control, screen: currentScreen, ...(value !== undefined ? { value } : {}) });
   }, true);

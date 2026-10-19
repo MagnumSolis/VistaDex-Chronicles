@@ -13,12 +13,13 @@ import { ReportScreen } from "@/screens/ReportScreen";
 import { Dashboard } from "@/screens/Dashboard";
 import { Graveyard } from "@/screens/Graveyard";
 import { HowItWorks } from "@/screens/HowItWorks";
+import { Feedback } from "@/screens/Feedback";
 
 // Routes an edition does not have.
 function available(name: RouteName) {
   if (name === "dashboard") return features.dashboard;
   if (name === "welcome") return features.welcome;
-  if (name === "feedback") return false; // added in a later screen
+  if (name === "feedback") return features.feedback;
   return true;
 }
 // Before the Welcome notice is answered (public, first visit), only Welcome and How it works
@@ -70,6 +71,7 @@ function Screen({ route }: { route: Route }) {
     case "dashboard": return <Dashboard />;
     case "graveyard": return <Graveyard />;
     case "how": return <HowItWorks />;
+    case "feedback": return <Feedback />;
     case "notfound": return <NotFound />;
     default: return null;
   }

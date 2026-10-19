@@ -51,4 +51,4 @@ VistaDex is an evidence-linked screening tool for accelerator / VC / university 
 ## Commands
 - `npm test` — node tests (pipeline, proxy, telemetry, study_version guard). `npm run test:web` — design-token contrast tests.
 - `npm run serve` — web/ (Vite + React) dev server on :5173. `npm run build` — static build in web/dist. `npm run dev-proxy` — Worker handler in Node on :8787.
-- `npm run parity` — replays the participant flow and checks telemetry against tests/fixtures/event-contract.json. `npm run a11y` — axe + keyboard + small-width checks. Both need the dev server; run both after any UI change.
+- `npm run parity` — replays the participant flow and checks telemetry against tests/fixtures/event-contract.json. `npm run a11y` — axe + keyboard + small-width checks. Both need the dev server; run both after any UI change. `npm --prefix web run access-e2e` — access-code flow in Chrome (stubbed proxy).

@@ -125,6 +125,7 @@ docs/DEPLOY.md              deployment + data export
 - Timestamped events under a random anonymous session ID: claim expanded, source clicked, objections/graveyard viewed, time on report, ratings, survey.
 - No names, emails, IP addresses or user agents. Idea text is stored (participants are warned not to include identifying details).
 - Participants can download their data (JSON/CSV) and withdraw (local + server deletion). Researchers export from the Worker with a token.
+- Participant links carry a shared study access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen`. The code keeps out crawlers and casual visitors, not anyone who has the link — see `docs/DEPLOY.md` §3b.
 - Every event carries `study_version` (`2026-10-pilot-2` = redesigned UI). The event contract in `tests/fixtures/event-contract.json` is checked by `npm run parity`.
 
 ---

@@ -50,6 +50,7 @@ npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put MISTRAL_API_KEY
 npx wrangler secret put TINYFISH_API_KEY
 npx wrangler secret put EXPORT_TOKEN      # a long random string; only researchers get it
+npx wrangler secret put ACCESS_CODES      # the study access code (see section 3b), e.g. K7Q2-MX9P
 ```
 
 Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
@@ -60,6 +61,27 @@ Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
 ## 3. Allowed origins
 
 `ALLOWED_ORIGINS` in `wrangler.toml` lists the browser origins that may call the proxy. For GitHub Pages the origin is just the scheme and host, `https://magnumsolis.github.io`, not the repo path. Remove the localhost entries if you don't want local frontends to reach the deployed proxy.
+
+## 3b. Access code, rate limits and daily cap
+
+**What the access code does and does not do.** The access code stops crawlers, bots and casual visitors who stumble on the proxy URL. It does **not** stop anyone who has the participant link: the code is in that link, so whoever receives a forwarded link can use the study. It is a gate against noise, not authentication.
+
+**Set it up**
+1. Pick one shared code (letters and digits, e.g. `K7Q2-MX9P`) and store it: `npx wrangler secret put ACCESS_CODES`. Several codes can be given comma-separated (useful for rotating: add the new one, share the new link, remove the old one later).
+2. `ACCESS_REQUIRED = "true"` is already set in `wrangler.toml`. If the secret is missing the Worker answers **503** to `/screen` and `/events` — it fails closed, never open.
+3. The participant link is the site URL with the code in the fragment:
+   `https://magnumsolis.github.io/VistaDex-Chronicles/#code=K7Q2-MX9P`
+   The fragment is never sent to GitHub Pages. The app keeps the code in `sessionStorage` for that tab, removes it from the address bar, and sends it to the proxy (header `X-VistaDex-Access` on `/screen`, field `access_code` in `/events` uploads). It is never stored with events, traces or logs.
+4. Withdrawal (`DELETE /session/:id`) does not need the code, so participants can always withdraw.
+5. Without the code a participant sees: "This study link is missing its access code. Please open the link you were given." (the existing `run_failed` event records it).
+
+**Per-IP rate limits** — `/screen` 30 requests / 60 s, `/events` 60 / 60 s, using the Workers Rate Limiting API bindings `SCREEN_LIMITER` and `EVENTS_LIMITER` in `wrangler.toml`. Needs Wrangler 4.36 or later (pinned in `worker/package.json`). Limits are counted per Cloudflare location, not globally. The client IP is read only as the limiter key and is never stored or logged. Refused requests get **429** with `Retry-After: 60` and the participant sees "Too many requests right now. Please wait a minute and try again."
+
+> **Check before deploy:** confirm in the Cloudflare docs or dashboard that the Rate Limiting binding is available on your plan (this could not be confirmed while writing this guide). If it is not, delete the two `[[ratelimits]]` blocks from `wrangler.toml` — the Worker skips rate limiting when the bindings are absent — and rely on the access code plus the daily cap. Dashboard WAF rate-limiting rules are an alternative only if the Worker runs on a custom domain; they do not apply to `*.workers.dev`.
+
+**Global daily cap on `/screen`** — `SCREEN_DAILY_CAP` in `wrangler.toml` (default `300` runs per UTC day; `"0"` turns it off). When it is reached, `/screen` answers **429** `{"error":"daily_cap"}` until 00:00 UTC (05:30 IST), and participants see "The study is paused for today. Please try again tomorrow." with `run_failed` recorded. Telemetry uploads and withdrawal are not capped.
+
+Why the counter lives in **D1, not KV**: the cap needs an exact, atomic "add one unless the limit is reached". D1 does that in a single SQL statement (`INSERT … ON CONFLICT DO UPDATE … WHERE screens < cap RETURNING`) on a strongly consistent database the Worker already uses. KV is eventually consistent, has no atomic increment (two concurrent runs could both read 299 and both pass) and limits writes to the same key to about one per second, so it would let the cap be overshot. The counter table is `daily_counters` in `schema.sql` — re-run `npm run db:init` after pulling this change.
 
 ## 4. Deploy the Worker
 
@@ -72,10 +94,10 @@ The Worker imports `../../prototype/core/*`, so deploy from inside a full checko
 Smoke test (no browser needed):
 
 ```bash
-curl -s -X POST "https://vistadex-proxy.<subdomain>.workers.dev/screen" -H "Content-Type: application/json" -d '{"idea_text":"The legal-tech market is worth $27B globally."}' -D -
+curl -s -X POST "https://vistadex-proxy.<subdomain>.workers.dev/screen" -H "Content-Type: application/json" -H "X-VistaDex-Access: <your code>" -d '{"idea_text":"The legal-tech market is worth $27B globally."}' -D -
 ```
 
-Look for `X-VistaDex-Mode: live` in the response headers. `mock` means no provider keys were picked up.
+Look for `X-VistaDex-Mode: live` in the response headers. `mock` means no provider keys were picked up. Without the header you should get `401`; if you get `503`, the `ACCESS_CODES` secret is missing.
 
 ## 5. Point the frontend at the proxy
 
@@ -157,6 +179,6 @@ npm run a11y                      # axe-core + keyboard-only flow + small-width 
 
 - **Run `npm run prelaunch` before sharing the participant link.** It fails while any team decision is still open: `TODO(team)` retention period and withdrawal contact (shown to participants as bracketed placeholders), survey items not signed off (`SURVEY.signedOff`), or no `PROXY_URL`.
 
-- **`/screen` is open to anyone who finds the URL.** CORS only stops other websites, not scripts, so someone could use up the free provider quotas. Add a Cloudflare rate-limiting rule on `/screen`, or a shared study code, before sharing the link.
+- **The access code is not authentication.** It keeps crawlers and casual visitors out; anyone with the participant link can still run screens and spend the provider free tiers. The per-IP rate limits and the daily cap bound the damage. Check the rate-limit binding works on your plan (section 3b).
 - **No automatic retention or deletion schedule.** Decide how long study data is kept and delete it at the end of the course.
 - **Graveyard matching is lexical (TF-IDF).** MiniLM embeddings are planned, and the threshold must be re-calibrated when switching.

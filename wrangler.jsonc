@@ -4,12 +4,19 @@
   "main": "worker/index.js",
   "compatibility_date": "2025-07-01",
   "assets": {
-    "directory": "./prototype",
+    "directory": "./public",
     "not_found_handling": "single-page-application"
   },
   "observability": {
     "enabled": true
   },
+  "d1_databases": [
+    {
+      "binding": "EVENTS",
+      "database_name": "vistadex_events",
+      "database_id": "52b5d181-92ae-4810-8d33-0a86cb3478ba"
+    }
+  ],
   "vars": {
     "DEMO_MODE_DEFAULT": "auto"
   }

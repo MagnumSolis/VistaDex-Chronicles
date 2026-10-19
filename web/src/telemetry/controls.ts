@@ -29,7 +29,7 @@ export const CONTROLS = [
   // dashboard (pitch edition only: never logged, registered so the coverage test covers it)
   "dashboard_search", "dashboard_filter_status", "dashboard_filter_category", "dashboard_open_report", "dashboard_clear",
   // walkthrough
-  "walkthrough_next", "walkthrough_back", "walkthrough_skip", "walkthrough_done", "walkthrough_how_it_works",
+  "walkthrough_next", "walkthrough_back", "walkthrough_skip", "walkthrough_done", "walkthrough_how_it_works", "walkthrough_resume",
   // not found
   "notfound_home",
 ] as const;

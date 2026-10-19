@@ -332,6 +332,7 @@
     "walkthrough_skip",
     "walkthrough_done",
     "walkthrough_how_it_works",
+    "walkthrough_resume",
     "notfound_home"
   ],
   "panel_viewed_rule": {

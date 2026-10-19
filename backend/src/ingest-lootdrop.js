@@ -67,11 +67,21 @@ export function parseStartupPage(html, url) {
 }
 
 async function fetchSitemapUrls() {
-  const res = await fetch(SITEMAP, { headers: { "user-agent": "VistaDex-GraveyardBot/0.1 (research; contact: vistadex.team@gmail.com)" } });
+  const res = await fetchWithTimeout(SITEMAP, { headers: { "user-agent": "VistaDex-GraveyardBot/0.1 (research; contact: vistadex.team@gmail.com)" } }, 30000);
   if (!res.ok) throw new Error(`sitemap ${res.status}`);
   const xml = await res.text();
   const urls = [...xml.matchAll(/<loc>(https:\/\/www\.loot-drop\.io\/startup\/[^<]+)<\/loc>/g)].map(m => m[1]);
   return urls;
+}
+
+async function fetchWithTimeout(url, opts = {}, ms = 20000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 async function main() {
@@ -88,12 +98,13 @@ async function main() {
   const staging = client.db(env.MONGODB_DB || DB_NAME).collection("graveyard_staging");
 
   let ok = 0, failed = 0, skipped = 0;
-  for (const url of targets) {
+  for (const [i, url] of targets.entries()) {
     const slug = url.split("/startup/")[1];
-    const existing = await staging.findOne({ source_urls: url });
-    if (existing) { skipped++; continue; }
+    process.stdout.write(`[${i + 1}/${targets.length}] ${slug} … `);
+    const existing = await staging.findOne({ source_urls: url }).catch(e => { throw new Error(`mongo findOne failed: ${e.message}`); });
+    if (existing) { skipped++; console.log("skip (already present)"); continue; }
     try {
-      const res = await fetch(url, { headers: { "user-agent": "VistaDex-GraveyardBot/0.1 (research; contact: vistadex.team@gmail.com)" } });
+      const res = await fetchWithTimeout(url, { headers: { "user-agent": "VistaDex-GraveyardBot/0.1 (research; contact: vistadex.team@gmail.com)" } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
       const parsed = parseStartupPage(html, url);
@@ -105,17 +116,16 @@ async function main() {
         { company_name: entry.company_name, year_closed: entry.year_closed },
         { $set: entry },
         { upsert: true }
-      );
+      ).catch(e => { throw new Error(`mongo write failed: ${e.message}`); });
       ok++;
-      const total = targets.length;
-      if (ok % 5 === 0 || ok === total) console.log(`  [${ok}/${total}] ${entry.company_name} (${entry.year_closed})`);
+      console.log(`ok — ${entry.company_name} (${entry.year_closed})`);
     } catch (e) {
       failed++;
-      console.error(`✗ ${slug}: ${e.message}`);
+      console.log(`FAILED: ${e.message}`);
     }
     await new Promise(r => setTimeout(r, DELAY_MS));
   }
-  console.log(`Done: ${ok} ingested, ${skipped} skipped (already present), ${failed} failed`);
+  console.log(`\nDone: ${ok} ingested, ${skipped} skipped (already present), ${failed} failed`);
   await client.close();
 }
 

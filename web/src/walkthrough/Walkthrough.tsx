@@ -25,12 +25,14 @@ export const STEPS: Step[] = [
   { id: "details", route: "screen", target: "[data-tour=details]", title: "Problem, solution, moat", body: "Write them the way you would argue them. VistaDex pulls the checkable claims out of these fields, so concrete statements get checked." },
   { id: "context", route: "screen", target: "[data-tour=context]", title: "Industry, role and markets", body: "Optional. Industry and role help compare reports on the Reports page; the markets you pick shape the Legal section." },
   { id: "run", route: "screen", target: "[data-tour=run]", title: "Press Run", body: "The screening takes a few seconds. The tour carries on when the report is ready.", gate: "run" },
-  { id: "summary", route: "report", target: "#section-summary", title: "Counts, not a score", body: "How many claims ended up in each status. There is no overall score or verdict: the report gives evidence and you decide." },
-  { id: "claims", route: "report", target: "#section-claims", title: "Claims and their evidence", body: "Each claim shows its status, why it got it, and how many independent sources back it. Open the sources and read them yourself. Unverified is a normal result." },
-  { id: "leads", route: "report", target: "#section-graveyard", title: "Leads to check", body: "Startups that shut down after trying something similar, and why. Matching is by shared words, so check whether they are really alike." },
+  { id: "score", route: "report", target: "[data-tour=score]", title: "A score you can take apart", body: "The VistaDex Score is a weighted mean of the axes that have enough data. Open “How this was calculated” to see every input, weight and what was searched. It describes the evidence, not whether the idea will work." },
+  { id: "profile", route: "report", target: "#section-profile", title: "The profile", body: "Each scored axis on one chart, and how the claims came out. An axis without enough data is marked n/a and left out, never counted as zero." },
+  { id: "claims", route: "report", target: "#section-claims", title: "Claims and their evidence", body: "Each claim shows its status, why it got it, and the independent sources behind it with their quotes. Unverified is a normal result." },
+  { id: "leads", route: "report", target: "#section-graveyard", title: "Leads to check", body: "Products that fetched pages name as already doing something similar, and startups that shut down after trying it. Check whether they are really alike." },
   { id: "objections", route: "report", target: "#section-objections", title: "Objections", body: "The strongest arguments against the idea. Give them the same attention as the claims." },
-  { id: "legal", route: "report", target: "#section-legal", title: "Legal and market", body: "Registries, rules and market size for your target markets. Not produced in this version yet; the sections say so." },
-  { id: "finish", route: "report", title: "That's the tour", body: "Replay it any time with the ? button. How it works explains the evidence rule and the limits of this prototype." },
+  { id: "big_tech", route: "report", target: "#section-big_tech", title: "Big Tech risk", body: "Whether a big platform company already offers something similar. A company counts only with 2 independent sources; fewer stays unverified." },
+  { id: "legal", route: "report", target: "#section-legal", title: "Legal and market", body: "Registries, rules and market size for your target markets. Where this version can't produce them, the section says so." },
+  { id: "finish", route: "report", title: "That's the tour", body: "Replay it any time with the ? button. Your reports are listed on the Reports page; How it works explains every formula." },
 ];
 const GATE = STEPS.findIndex(s => s.gate === "run");
 const FIRST_REPORT = STEPS.findIndex(s => s.route === "report");

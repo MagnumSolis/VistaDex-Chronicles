@@ -2,12 +2,14 @@ import { useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useSectionInView } from "@/telemetry/useSectionInView";
 
-export type SectionId = "summary" | "claims" | "graveyard" | "objections" | "legal" | "market";
+export type SectionId = "summary" | "profile" | "claims" | "graveyard" | "objections" | "big_tech" | "legal" | "market";
 export const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "summary", label: "Summary" },
+  { id: "profile", label: "Profile" },
   { id: "claims", label: "Claims" },
-  { id: "graveyard", label: "Graveyard" },
+  { id: "graveyard", label: "Leads to check" },
   { id: "objections", label: "Objections" },
+  { id: "big_tech", label: "Big Tech risk" },
   { id: "legal", label: "Legal" },
   { id: "market", label: "Market" },
 ];

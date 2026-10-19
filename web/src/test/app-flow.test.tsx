@@ -52,7 +52,23 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     expect(started.payload).toMatchObject({ markets: ["EU"], sample: null, role: "founder", industries: ["AI/ML", "SaaS/B2B"] });
     expect(started.payload.field_chars.pitch).toBe(pitch.length);
     // mock mode: legal and market show clearly labelled sample data, only for the picked market
-    expect(screen.getAllByText(/Sample data, not real/).length).toBe(2);
+    // mock mode: competitors, Big Tech, legal and market are clearly labelled sample data
+    expect(screen.getAllByText(/Sample data, not real/).length).toBe(4);
+    // the score is shown with its breakdown one tap away, and says it includes sample data
+    expect(screen.getByText("VistaDex Score")).toBeTruthy();
+    expect(screen.getByText("Includes sample data")).toBeTruthy();
+    const how = screen.getByRole("button", { name: /How this was calculated/ });
+    expect(how.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(how);
+    expect(how.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getAllByText(/Weights: Novelty 25, Market 20/).length).toBe(1);
+    expect(screen.getByText(/Checked against 18 entries \(unverified seed\)/)).toBeTruthy();
+    // charts have text equivalents
+    expect(screen.getByRole("img", { name: /n\/a = not enough data/ })).toBeTruthy();
+    expect(screen.getByRole("table", { name: /Each axis out of 100/ })).toBeTruthy();
+    expect(screen.getByRole("table", { name: /Claim outcomes/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /Products already doing something similar/ })).toBeTruthy();
+    expect(screen.getByText(/Unverified risk/)).toBeTruthy();
     expect(screen.getByRole("heading", { name: /European Union/ })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: /United States/ })).toBeNull();
   }, 20000);
@@ -184,7 +200,8 @@ describe("live runs never get legal or market data", () => {
     fillIdea();
     run();
     await reportShown();
-    expect(screen.getAllByText("Not available in this version yet").length).toBe(2);
+    expect(screen.getAllByText("Not available in this version yet").length).toBe(3); // Big Tech, legal, market
+    expect(screen.getByText(/Competitor search: not available in this version yet/)).toBeTruthy();
     expect(screen.queryByText(/Sample data, not real/)).toBeNull();
   });
 });

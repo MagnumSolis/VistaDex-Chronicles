@@ -43,11 +43,11 @@ describe("walkthrough gating", () => {
     expect(card()).toBeNull();                                  // hidden while running
     expect(screen.queryByRole("button", { name: /Resume tour/ })).toBeNull();
     await reportShown();
-    await waitFor(() => expect(title()).toBe("Counts, not a score")); // first report step
+    await waitFor(() => expect(title()).toBe("A score you can take apart")); // first report step
     fireEvent.click(screen.getByRole("button", { name: /Skip tour/ }));
     expect(card()).toBeNull();
     const ended = tm.events().find((e: { type: string }) => e.type === "walkthrough_ended");
-    expect(ended.payload).toEqual({ how: "skip", at_step: "summary" });
+    expect(ended.payload).toEqual({ how: "skip", at_step: "score" });
     expect(types(tm)).toContain("walkthrough_step_time");
   }, 20000);
 

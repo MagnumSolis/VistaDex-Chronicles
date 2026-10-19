@@ -194,11 +194,14 @@
     ],
     "section_time.section": [
       "summary",
+      "profile",
       "claims",
       "graveyard",
       "objections",
+      "big_tech",
       "legal",
-      "market"
+      "market",
+      "score_breakdown"
     ],
     "report_time.ended_by": [
       "new_run",
@@ -222,15 +225,17 @@
       "done"
     ],
     "walkthrough.step": [
-      "idea",
       "samples",
-      "markets",
+      "basics",
+      "details",
+      "context",
       "run",
-      "tracker",
-      "summary",
+      "score",
+      "profile",
       "claims",
       "leads",
       "objections",
+      "big_tech",
       "legal",
       "finish"
     ],
@@ -332,6 +337,9 @@
     "running_go_screen",
     "report_section_jump",
     "idea_text_toggle",
+    "score_breakdown_toggle",
+    "competitor_link",
+    "big_tech_source_link",
     "sources_toggle",
     "source_link",
     "lead_source_link",

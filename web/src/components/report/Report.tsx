@@ -1,4 +1,4 @@
-// ── Report — one long scrolling page: Summary · Claims · Graveyard · Objections · Legal · Market ──
+// ── Report — one long page: Summary · Profile · Claims · Leads to check · Objections · Big Tech risk · Legal · Market ──
 import { useEffect, useState } from "react";
 import { ArrowRight, FileDown, MessageSquareText, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { GraveyardLeads } from "./GraveyardLeads";
 import { Objections } from "./Objections";
 import { LegalSection, MarketSection } from "./LegalMarket";
 import { ReportSection, SECTIONS, type SectionId } from "./ReportSection";
+import { BigTech, Competitors, Profile, ScoreSummary } from "./ScoreParts";
 
 const MODE_LABEL: Record<RunMode | "demo", string> = {
   live: "Live run",
@@ -31,7 +32,8 @@ export function Report({ entry }: { entry: ReportEntry }) {
   const counts = Object.fromEntries(STATUS_ORDER.map(s => [s, report.claims.filter(c => c.status === s).length]));
   const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
   const [ideaOpen, setIdeaOpen] = useState(false);
-  const longIdea = report.idea_text.length > 320;
+  const input = report.input;
+  const longIdea = input ? Boolean(input.problem || input.solution || input.moat) : report.idea_text.length > 320;
 
   const jump = (id: SectionId) => {
     const el = document.getElementById(`section-${id}`);
@@ -40,7 +42,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
     document.getElementById(`section-${id}-title`)?.focus({ preventScroll: true });
   };
   const another = () => { clearDraft(); navigate(PATHS.screen); };
-  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: report.graveyard_matches.length, objections: report.objections.length };
+  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: report.graveyard_matches.length + (report.competitors?.length ?? 0), objections: report.objections.length };
 
   return (
     <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8 print:block">
@@ -65,8 +67,21 @@ export function Report({ entry }: { entry: ReportEntry }) {
         <ReportSection id="summary" title="Summary" runId={runId}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 max-w-[70ch]">
-              <p className="eyebrow text-muted-foreground">{entry.kind === "demo" ? entry.title : "Your idea"}</p>
-              <p id="report-idea" className={cn("mt-2 whitespace-pre-line text-[1.0625rem] leading-relaxed", longIdea && !ideaOpen && "line-clamp-4 print:line-clamp-none")}>{report.idea_text}</p>
+              <p className="eyebrow text-muted-foreground">{entry.kind === "demo" ? "Demo idea" : "Your idea"}</p>
+              {input ? (
+                <div id="report-idea" className="mt-2">
+                  <p className="font-display text-[1.5rem] leading-tight">{input.title}</p>
+                  <p className="mt-1 text-[1.0625rem] leading-relaxed">{input.pitch}</p>
+                  <dl className={cn("mt-3 space-y-2 text-[0.9375rem] leading-relaxed", !ideaOpen && "hidden print:block")}>
+                    {(["problem", "solution", "moat"] as const).filter(k => input[k]).map(k => (
+                      <div key={k}><dt className="eyebrow text-muted-foreground">{k === "moat" ? "Different / moat" : k}</dt><dd>{input[k]}</dd></div>
+                    ))}
+                    {input.industries.length > 0 && <div><dt className="eyebrow text-muted-foreground">Industry</dt><dd>{input.industries.join(", ")}</dd></div>}
+                  </dl>
+                </div>
+              ) : (
+                <p id="report-idea" className={cn("mt-2 whitespace-pre-line text-[1.0625rem] leading-relaxed", longIdea && !ideaOpen && "line-clamp-4 print:line-clamp-none")}>{report.idea_text}</p>
+              )}
               {longIdea && (
                 <button type="button" onClick={() => setIdeaOpen(o => !o)} aria-expanded={ideaOpen} aria-controls="report-idea" data-control="idea_text_toggle"
                   className="mt-1 text-sm font-medium text-link underline underline-offset-4 print:hidden">
@@ -81,8 +96,10 @@ export function Report({ entry }: { entry: ReportEntry }) {
             </dl>
           </div>
 
-          {/* Counts, not a score: one tile per status with equal presence. */}
-          <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="summary">
+          <div className="mt-6"><ScoreSummary scores={report.scores} band={report.overlap_band} runId={runId} /></div>
+
+          {/* One tile per status with equal presence. */}
+          <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="summary">
             {STATUS_ORDER.map(st => {
               const meta = STATUS[st];
               const Icon = meta.icon;
@@ -100,9 +117,14 @@ export function Report({ entry }: { entry: ReportEntry }) {
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             <span className="font-mono text-foreground">{sources}</span> independent source{sources === 1 ? "" : "s"} across {report.claims.length} claim{report.claims.length === 1 ? "" : "s"}.
             A status needs at least two. Also in this report: <span className="font-mono text-foreground">{report.graveyard_matches.length}</span> lead{report.graveyard_matches.length === 1 ? "" : "s"} to check
-            and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. There is no overall score: you decide.
+            and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
           <Actions onAnother={another} />
+        </ReportSection>
+
+        <ReportSection id="profile" title="Profile" runId={runId}
+          intro="The five scored axes at a glance, and how the claims came out. An axis without enough data is marked n/a and left out, never shown as zero.">
+          <Profile report={report} />
         </ReportSection>
 
         <ReportSection id="claims" title="Claims & evidence" count={report.claims.length} runId={runId}
@@ -116,14 +138,21 @@ export function Report({ entry }: { entry: ReportEntry }) {
           )}
         </ReportSection>
 
-        <ReportSection id="graveyard" title="Leads to check" count={report.graveyard_matches.length} runId={runId}
-          intro="Startups that shut down after trying something that looks similar. A resemblance is a lead to verify, not a verdict.">
+        <ReportSection id="graveyard" title="Leads to check" count={report.graveyard_matches.length + (report.competitors?.length ?? 0)} runId={runId}
+          intro="Products already doing something similar, and startups that shut down after trying it. A resemblance is a lead to verify, not a verdict.">
+          <Competitors report={report} />
+          <h3 className="mb-3 font-display text-[1.375rem] leading-tight">Startups that shut down</h3>
           <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} />
         </ReportSection>
 
         <ReportSection id="objections" title="Objections" count={report.objections.length} runId={runId}
           intro="The strongest arguments against the idea, using what was found above. Read them as carefully as the claims.">
           <Objections objections={report.objections} />
+        </ReportSection>
+
+        <ReportSection id="big_tech" title="Big Tech risk" runId={runId}
+          intro="Whether a big platform company already offers or has announced something similar. Same rule as claims: a company counts with 2 independent sources.">
+          <BigTech risk={report.big_tech_risk} sample={Boolean(report.sample_fields?.includes("big_tech_risk"))} />
         </ReportSection>
 
         <ReportSection id="legal" title="Legal" runId={runId}

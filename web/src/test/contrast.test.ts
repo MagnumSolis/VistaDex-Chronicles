@@ -15,6 +15,7 @@ const PAIRS: [string, string, number][] = [
   // brand blocks
   ["on-lime", "lime", 4.5], ["foreground", "lime", 4.5],
   ["on-charcoal", "charcoal", 4.5], ["on-charcoal-muted", "charcoal", 4.5], ["lime", "charcoal", 4.5],
+  ["on-charcoal", "charcoal-raised", 4.5], ["on-charcoal-muted", "charcoal-raised", 4.5], ["lime", "charcoal-raised", 4.5], ["on-charcoal-muted", "charcoal", 3],
   // primary action (lime label on deep green) and its inverse on the page
   ["primary-foreground", "primary", 4.5], ["page", "on-page", 4.5],
   // status colour on its own tint and on paper (tags, count tiles, icons)

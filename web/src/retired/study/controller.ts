@@ -8,7 +8,9 @@
 
 import * as tm from "@proto/ui/telemetry.js";
 import { SCALE } from "@proto/ui/study-config.js";
-import type { ClaimStatus, ClaimType, RunMode, ScreenResult, ViewName } from "@/types";
+import type { ClaimStatus, ClaimType, RunMode, ScreenResult } from "@/types";
+
+type ViewName = "dashboard" | "screen" | "graveyard";
 
 type Run = { id: string; visibleMs: number; since: number | null; seen: Set<string> };
 

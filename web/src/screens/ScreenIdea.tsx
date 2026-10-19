@@ -1,131 +1,143 @@
-import { useCallback, useRef, useState } from "react";
-import { Play, TriangleAlert } from "lucide-react";
+// ── Screen an idea — the input ──
+import { useId, useState } from "react";
+import { ArrowRight, Check, LoaderCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { PipelineProgress, type StageView } from "@/components/PipelineProgress";
-import { Report } from "@/components/report/Report";
-import { SAMPLE_IDEA, liveMode, screenIdea, studyConfig } from "@/proto";
-import { FinishCard, StudyBar, TrustPre } from "@/study/StudyUI";
-import * as study from "@/study/controller";
-import { useStudyState } from "@/study/useStudy";
-import type { ScreenResult } from "@/types";
+import { PageTitle, Panel, Problem } from "@/components/ui-vd";
+import { cn } from "@/lib/utils";
+import { liveMode, studyConfig } from "@/proto";
+import { href, PATHS } from "@/router";
+import { SAMPLES } from "@/lib/samples";
+import { latestSessionReport, useSessionReports } from "@/lib/reports";
+import { clearRunError, errorCopy, reportPath, startRun, useRun } from "@/lib/run";
+import { JURISDICTIONS, type Jurisdiction } from "@/types";
 
-// Fixed per-stage animation time so progress is readable (same as the vanilla UI; no random jitter).
-const STAGE_ANIMATION_MS = 600;
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-const idleStages = (): StageView[] => [0, 1, 2, 3].map(() => ({ state: "idle" }));
+export const MAX_IDEA_CHARS = 6000; // same limit as the Worker (worker/src/index.js)
+const MARKET_LABEL: Record<Jurisdiction, string> = { EU: "European Union", USA: "United States", India: "India" };
 
-export function ScreenIdea({ onReadStudyInfo, onNeedConsent }: {
-  onReadStudyInfo: () => void;
-  // Asks the app to show the consent dialog, then calls resume() once the participant has chosen.
-  onNeedConsent: (resume: () => void) => void;
-}) {
-  const { participating } = useStudyState();
-  const [idea, setIdea] = useState("");
-  const [stages, setStages] = useState<StageView[]>(idleStages);
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<{ runId: string; data: ScreenResult } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [needsTrust, setNeedsTrust] = useState(false);
-  const reportRef = useRef<HTMLDivElement>(null);
+// The draft survives moving between screens (module memory only; never stored or logged).
+const draft: { text: string; markets: Jurisdiction[]; sample: string | null } = { text: "", markets: [], sample: null };
+export function clearDraft() { draft.text = ""; draft.markets = []; draft.sample = null; }
 
-  const onStage = useCallback(async (n: number, state: "running" | "done", note?: string) => {
-    setStages(prev => prev.map((s, i) => (i === n - 1 ? { state, note } : s)));
-    if (state === "running") await sleep(STAGE_ANIMATION_MS);
-  }, []);
+export function ScreenIdea() {
+  const run = useRun();
+  useSessionReports();
+  const last = latestSessionReport();
+  const [idea, setIdeaState] = useState(draft.text);
+  const [markets, setMarketsState] = useState<Jurisdiction[]>(draft.markets);
+  const [empty, setEmpty] = useState(false);
+  const hintId = useId();
+  const counterId = useId();
+  const running = run.status === "running";
 
-  async function run() {
-    if (running) return;
+  const setIdea = (text: string, sample: string | null = null) => {
+    draft.text = text; draft.sample = sample; setIdeaState(text); setEmpty(false); clearRunError();
+  };
+  const toggleMarket = (m: Jurisdiction) => {
+    const next = markets.includes(m) ? markets.filter(x => x !== m) : JURISDICTIONS.filter(x => x === m || markets.includes(x));
+    draft.markets = next; setMarketsState(next);
+  };
+
+  function submit() {
     const text = idea.trim();
-    if (!text) { setError("Please paste an idea first."); return; }
-    // Consent is normally answered on entering this screen. If a run is ever requested while it is
-    // still unanswered, ask first and then carry on with this same run — the idea text is kept.
-    if (study.consentStatus() === null) { onNeedConsent(() => { void run(); }); return; }
-    if (!study.canRun()) {
-      // The pre-use question must be answered first. Bring it into view and focus it (as the
-      // original UI did), so the click on Run never looks like it did nothing.
-      setNeedsTrust(true);
-      const slider = document.getElementById("trustPreInput");
-      slider?.scrollIntoView({ behavior: "smooth", block: "center" });
-      slider?.focus({ preventScroll: true });
-      return;
-    }
-    setNeedsTrust(false);
-    setRunning(true);
-    setError(null);
-    setResult(null);
-    setStages(idleStages());
-    const runId = study.runStarted({ ideaText: text, mode: liveMode() ? "live" : "mock" });
-    const t0 = performance.now();
-    try {
-      const data = (await screenIdea(text, { onStage })) as ScreenResult;
-      setResult({ runId, data });
-      study.runCompleted(runId, data, Math.round(performance.now() - t0));
-      requestAnimationFrame(() => reportRef.current?.focus({ preventScroll: true }));
-    } catch (err) {
-      console.error(err);
-      study.runFailed(runId, err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRunning(false);
-    }
+    if (!text) { setEmpty(true); document.getElementById("ideaInput")?.focus(); return; }
+    void startRun({ ideaText: text, markets, sample: draft.sample && SAMPLES.find(s => s.id === draft.sample)?.text === idea ? draft.sample : null });
   }
 
+  const copy = run.error ? errorCopy(run.error.code) : null;
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <header className="pt-2">
-        <h1 className="font-display text-[2.75rem] font-bold leading-[0.95] tracking-tight sm:text-[3.5rem]">Screen an idea</h1>
-        <p className="mt-3 max-w-[62ch] text-[1.0625rem] leading-relaxed text-muted-foreground">
-          Paste an idea. VistaDex checks its claims against independent sources, finds similar startups that failed, and lists objections. You make the decision.
-        </p>
-      </header>
+    <div>
+      <PageTitle eyebrow="Screen an idea" title="What's the idea?">
+        Paste a startup idea the way you would pitch it. VistaDex checks its claims, looks for startups that tried it before, and argues against it. It never gives a score.
+      </PageTitle>
 
-      <StudyBar onReadInfo={onReadStudyInfo} />
-      <div className={needsTrust ? "rounded-panel ring-2 ring-primary ring-offset-4 ring-offset-background" : undefined}><TrustPre /></div>
-
-      <div className="rounded-panel bg-card p-5 shadow-panel sm:p-7">
-        <Label htmlFor="ideaInput" className="font-display text-xl font-bold">Idea text</Label>
-        <p id="ideaHint" className="mt-1 text-sm text-muted-foreground">
-          {studyConfig.INPUT_WARNING.base}{participating ? studyConfig.INPUT_WARNING.stored : studyConfig.INPUT_WARNING.notStored}
-        </p>
-        <Textarea
-          id="ideaInput"
-          value={idea}
-          onChange={e => setIdea(e.target.value)}
-          aria-describedby="ideaHint"
-          className="mt-4 min-h-44 text-base leading-relaxed md:text-base"
-          placeholder="Example: We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally."
-        />
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <Button variant="outline" size="lg" onClick={() => setIdea(SAMPLE_IDEA)} disabled={running}>Load sample idea</Button>
-          <Button size="lg" onClick={run} disabled={running} aria-describedby={needsTrust ? "trust-needed" : undefined}>
-            <Play aria-hidden className="fill-current" /> {running ? "Running…" : "Run pipeline"}
-          </Button>
-        </div>
-        {needsTrust && participating && (
-          <p id="trust-needed" role="alert" className="mt-3 text-sm font-medium text-foreground">Please answer the question above before your first run.</p>
+      <div className="space-y-4">
+        {running && (
+          <p className="on-light flex flex-wrap items-center gap-3 rounded-card bg-background p-4 text-foreground">
+            <LoaderCircle aria-hidden className="size-5 motion-safe:animate-spin" /> A screening is running.
+            <a href={href(PATHS.running)} data-control="open_last_report" data-control-value="running" className="font-medium text-link underline underline-offset-4">See its progress</a>
+          </p>
         )}
-      </div>
-
-      <PipelineProgress stages={stages} />
-
-      {error && (
-        <div role="alert" className="flex gap-3 rounded-card bg-card p-5 shadow-card">
-          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-foreground" />
-          <div>
-            <p className="text-sm font-semibold">The screening did not run</p>
-            <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+        {copy && (
+          <div className="on-light">
+            <Problem title={copy.title}>
+              <p>{copy.body}</p>
+              {run.error?.code === "pipeline" || run.error?.code === "contract" || run.error?.code === "http"
+                ? <p className="mt-2 font-mono text-xs text-muted-foreground">{run.error.message}</p> : null}
+            </Problem>
           </div>
-        </div>
-      )}
+        )}
+        {!running && last && (
+          <a href={href(reportPath(last.id))} data-control="open_last_report" data-control-value="report"
+            className="on-page inline-flex items-center gap-2 text-[0.9375rem] font-medium text-lime underline underline-offset-4">
+            Back to your last report <ArrowRight aria-hidden className="size-4" />
+          </a>
+        )}
 
-      {result && (
-        <div ref={reportRef} tabIndex={-1} className="space-y-10 pt-2 outline-none" aria-live="polite">
-          <Report report={result.data.report} mode={result.data.mode} runId={result.runId} rateable={participating} />
-          {participating && <FinishCard key={result.runId} runId={result.runId} />}
-        </div>
-      )}
+        <Panel tab="Your idea" as="section" aria-labelledby="idea-tab" tabId="idea-tab">
+          <div data-tour="idea">
+            <label htmlFor="ideaInput" className="text-[0.9375rem] font-semibold">Idea text</label>
+            <p id={hintId} className="mt-1 text-sm text-muted-foreground">
+              {studyConfig.INPUT_WARNING.base}. {liveMode() ? "It is sent to our server to make the report." : "In this version it never leaves your browser."} It is not stored in usage records.
+            </p>
+            <Textarea
+              id="ideaInput"
+              data-control="idea_text"
+              value={idea}
+              maxLength={MAX_IDEA_CHARS}
+              onChange={e => setIdea(e.target.value)}
+              aria-describedby={`${hintId} ${counterId}${empty ? " idea-empty" : ""}`}
+              aria-invalid={empty || undefined}
+              className="mt-3 min-h-48 bg-card text-base leading-relaxed md:text-[1.0625rem]"
+              placeholder="Example: We are building … No such tool exists today that … The market is worth …"
+            />
+            <div className="mt-2 flex flex-wrap justify-between gap-2 text-sm">
+              <span id="idea-empty" role={empty ? "alert" : undefined} className="font-medium">{empty ? "Paste or type an idea first." : ""}</span>
+              <span id={counterId} className="font-mono text-muted-foreground">{idea.length.toLocaleString("en")} / {MAX_IDEA_CHARS.toLocaleString("en")} characters</span>
+            </div>
+          </div>
+
+          <div data-tour="samples" className="mt-6">
+            <p className="text-[0.9375rem] font-semibold">No idea handy? Load sample idea:</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {SAMPLES.map(s => (
+                <Button key={s.id} variant="outline" onClick={() => setIdea(s.text, s.id)} disabled={running}
+                  data-control="sample_load" data-control-value={s.id} aria-pressed={draft.sample === s.id && idea === s.text}
+                  className="aria-pressed:border-primary aria-pressed:bg-accent">
+                  {s.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <fieldset data-tour="markets" className="mt-6">
+            <legend className="text-[0.9375rem] font-semibold">Target markets <span className="font-normal text-muted-foreground">(optional)</span></legend>
+            <p className="mt-1 text-sm text-muted-foreground">Pick where you would launch. The report's Legal section covers these.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {JURISDICTIONS.map(m => {
+                const on = markets.includes(m);
+                return (
+                  <button key={m} type="button" aria-pressed={on} onClick={() => toggleMarket(m)} disabled={running}
+                    data-control="market_toggle" data-control-value={m}
+                    className={cn("inline-flex h-10 items-center gap-2 rounded-control border px-3.5 text-sm font-medium transition-colors duration-150 disabled:opacity-50",
+                      on ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card text-foreground hover:bg-accent")}>
+                    {on ? <Check aria-hidden className="size-4" /> : <span aria-hidden className="size-4 rounded-sm border border-input" />}
+                    {m}<span className="sr-only"> ({MARKET_LABEL[m]})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4 border-t pt-6">
+            <Button size="lg" onClick={submit} disabled={running} data-control="run_screening" data-tour="run" className="h-12 px-7 text-base">
+              {running ? <LoaderCircle aria-hidden className="motion-safe:animate-spin" /> : <Play aria-hidden className="fill-current" />}
+              {running ? "Running…" : "Run"}
+            </Button>
+            <p className="text-sm text-muted-foreground">Takes a few seconds{liveMode() ? " to a minute" : ""}. You can cancel while it runs.</p>
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }

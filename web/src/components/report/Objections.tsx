@@ -1,28 +1,23 @@
-import { forwardRef } from "react";
 import { SeverityTag } from "@/components/status";
-import { CardLabel, Section } from "@/components/Section";
+import { CardLabel } from "./ReportSection";
 import type { Objection } from "@/types";
 
-export const Objections = forwardRef<HTMLDivElement, { objections: Objection[] }>(function Objections({ objections }, ref) {
+// Same card, type size and spacing as a claim: objections carry equal visual weight.
+export function Objections({ objections }: { objections: Objection[] }) {
+  if (objections.length === 0) {
+    return <p className="rounded-card bg-card p-5 text-[0.9375rem]">No objections were raised. That is not an endorsement.</p>;
+  }
   return (
-    <div ref={ref}>
-      <Section id="objections" title="Objections" count={objections.length}>
-        {objections.length === 0 ? (
-          <p className="rounded-card bg-card p-6 text-[0.9375rem] shadow-card">No objections were raised. That is not an endorsement.</p>
-        ) : (
-          <ol className="space-y-4">
-            {objections.map((o, i) => (
-              <li key={i} className="rounded-card bg-card p-5 shadow-card sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <CardLabel n={i + 1}>Objection</CardLabel>
-                  <SeverityTag severity={o.severity} />
-                </div>
-                <p className="mt-4 text-[1.0625rem] leading-relaxed text-foreground">{o.objection}</p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </Section>
-    </div>
+    <ol className="space-y-4" data-tour="objections">
+      {objections.map((o, i) => (
+        <li key={i} className="rounded-card bg-card p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardLabel n={i + 1}>Objection</CardLabel>
+            <SeverityTag severity={o.severity} />
+          </div>
+          <p className="mt-4 text-[1.125rem] leading-relaxed text-foreground">{o.objection}</p>
+        </li>
+      ))}
+    </ol>
   );
-});
+}

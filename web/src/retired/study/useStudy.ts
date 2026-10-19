@@ -1,6 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 import * as study from "./controller";
-import { isPanelViewed, OBSERVER_THRESHOLDS } from "./viewRule";
+import { isPanelViewed, OBSERVER_THRESHOLDS } from "@/telemetry/viewRule";
 
 // Re-render when consent, trust or run state changes.
 export function useStudyState() {

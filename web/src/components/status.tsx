@@ -2,7 +2,8 @@ import { CircleCheck, CircleDashed, CircleX, Scale, type LucideIcon } from "luci
 import { cn } from "@/lib/utils";
 import type { ClaimStatus, ClaimType, Severity } from "@/types";
 
-// Each status has a text label AND a distinct icon, so it reads without colour.
+// Each status has a text label AND a distinct icon, so it reads without colour. Status hues are used
+// only here (tags, count tiles, status icons). "Unverified" is a normal outcome with the same presence.
 export const STATUS: Record<ClaimStatus, { label: string; icon: LucideIcon; text: string; bg: string; help: string }> = {
   confirmed: {
     label: "Confirmed", icon: CircleCheck,
@@ -22,7 +23,7 @@ export const STATUS: Record<ClaimStatus, { label: string; icon: LucideIcon; text
   unverified: {
     label: "Unverified", icon: CircleDashed,
     text: "text-st-unverified", bg: "bg-st-unverified-bg",
-    help: "Not enough independent evidence either way. This is a normal outcome, not an error.",
+    help: "Fewer than 2 independent sources either way. A normal outcome, not an error.",
   },
 };
 
@@ -39,17 +40,14 @@ export function StatusTag({ status, className }: { status: ClaimStatus; classNam
   const s = STATUS[status] ?? STATUS.unverified;
   const Icon = s.icon;
   return (
-    <span
-      className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.8125rem] font-semibold leading-5", s.text, s.bg, className)}
-      title={s.help}
-    >
-      <Icon aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
+    <span className={cn("inline-flex items-center gap-1.5 rounded-control px-2.5 py-1 text-[0.8125rem] font-semibold leading-5", s.text, s.bg, className)} title={s.help}>
+      <Icon aria-hidden className="size-4 shrink-0" strokeWidth={2} />
       {s.label}
     </span>
   );
 }
 
-// Severity is neutral by design: a word plus a 3-step bar in ink. It never reuses status hues.
+// Severity is neutral by design: the word plus a 3-step bar in ink. It never reuses status hues.
 const SEVERITY: Record<Severity, { label: string; level: number }> = {
   high: { label: "High", level: 3 },
   medium: { label: "Medium", level: 2 },
@@ -59,14 +57,13 @@ const SEVERITY: Record<Severity, { label: string; level: number }> = {
 export function SeverityTag({ severity }: { severity: Severity }) {
   const s = SEVERITY[severity] ?? SEVERITY.low;
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-[0.8125rem] font-semibold text-foreground">
+    <span className="inline-flex items-center gap-2 rounded-control bg-muted px-2.5 py-1 text-[0.8125rem] font-semibold text-foreground">
       <span aria-hidden className="inline-flex items-end gap-px">
         {[1, 2, 3].map(n => (
           <span key={n} className={cn("w-1 rounded-[1px]", n <= s.level ? "bg-current" : "bg-border-strong")} style={{ height: 4 + n * 3 }} />
         ))}
       </span>
-      {s.label}
-      <span className="sr-only"> severity</span>
+      {s.label} severity
     </span>
   );
 }

@@ -14,7 +14,7 @@ const NAV: Record<NavId, { label: string; short: string; path: string; icon: Luc
   how: { label: "How it works", short: "How it works", path: PATHS.how, icon: BookOpen, routes: ["how"] },
 };
 
-export function Shell({ route, onHelp, children }: { route: RouteName; onHelp: () => void; children: ReactNode }) {
+export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: () => void; children: ReactNode }) {
   const active = (id: NavId) => NAV[id].routes.includes(route) || (id === "dashboard" && route === "home" && features.home === "dashboard");
   return (
     <div className="on-page flex min-h-dvh flex-col bg-page text-on-page">
@@ -94,7 +94,7 @@ function Wordmark({ onPage = false }: { onPage?: boolean }) {
   );
 }
 
-function HeaderExtras({ onHelp, compact = false }: { onHelp: () => void; compact?: boolean }) {
+function HeaderExtras({ onHelp, compact = false }: { onHelp?: () => void; compact?: boolean }) {
   return (
     <>
       {features.badge && (
@@ -102,7 +102,7 @@ function HeaderExtras({ onHelp, compact = false }: { onHelp: () => void; compact
           {features.badge}
         </span>
       )}
-      {features.walkthrough && (
+      {features.walkthrough && onHelp && (
         <button type="button" onClick={onHelp} data-control="help_replay_walkthrough" aria-label="Replay the walkthrough"
           className={cn("inline-flex size-10 items-center justify-center rounded-control border transition-colors duration-150",
             compact ? "border-on-page/70 text-on-page hover:bg-page-raised" : "border-foreground/70 text-foreground hover:bg-accent")}>

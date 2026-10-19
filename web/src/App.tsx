@@ -1,48 +1,87 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { Compass } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EmptyState, PageTitle } from "@/components/ui-vd";
 import { features } from "@/edition";
-import { navigate, useRoute, type RouteName } from "@/router";
+import { navigate, PATHS, useRoute, type Route, type RouteName } from "@/router";
 import { Shell } from "@/shell/Shell";
-import * as study from "@/study/controller";
+import * as telemetry from "@/telemetry";
+import { Welcome } from "@/screens/Welcome";
 import { ScreenIdea } from "@/screens/ScreenIdea";
+import { Running } from "@/screens/Running";
+import { ReportScreen } from "@/screens/ReportScreen";
 import { Dashboard } from "@/screens/Dashboard";
 import { Graveyard } from "@/screens/Graveyard";
-import { ConsentDialog } from "@/study/StudyUI";
-import type { ViewName } from "@/types";
 
-// Routes an edition does not have fall back to its home screen.
-function allowed(name: RouteName) {
+// Routes an edition does not have.
+function available(name: RouteName) {
   if (name === "dashboard") return features.dashboard;
-  return name === "screen" || name === "graveyard";
+  if (name === "welcome") return features.welcome;
+  if (name === "feedback" || name === "how") return false; // added in later screens
+  return true;
 }
+// Before the Welcome notice is answered (public, first visit), only Welcome is shown.
+const beforeNotice = (name: RouteName) => name !== "welcome";
 
 export function App() {
   const route = useRoute();
-  const [consentOpen, setConsentOpen] = useState(false);
-  const resumeAfterConsent = useRef<(() => void) | null>(null);
-  const home = features.dashboard ? "/dashboard" : "/screen";
+  useSyncExternalStore(telemetry.subscribe, telemetry.getVersion);
+  const answered = telemetry.noticeAnswered();
 
-  useEffect(() => { study.init(); }, []);
+  useEffect(() => { telemetry.installControlTracking(); telemetry.installLifecycle(); }, []);
+
+  // Redirects: "#/" goes home; routes this edition lacks go home; first visit goes to Welcome.
   useEffect(() => {
-    if (route.name === "home" || !allowed(route.name)) { navigate(home, { replace: true }); return; }
-    if (study.viewChanged(route.name as ViewName)) setConsentOpen(true);
-  }, [route.name, home]);
+    if (route.name === "home") {
+      navigate(features.home === "dashboard" ? PATHS.dashboard : answered ? PATHS.screen : PATHS.welcome, { replace: true });
+    } else if (route.name !== "notfound" && !available(route.name)) {
+      navigate(features.home === "dashboard" ? PATHS.dashboard : PATHS.screen, { replace: true });
+    } else if (!answered && beforeNotice(route.name)) {
+      navigate(PATHS.welcome, { replace: true });
+    }
+  }, [route.name, answered]);
+
+  useEffect(() => {
+    if (route.name !== "home") telemetry.screenChanged(screenName(route.name));
+  }, [route.name]);
+
+  useEffect(() => {
+    document.getElementById("main")?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+  }, [route.path]);
 
   return (
-    <Shell route={route.name} onHelp={() => {}}>
-      {/* Screens stay mounted (hidden when inactive) so a report survives switching screens. */}
-      <div className="on-light rounded-panel bg-background p-4 text-foreground md:p-8">
-        {features.dashboard && <div hidden={route.name !== "dashboard"}><Dashboard /></div>}
-        <div hidden={route.name !== "screen"}>
-          <ScreenIdea onReadStudyInfo={() => setConsentOpen(true)} onNeedConsent={resume => { resumeAfterConsent.current = resume; setConsentOpen(true); }} />
-        </div>
-        <div hidden={route.name !== "graveyard"}><Graveyard /></div>
-      </div>
-      <ConsentDialog open={consentOpen} onDone={() => {
-        setConsentOpen(false);
-        const resume = resumeAfterConsent.current;
-        resumeAfterConsent.current = null;
-        resume?.();
-      }} />
+    <Shell route={route.name}>
+      <Screen route={route} />
     </Shell>
+  );
+}
+
+const screenName = (n: RouteName) => (n === "how" ? "how_it_works" : n);
+
+function Screen({ route }: { route: Route }) {
+  switch (route.name) {
+    case "welcome": return <Welcome onStartWalkthrough={() => navigate(PATHS.screen)} />;
+    case "screen": return <ScreenIdea />;
+    case "running": return <Running />;
+    case "report": return <ReportScreen param={route.param} />;
+    case "dashboard": return <Dashboard />;
+    case "graveyard": return <Graveyard />;
+    case "notfound": return <NotFound />;
+    default: return null;
+  }
+}
+
+function NotFound() {
+  return (
+    <div>
+      <PageTitle eyebrow="Not found" title="There's nothing at this address" />
+      <div className="on-light max-w-xl text-foreground">
+        <EmptyState icon={Compass} title="This page doesn't exist."
+          action={<Button size="lg" onClick={() => navigate("/")} data-control="notfound_home">Go to the start</Button>}>
+          Reports are not shared by link: each visitor sees only the reports they ran in their own tab.
+        </EmptyState>
+      </div>
+    </div>
   );
 }

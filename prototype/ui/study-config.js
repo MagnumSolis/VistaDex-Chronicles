@@ -1,12 +1,38 @@
-// ── study-config.js — Wording for the BITS F364 study (edit here, not in code) ──
+// ── study-config.js — Visitor-facing wording and open team decisions (edit here, not in code) ──
 
-// Bump whenever the participant-facing UI changes (CLAUDE.md). pilot-1 = vanilla UI; pilot-2 = redesigned web/ UI.
-export const STUDY_VERSION = "2026-10-pilot-2";
+// Bump whenever the visitor-facing UI or the telemetry changes (CLAUDE.md), and record it in
+// tests/fixtures/event-contract.json. pilot-1 = vanilla UI; pilot-2 = first web/ UI (BITS F364 study);
+// public-1 = two-edition revamp (public demo + pitch). The public demo is not used for the F364 paper.
+export const STUDY_VERSION = "2026-10-public-1";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.
-export const RETENTION_PERIOD = "[TODO(team): retention period]";   // e.g. "until the end of the course (Dec 2026)"
-export const WITHDRAWAL_CONTACT = "[TODO(team): withdrawal contact]"; // e.g. a team email or form link
+export const RETENTION_PERIOD = "12 months";
+export const WITHDRAWAL_CONTACT = "[TODO(team): contact email]"; // data requests and withdrawal problems
+
+// ── Welcome: product transparency notice (public edition) ──
+export const NOTICE = {
+  recorded: "Every button press, and how long you spend on each screen, each report section and each walkthrough step.",
+  identity: "Under a random session ID. No name, email address or IP address.",
+  // TODO(team): confirm. Default: the idea text is NOT stored in usage records.
+  ideaText: "The idea text you paste is not stored in these records; we only note how long it is.",
+  ideaTextMock: "In this version the screening runs in your browser, so the idea text never leaves it.",
+  ideaTextLive: "To make the report, the idea text is sent to our server. The server keeps a technical log of each screening (the claims it pulled out of your text and the sources it checked) so we can find bugs; deleting your session deletes those logs too.",
+  // TODO(team): opt-out policy. Default: a visible "Use without recording" choice on Welcome.
+  optOut: "Use without recording",
+};
+
+// ── Feedback form (public edition) ──
+// TODO(team): final question wording. Set signedOff to true once the team has approved it.
+export const FEEDBACK = {
+  signedOff: false,
+  role: { question: "What best describes you?", options: [["founder", "Founder"], ["investor", "Investor"], ["other", "Other"]] },
+  useful: { question: "Was the report useful?", options: [["yes", "Yes"], ["partly", "Partly"], ["no", "No"], ["no_report", "I didn't run one"]] },
+  section: { question: "Which section mattered most to you?", options: [["claims", "Claims"], ["graveyard", "Graveyard leads"], ["objections", "Objections"], ["legal", "Legal"], ["market", "Market"], ["none", "None of them"]] },
+  wrong: { question: "What was wrong or missing?", hint: "Optional. Please don't include names or confidential information." },
+  wouldUse: { question: "Would you use this?", options: [["yes", "Yes"], ["maybe", "Maybe"], ["no", "No"]] },
+  email: { question: "Email, if we may follow up (optional)", hint: "Stored with these answers only, never with your usage records." },
+};
 
 export const CONSENT = {
   title: "Before you start: taking part in our study",

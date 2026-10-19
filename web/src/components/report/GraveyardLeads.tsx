@@ -1,44 +1,72 @@
-import { forwardRef } from "react";
-import { CardLabel, Section } from "@/components/Section";
-import { GRAVEYARD_DB } from "@/proto";
+import { CircleCheck, CircleDashed, ExternalLink } from "lucide-react";
+import { CardLabel } from "./ReportSection";
+import { GRAVEYARD_DB, registrableDomain } from "@/proto";
+import { matchStrength, sharedWords } from "@/lib/overlap";
 import type { GraveyardMatch } from "@/types";
 
-// Leads are deliberately flat with a dashed outline: they are things to check, not evidence.
-export const GraveyardLeads = forwardRef<HTMLDivElement, { matches: GraveyardMatch[] }>(function GraveyardLeads({ matches }, ref) {
+interface SeedEntry { company_name: string; sources?: string[]; source_verified?: boolean }
+const SEED = GRAVEYARD_DB as SeedEntry[];
+
+// "Leads to check": startups that shut down after trying something similar. Flat dashed cards — leads,
+// not evidence. The overlap is shown as words in common and a plain strength, never as a verdict.
+export function GraveyardLeads({ matches, ideaText }: { matches: GraveyardMatch[]; ideaText: string }) {
+  if (matches.length === 0) {
+    return (
+      <p className="rounded-card border-2 border-dashed border-border-strong p-5 text-[0.9375rem] leading-relaxed">
+        No close matches among the {SEED.length} shut-down startups in our seed set. That doesn&apos;t mean nobody has tried this.
+      </p>
+    );
+  }
   return (
-    <div ref={ref}>
-      <Section id="leads" title="Graveyard leads" count={matches.length}>
-        {matches.length === 0 ? (
-          <p className="rounded-card border-2 border-dashed border-border-strong p-6 text-[0.9375rem]">
-            No close matches among the {GRAVEYARD_DB.length} failed startups in the seed set. That doesn&apos;t mean nobody has tried this.
-          </p>
-        ) : (
-          <ul className="space-y-4">
-            {matches.map(m => (
-              <li key={m.company_name} className="rounded-card border-2 border-dashed border-border-strong p-5 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <CardLabel>Lead to check</CardLabel>
-                  <span className="rounded-full bg-card px-3 py-1 text-[0.8125rem]" title="Word overlap between this idea and what they tried: 0 = none, 1 = identical wording.">
-                    Similarity <span className="font-mono font-medium">{m.similarity.toFixed(2)}</span>
-                  </span>
-                </div>
-                <h3 className="mt-4 font-display text-xl font-bold leading-tight">
-                  {m.company_name}
-                  {m.year_closed != null && <span className="ml-2 font-sans text-sm font-normal text-muted-foreground">closed {m.year_closed}</span>}
-                </h3>
-                <p className="mt-1.5 text-[0.9375rem] leading-relaxed">{m.what_they_tried}</p>
-                <div className="mt-4 rounded-inner bg-card p-4">
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cause of death</p>
-                  <p className="mt-1 text-[0.9375rem] leading-relaxed">{m.cause_of_death}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {matches.length > 0 && (
-          <p className="mt-3 text-sm text-muted-foreground">Similarity is word overlap (0–1). A resemblance is a lead to verify, not a verdict.</p>
-        )}
-      </Section>
-    </div>
+    <ul className="space-y-4" data-tour="leads">
+      {matches.map(m => {
+        const seed = SEED.find(e => e.company_name === m.company_name);
+        const words = sharedWords(ideaText, m.what_they_tried);
+        return (
+          <li key={m.company_name} className="rounded-card border-2 border-dashed border-border-strong bg-card p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardLabel>Lead to check</CardLabel>
+              <span className="rounded-control bg-muted px-2.5 py-1 text-[0.8125rem]" title="Word overlap between your idea and what they tried: 0 = none, 1 = identical wording.">
+                {matchStrength(m.similarity)} word overlap <span className="font-mono font-medium">{m.similarity.toFixed(2)}</span>
+              </span>
+            </div>
+            <h3 className="mt-4 font-display text-[1.5rem] leading-tight">
+              {m.company_name}
+              <span className="ml-2 font-sans text-sm text-muted-foreground">{m.year_closed != null ? `closed ${m.year_closed}` : "year closed not recorded"}</span>
+            </h3>
+            <dl className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-inner bg-muted p-4">
+                <dt className="eyebrow text-muted-foreground">What they tried</dt>
+                <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">{m.what_they_tried}</dd>
+              </div>
+              <div className="rounded-inner bg-muted p-4">
+                <dt className="eyebrow text-muted-foreground">Cause of death</dt>
+                <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">{m.cause_of_death}</dd>
+              </div>
+              <div className="rounded-inner bg-muted p-4 md:col-span-2">
+                <dt className="eyebrow text-muted-foreground">How it overlaps</dt>
+                <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">
+                  {words.length ? (
+                    <>Words in common: <span className="font-medium">{words.join(", ")}</span>.</>
+                  ) : "Few words in common; matched on overall wording."}
+                  <span className="text-muted-foreground"> Matching is word overlap only, so check whether the businesses really are alike.</span>
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              {seed?.source_verified
+                ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Closure source checked by the team</span>
+                : <span className="inline-flex items-center gap-1.5 font-medium"><CircleDashed aria-hidden className="size-4" /> Closure source not yet checked by the team</span>}
+              {(seed?.sources ?? []).map(url => (
+                <a key={url} href={url} target="_blank" rel="noopener noreferrer" data-control="lead_source_link"
+                  className="inline-flex items-center gap-1 text-link underline underline-offset-4">
+                  {registrableDomain(url) || url} <ExternalLink aria-hidden className="size-3.5" /><span className="sr-only">(opens in a new tab)</span>
+                </a>
+              ))}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
-});
+}

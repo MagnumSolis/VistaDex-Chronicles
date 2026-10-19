@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* One fixed theme for everyone: shadcn's dark: classes never follow the OS setting. */
+@custom-variant dark (&:is(.dark *));
+
 /* ── VistaDex design tokens ─────────────────────────────────────────
    One fixed theme for everyone (not OS-dependent). Deep-green page, flat
    colour-blocked surfaces (no shadows, no borders for depth), cream and paper
@@ -25,6 +28,7 @@
   --charcoal: #232623;             /* "product window" surfaces */
   --on-charcoal: #eef2e2;
   --on-charcoal-muted: #b9bfb8;
+  --charcoal-raised: #2e322e;      /* the running row / notes inside a product window */
 
   /* reading surfaces */
   --background: #eef2e2;           /* cream: panels, forms, the report */
@@ -83,6 +87,7 @@
   --color-charcoal: var(--charcoal);
   --color-on-charcoal: var(--on-charcoal);
   --color-on-charcoal-muted: var(--on-charcoal-muted);
+  --color-charcoal-raised: var(--charcoal-raised);
   --color-link: var(--link);
 
   --color-background: var(--background);
@@ -173,6 +178,16 @@
 }
 
 @layer components {
+  /* Folder-tab title (design brief P4): the tab joins the panel with an inward-curved corner. */
+  .tab-notch::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    bottom: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: radial-gradient(circle at 100% 0, transparent 1.24rem, var(--notch) 1.25rem);
+  }
   /* Small uppercase, letter-spaced label above headings and in legends. */
   .eyebrow {
     font-size: 0.75rem;

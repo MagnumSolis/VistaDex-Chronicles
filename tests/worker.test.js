@@ -174,3 +174,24 @@ test("export is disabled when no EXPORT_TOKEN is configured", async () => {
   const res = await handle(req("GET", "/export", { origin: null, headers: { Authorization: "Bearer " } }), { ...ENV, EXPORT_TOKEN: "" }, { store: memoryStore() });
   assert.equal(res.status, 401);
 });
+
+test("POST /screen accepts the structured input and keeps it on the report", async () => {
+  const body = { title: "LegalAI", pitch: "AI contract review for startups", problem: "Contract review is slow and expensive.", solution: "No tool combines AI contract review with human lawyer oversight.", moat: "", industries: ["AI/ML", "Nope"], role: "founder", markets: ["EU"] };
+  const res = await handle(req("POST", "/screen", { body }), ENV, { store: memoryStore() });
+  assert.equal(res.status, 200);
+  const report = await res.json();
+  assert.deepEqual(validateContract(report), []);
+  assert.equal(report.input.title, "LegalAI");
+  assert.deepEqual(report.input.industries, ["AI/ML"]);
+  assert.match(report.idea_text, /^LegalAI\. AI contract review for startups\. /);
+  assert.equal(report.sample_fields, undefined, "the server never adds sample data");
+});
+
+test("POST /screen structured input: required fields and per-field limits", async () => {
+  const missing = await handle(req("POST", "/screen", { body: { title: "T", pitch: "", problem: "p", solution: "" } }), ENV, { store: memoryStore() });
+  assert.equal(missing.status, 400);
+  assert.deepEqual((await missing.json()).fields, ["pitch", "solution"]);
+  const long = await handle(req("POST", "/screen", { body: { title: "T", pitch: "x".repeat(281), problem: "p", solution: "s" } }), ENV, { store: memoryStore() });
+  assert.equal(long.status, 413);
+  assert.deepEqual((await long.json()).fields, ["pitch"]);
+});

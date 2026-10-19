@@ -21,15 +21,16 @@ const cancelled = () => new ScreenError("cancelled", "The screening was cancelle
 
 // Returns { report, trace, traceId, mode }. Pass { signal } (AbortSignal) to cancel: the mock path
 // stops at the next stage boundary; the proxy request is aborted (the server may still finish it).
-export async function screenIdea(ideaText, { onStage, signal } = {}) {
-  if (liveMode()) return screenViaProxy(ideaText, onStage, signal);
+// ideaOrInput: the structured input from the form (or a plain idea text).
+export async function screenIdea(ideaOrInput, { onStage, signal } = {}) {
+  if (liveMode()) return screenViaProxy(ideaOrInput, onStage, signal);
   const guarded = async (...args) => {
     if (signal?.aborted) throw cancelled();
     await onStage?.(...args);
     if (signal?.aborted) throw cancelled();
   };
   // In-browser mock only: sample placeholders for what the key-free path cannot produce (marked in sample_fields).
-  const { report, trace } = await runScreen(ideaText, { mode: "mock", graveyard: GRAVEYARD_DB, onStage: guarded, samples: MOCK_SAMPLES });
+  const { report, trace } = await runScreen(ideaOrInput, { mode: "mock", graveyard: GRAVEYARD_DB, onStage: guarded, samples: MOCK_SAMPLES });
   return { report, trace, traceId: trace.trace_id, mode: "mock" };
 }
 
@@ -40,7 +41,7 @@ function refusalCode(status, body) {
   return "http";
 }
 
-async function screenViaProxy(ideaText, onStage = async () => {}, signal) {
+async function screenViaProxy(ideaOrInput, onStage = async () => {}, signal) {
   // The proxy runs all stages server-side and does not report them one by one; the UI says so and
   // marks them done together once it answers.
   await onStage(1, "running");
@@ -50,9 +51,9 @@ async function screenViaProxy(ideaText, onStage = async () => {}, signal) {
     res = await fetch(`${CONFIG.PROXY_URL.replace(/\/$/, "")}/screen`, {
       method: "POST",
       signal,
-      // The access code travels in a header so the request body stays exactly the contract's { idea_text }.
+      // The access code travels in a header so the request body stays exactly the input.
       headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}) },
-      body: JSON.stringify({ idea_text: ideaText }),
+      body: JSON.stringify(typeof ideaOrInput === "string" ? { idea_text: ideaOrInput } : ideaOrInput),
     });
   } catch (err) {
     if (signal?.aborted) throw cancelled();

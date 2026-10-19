@@ -1,6 +1,7 @@
 // ── VistaDex proxy — Cloudflare Worker ──
 // Holds the provider keys (Worker secrets) so they never reach the browser.
-//   POST   /screen          { idea_text } → POST /screen contract; X-VistaDex-Trace-Id / X-VistaDex-Mode headers
+//   POST   /screen          { title, pitch, problem, solution, moat, industries, role, markets } or { idea_text }
+//                           → POST /screen contract; X-VistaDex-Trace-Id / X-VistaDex-Mode headers
 //                           needs the study access code in the X-VistaDex-Access header
 //   POST   /events          { session_id, events[], access_code } → stored in D1 (consented study telemetry)
 //   DELETE /session/:id     withdraw: deletes the session's events and traces (no access code needed —
@@ -18,9 +19,9 @@ import { runScreen } from "../../prototype/core/pipeline.js";
 import { routesFromEnv } from "../../prototype/core/providers/llm.js";
 import { retrievalFromEnv } from "../../prototype/core/providers/retrieval.js";
 import { GRAVEYARD_DB } from "../../prototype/data/graveyard.js";
+import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
 
-const MAX_IDEA_CHARS = 6000;
 const MAX_BODY_BYTES = 256 * 1024;
 const MAX_EVENTS_PER_BATCH = 200;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -59,9 +60,21 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
     || await rateLimited(env.SCREEN_LIMITER, request, cors);
   if (denied) return denied;
   const body = await readJSON(request);
-  const ideaText = typeof body?.idea_text === "string" ? body.idea_text.trim() : "";
-  if (!ideaText) return json({ error: "idea_text is required" }, 400, cors);
-  if (ideaText.length > MAX_IDEA_CHARS) return json({ error: `idea_text is longer than ${MAX_IDEA_CHARS} characters` }, 413, cors);
+  // Structured input (the form) when a title is sent; otherwise the original { idea_text } body.
+  let idea;
+  if (body && typeof body.title === "string") {
+    const long = TEXT_FIELDS.filter(f => String(body[f] ?? "").trim().length > FIELD_LIMITS[f]);
+    if (long.length) return json({ error: "field_too_long", fields: long }, 413, cors);
+    const input = normalizeInput(body);
+    const missing = validateInput(input).map(e => e.field);
+    if (missing.length) return json({ error: "fields_required", fields: missing }, 400, cors);
+    idea = input;
+  } else {
+    const ideaText = typeof body?.idea_text === "string" ? body.idea_text.trim() : "";
+    if (!ideaText) return json({ error: "idea_text is required" }, 400, cors);
+    if (ideaText.length > MAX_IDEA_CHARS) return json({ error: `idea_text is longer than ${MAX_IDEA_CHARS} characters` }, 413, cors);
+    idea = ideaText;
+  }
 
   // Global daily cap, counted after validation so malformed requests don't use it up.
   const cap = Number(env.SCREEN_DAILY_CAP || 0);
@@ -77,7 +90,8 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
   const llmRoutes = routesFromEnv(env, fetchImpl);
   const retrieval = retrievalFromEnv(env, fetchImpl);
   const live = Object.values(llmRoutes).some(chain => chain.length) || retrieval.name !== "mock";
-  const { report, trace } = await runScreen(ideaText, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard: GRAVEYARD_DB });
+  // No samples here: the server never fills fields with placeholder data.
+  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard: GRAVEYARD_DB });
   await store.saveTrace(trace.trace_id, trace.mode, trace, now());
   return json(report, 200, {
     ...cors,

@@ -52,6 +52,8 @@ async function publish() {
 }
 
 const cmd = process.argv[2];
-if (cmd === "stats") stats().catch(e => { console.error(e.message); process.exit(1); });
-else if (cmd === "publish") publish().catch(e => { console.error(e.message); process.exit(1); });
-else console.log("usage: node src/db.js stats|publish");
+if (process.argv[1] && process.argv[1].endsWith("db.js")) {
+  if (cmd === "stats") stats().catch(e => { console.error(e.message); process.exit(1); });
+  else if (cmd === "publish") publish().catch(e => { console.error(e.message); process.exit(1); });
+  else console.log("usage: node src/db.js stats|publish");
+}

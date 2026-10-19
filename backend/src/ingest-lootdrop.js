@@ -7,8 +7,10 @@
 
 import { MongoClient } from "mongodb";
 import { newGraveyardEntry, validateEntry } from "./schemas.js";
+import { envFrom } from "./db.js";
 
-const MONGO_URI = process.env.MONGODB_URI;
+const env = { ...process.env, ...envFrom(".env") };
+const MONGO_URI = env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB || "vistadex";
 const SITEMAP = "https://www.loot-drop.io/sitemap.xml";
 const DELAY_MS = Number(process.env.INGEST_DELAY_MS || 1200); // polite crawl rate
@@ -83,7 +85,7 @@ async function main() {
 
   const client = new MongoClient(MONGO_URI);
   await client.connect();
-  const staging = client.db(DB_NAME).collection("graveyard_staging");
+  const staging = client.db(env.MONGODB_DB || DB_NAME).collection("graveyard_staging");
 
   let ok = 0, failed = 0, skipped = 0;
   for (const url of targets) {

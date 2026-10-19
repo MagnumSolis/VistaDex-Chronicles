@@ -1,6 +1,16 @@
-// ── pipeline.js — Simulated 4-stage pipeline for VistaDex prototype ──
-// Mirrors the real Groq + Tavily + MongoDB pipeline from the architecture doc.
-// In production, each function here calls the real API endpoints.
+// ── pipeline.js — 4-stage pipeline for VistaDex.
+// DEMO_MODE selects the simulated pipeline vs the real serverless one (/api/screen).
+// Both paths return the SAME output contract:
+// { claims: [{claim,type,status,reasoning,sources}], graveyard_matches: [{company_name,what_they_tried,cause_of_death,year_closed,similarity}], objections: [{objection,severity}] }
+
+const DEMO_MODE = (() => {
+  const param = new URLSearchParams(location.search).get('demo');
+  if (param === '1') return true;
+  if (param === '0') return false;
+  // auto: demo when no API backend is reachable-configured (kept simple: same-origin worker); user can force via ?demo=
+  return window.DEMO_MODE_DEFAULT !== undefined ? window.DEMO_MODE_DEFAULT : false;
+})();
+window.DEMO_MODE = DEMO_MODE;
 
 // ── Simulated pipeline stages ────────────────────────────────────────
 // Stage 1: Claim Extraction (Groq llama-3.3-70b-versatile)
@@ -198,8 +208,65 @@ async function simulateObjectorPass(claims, graveyardMatches) {
   return objections.slice(0, 4);
 }
 
-// ── Main pipeline runner ──────────────────────────────────────────────
+// ── Real pipeline: delegates to the serverless proxy (keys never touch the frontend) ──
+async function runRealPipeline(ideaText) {
+  const res = await fetch('/api/screen', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ idea: ideaText, session_id: window.TELEMETRY?.getSessionId() || null }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'screen_failed');
+  return data.result;
+}
+
+// Normalize any pipeline result to the unified contract.
+function normalizeResult(result) {
+  const claims = (result.claims || []).map(c => ({
+    claim: c.claim || '',
+    type: c.type || 'other',
+    status: ['confirmed','contradicted','disputed','unverified'].includes(c.status) ? c.status : 'unverified',
+    reasoning: c.reasoning || '',
+    sources: Array.isArray(c.sources) ? c.sources : [],
+  }));
+  const graveyard_matches = (result.graveyard_matches || result.graveyard || []).map(g => {
+    const entry = g.company_name ? g : (GRAVEYARD_DB.find(e => e.id === g.id) || {});
+    return {
+      company_name: entry.company_name || '',
+      what_they_tried: entry.what_they_tried || '',
+      cause_of_death: entry.cause_of_death || '',
+      year_closed: entry.year_closed || null,
+      similarity: typeof g.similarity === 'number' ? g.similarity : 0,
+    };
+  });
+  const objections = (result.objections || []).map(o => ({
+    objection: o.objection || '',
+    severity: ['high','medium','low'].includes(o.severity) ? o.severity : 'medium',
+  }));
+  return { claims, graveyard_matches, objections };
+}
+
+// ── Main pipeline runner ────────────────────────────────────────────
+// Entry point: DEMO_MODE routes between simulated and real pipeline; both normalize to the contract.
 async function runPipelineOn(ideaText) {
+  if (!DEMO_MODE) {
+    setStage(1, "running"); setStage(2, "running");
+    try {
+      const result = await runRealPipeline(ideaText);
+      setStage(1, "done", `${result.claims.length} claims extracted`);
+      setStage(2, "done", `${result.claims.length} claims classified`);
+      setStage(3, "done", `${(result.graveyard_matches || []).length} matches found`);
+      setStage(4, "done", `${(result.objections || []).length} objections raised`);
+      return result;
+    } catch (e) {
+      [1,2,3,4].forEach(i => setStage(i, "idle"));
+      throw e;
+    }
+  }
+  return runDemoPipeline(ideaText);
+}
+
+async function runDemoPipeline(ideaText) {
   // Stage 1
   setStage(1, "running");
   const rawClaims = await simulateClaimExtraction(ideaText);
@@ -220,7 +287,7 @@ async function runPipelineOn(ideaText) {
   const objections = await simulateObjectorPass(classifiedClaims, graveyardMatches);
   setStage(4, "done", `${objections.length} objections raised`);
 
-  return { claims: classifiedClaims, graveyard: graveyardMatches, objections };
+  return normalizeResult({ claims: classifiedClaims, graveyard: graveyardMatches, objections });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────

@@ -213,6 +213,7 @@ function loadReviewerNote(ideaId) {
 }
 function saveReviewerNote(ideaId, value) {
   try { localStorage.setItem(reviewerNoteKey(ideaId), value); } catch {}
+  window.TELEMETRY?.logEvent('reviewer_note', { idea_id: ideaId, length: value.length });
 }
 
 function closeModal(e) {
@@ -247,11 +248,21 @@ async function runPipeline() {
   document.getElementById('resultsPanel').style.display = 'none';
   document.getElementById('reportView').innerHTML = '';
 
+  const t0 = performance.now();
   try {
     const result = await runPipelineOn(ideaText);
+    window.TELEMETRY?.logEvent('pipeline_run', {
+      mode: window.DEMO_MODE ? 'demo' : 'real',
+      duration_ms: Math.round(performance.now() - t0),
+      claims: result.claims.length,
+      graveyard_matches: result.graveyard_matches.length,
+      objections: result.objections.length,
+    });
     renderLiveReport(ideaText, result);
   } catch (err) {
     console.error(err);
+    window.TELEMETRY?.logEvent('pipeline_error', { mode: window.DEMO_MODE ? 'demo' : 'real', error: String(err) });
+    alert('Pipeline failed: ' + err.message + (window.DEMO_MODE ? '' : '\n\nTip: append ?demo=1 to the URL to run the key-free demo pipeline.'));
   }
 
   pipelineRunning = false;
@@ -259,7 +270,8 @@ async function runPipeline() {
   runBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Pipeline`;
 }
 
-function renderLiveReport(ideaText, { claims, graveyard, objections }) {
+function renderLiveReport(ideaText, { claims, graveyard_matches, graveyard, objections }) {
+  graveyard = graveyard_matches || graveyard || [];
   const panel = document.getElementById('resultsPanel');
   const reportView = document.getElementById('reportView');
 
@@ -450,4 +462,20 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTable(sorted);
   renderStats();
   renderGraveyard(GRAVEYARD_DB);
+  initConsentBanner();
 });
+
+// ── Consent banner (telemetry gate) ──
+function initConsentBanner() {
+  const banner = document.getElementById('consentBanner');
+  if (!banner || !window.TELEMETRY) return;
+  if (!window.TELEMETRY.hasConsent()) banner.style.display = 'flex';
+  document.getElementById('consentAccept')?.addEventListener('click', () => {
+    window.TELEMETRY.setConsent(true);
+    banner.style.display = 'none';
+  });
+  document.getElementById('consentDecline')?.addEventListener('click', () => {
+    window.TELEMETRY.setConsent(false);
+    banner.style.display = 'none';
+  });
+}

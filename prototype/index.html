@@ -249,7 +249,15 @@ Example: 'We are building an AI-powered legal contract review tool for early-sta
     </div>
   </div>
 
+  <!-- CONSENT BANNER — no telemetry is logged before this is accepted (AGENTS.md rule 6) -->
+  <div id="consentBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#0f172a;border-top:1px solid #334155;padding:14px 20px;display:none;align-items:center;gap:16px;flex-wrap:wrap;">
+    <span style="color:#e2e8f0;font-size:0.85rem;flex:1;min-width:260px;">This app collects pseudonymous usage data (trust ratings, agreement clicks, timings) for a university research study (BITS Pilani F364). No PII, no idea text stored. You can use the app without consenting.</span>
+    <button class="btn-primary" id="consentAccept" style="padding:8px 16px;">I consent</button>
+    <button class="btn-ghost" id="consentDecline" style="padding:8px 16px;">No thanks</button>
+  </div>
+
   <script src="data.js"></script>
+  <script src="telemetry.js"></script>
   <script src="pipeline.js"></script>
   <script src="app.js"></script>
 </body>

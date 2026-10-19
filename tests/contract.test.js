@@ -28,7 +28,7 @@ test("validateContract flags broken reports", () => {
 test("pipeline output matches the contract exactly", async () => {
   const { report, trace } = await runScreen(SAMPLE_IDEA, { graveyard: GRAVEYARD_DB });
   assert.deepEqual(validateContract(report), []);
-  assert.deepEqual(Object.keys(report).sort(), ["claims", "graveyard_matches", "idea_text", "objections"]);
+  assert.deepEqual(Object.keys(report).sort(), ["claims", "graveyard_matches", "idea_text", "objections", "overlap_band", "scores", "search"]);
   assert.equal(report.idea_text, SAMPLE_IDEA);
   assert.ok(trace.trace_id);
   assert.ok(trace.events.length > 0);

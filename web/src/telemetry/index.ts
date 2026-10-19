@@ -120,7 +120,7 @@ export function reportCounts(report: Report) {
   return {
     claims: report.claims.length,
     statuses: by(["confirmed", "contradicted", "disputed", "unverified"] as const, c => c.status),
-    types: by(["novelty", "market_size", "defensibility", "other"] as const, c => c.type),
+    types: by(["novelty", "market_size", "defensibility", "traction", "other"] as const, c => c.type),
     graveyard_matches: report.graveyard_matches.length,
     objections: report.objections.length,
     legal: Boolean(report.legal),

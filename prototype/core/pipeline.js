@@ -1,8 +1,9 @@
-// ── pipeline.js — Runs the 4 stages and returns { report, trace } ──
+// ── pipeline.js — Runs the stages and returns { report, trace } ──
 // Pure: no DOM, no timers, no randomness in any decision. Shared by the browser
 // (key-free mock path) and the Worker (real providers when keys are present).
 
-import { toContract } from "./contract.js";
+import { finalizeReport, applySamples } from "./finalize.js";
+import { buildIdeaText, normalizeInput } from "./input.js";
 import { createTrace } from "./trace.js";
 import { createLLM } from "./providers/llm.js";
 import { mockRetrieval } from "./providers/retrieval.js";
@@ -12,8 +13,13 @@ import { classifyClaims } from "./stages/classify.js";
 import { matchGraveyard } from "./stages/graveyard.js";
 import { raiseObjections } from "./stages/objector.js";
 
-// deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode }
-export async function runScreen(ideaText, deps = {}) {
+// ideaOrInput: the idea text (string), or the structured input { title, pitch, problem, solution, moat,
+// industries, role, markets } — then idea_text is built from it (input.js) and the input is kept on the report.
+// deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode, samples }
+//   samples: mock-mode placeholders (prototype/data/samples.js) — passed by the browser mock path only.
+export async function runScreen(ideaOrInput, deps = {}) {
+  const input = typeof ideaOrInput === "string" ? null : normalizeInput(ideaOrInput);
+  const ideaText = input ? buildIdeaText(input) : String(ideaOrInput ?? "");
   const mode = deps.mode || "mock";
   const trace = createTrace({ ideaText, mode });
   const llm = createLLM(deps.llmRoutes || {}, trace);
@@ -22,7 +28,7 @@ export async function runScreen(ideaText, deps = {}) {
   const graveyard = deps.graveyard || [];
   const onStage = deps.onStage || (async () => {});
   trace.log("run_start", {
-    retrieval: retrieval.name, similarity: similarity.name,
+    retrieval: retrieval.name, similarity: similarity.name, structured_input: Boolean(input), samples: Boolean(deps.samples),
     llm: { extract: llm.available("extract"), classify: llm.available("classify"), objector: llm.available("objector") },
   });
 
@@ -42,7 +48,16 @@ export async function runScreen(ideaText, deps = {}) {
   const objections = await raiseObjections(ideaText, claims, matches, { llm, trace });
   await onStage(4, "done", `${objections.length} objections raised`);
 
-  const report = toContract({ idea_text: ideaText, claims, graveyard_matches: matches, objections });
-  trace.log("run_done", { claims: report.claims.length, matches: report.graveyard_matches.length, objections: report.objections.length });
+  const raw = applySamples({
+    idea_text: ideaText,
+    ...(input ? { input } : {}),
+    claims, graveyard_matches: matches, objections,
+    search: { graveyard: { entries_checked: graveyard.length, verified_entries: graveyard.filter(g => g.source_verified === true).length } },
+  }, deps.samples);
+  const report = finalizeReport(raw);
+  trace.log("run_done", {
+    claims: report.claims.length, matches: report.graveyard_matches.length, objections: report.objections.length,
+    overlap_band: report.overlap_band, vistadex: report.scores.vistadex.value,
+  });
   return { report, trace: trace.finish() };
 }

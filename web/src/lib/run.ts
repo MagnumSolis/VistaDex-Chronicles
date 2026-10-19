@@ -4,7 +4,6 @@ import { useSyncExternalStore } from "react";
 import { features } from "@/edition";
 import { liveMode, screenIdea } from "@/proto";
 import { navigate, PATHS } from "@/router";
-import { SAMPLE_LEGAL, SAMPLE_MARKET } from "@/fixtures/sample-legal-market";
 import { addSessionReport } from "@/lib/reports";
 import * as telemetry from "@/telemetry";
 import type { Jurisdiction, ScreenResult, StageState } from "@/types";
@@ -74,8 +73,7 @@ export async function startRun({ ideaText, markets, sample }: { ideaText: string
   try {
     const data = (await screenIdea(ideaText, { onStage, signal })) as ScreenResult;
     if (signal.aborted) throw Object.assign(new Error("cancelled"), { code: "cancelled" });
-    // Legal and market are not produced by the pipeline yet: sample placeholders in mock mode only.
-    const report = data.mode === "mock" ? { ...data.report, legal: SAMPLE_LEGAL, market: SAMPLE_MARKET } : data.report;
+    const report = data.report; // in mock mode the pipeline already carries the sample placeholders (sample_fields)
     addSessionReport({ id: runId, createdAt: new Date(), report, mode: data.mode, markets, traceId: data.traceId });
     telemetry.runCompleted(runId, { report, traceId: data.traceId, mode: data.mode }, Math.round(performance.now() - t0));
     const done = idleStages();

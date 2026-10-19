@@ -33,6 +33,7 @@ export const CLAIM_TYPE_LABEL: Record<ClaimType, string> = {
   novelty: "Novelty",
   market_size: "Market size",
   defensibility: "Defensibility",
+  traction: "Traction",
   other: "Other",
 };
 

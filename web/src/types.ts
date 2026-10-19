@@ -1,14 +1,12 @@
-// Shapes of the POST /screen contract (prototype/core/contract.js) as the UI uses them, plus OPTIONAL
-// fields the pipeline does not produce yet (legal, market, per-source evidence). The UI shows a neutral
-// "not available in this version yet" state when they are absent; only the in-browser MOCK mode fills
-// them, with clearly labelled sample data (src/fixtures/sample-legal-market.ts).
+// Shapes of the POST /screen contract (prototype/core/contract.js) as the UI uses them. Every field added
+// in round 2 is optional: the UI shows "Not available in this version yet" when one is absent. Fields
+// listed in sample_fields hold SAMPLE placeholders (in-browser mock mode only, prototype/data/samples.js).
 
-export type ClaimType = "novelty" | "market_size" | "defensibility" | "other";
+export type ClaimType = "novelty" | "market_size" | "defensibility" | "traction" | "other";
 export type ClaimStatus = "confirmed" | "contradicted" | "disputed" | "unverified";
 export type Severity = "high" | "medium" | "low";
 
-/** One verified quote per source. Not produced yet: the pipeline folds up to two quotes into `reasoning`.
- *  TODO(team): emit this from prototype/core/stages/classify.js (a core change). */
+/** One verified quote per source (the quote appears word for word on the fetched page). */
 export interface Evidence { url: string; stance: "supports" | "contradicts"; quote: string }
 
 export interface Claim {
@@ -42,16 +40,35 @@ export interface LegalFact { kind: "patent" | "trademark" | "approval" | "licenc
 /** (b) A rule that may apply, naming the rule and where it comes from. Never "allowed / not allowed". */
 export interface LegalRequirement { rule: string; summary: string; source: Link }
 export interface LegalJurisdiction { jurisdiction: Jurisdiction; facts: LegalFact[]; requirements: LegalRequirement[] }
-export interface Legal { jurisdictions: LegalJurisdiction[]; sample?: boolean }
+export interface Legal { jurisdictions: LegalJurisdiction[] }
 
-// ── Market (not produced by the pipeline yet) ──
+// ── Market: TAM from a verified source quote; SAM/SOM not produced live yet ──
 export interface MarketFigure { value: string; scope: string }
 export interface Market {
-  tam: MarketFigure & { citation: Link };
-  sam: MarketFigure & { assumptions: string[] };
-  som: MarketFigure & { assumptions: string[] };
-  sample?: boolean;
+  tam?: MarketFigure & { value_usd: number | null; citation: Link | null; quote: string };
+  sam?: MarketFigure & { assumptions: string[] };
+  som?: MarketFigure & { assumptions: string[] };
 }
+
+// ── Round 2 ──
+export type Role = "founder" | "investor" | "accelerator";
+export interface IdeaInput { title: string; pitch: string; problem: string; solution: string; moat: string; industries: string[]; role: Role | null; markets: Jurisdiction[] }
+export interface Competitor { name: string; url: string; why_similar: string; quote: string }
+export type BigTechLevel = "low" | "medium" | "high" | "none_found" | "unverified";
+export interface BigTechRisk {
+  level: BigTechLevel;
+  companies: { name: string; relation: "direct" | "adjacent"; reason: string; source_urls: string[]; quote: string }[];
+  unconfirmed: { name: string; source_urls: string[] }[];
+  summary: string; companies_checked: string[]; queries: string[]; sources_checked: number;
+}
+export type OverlapBand = "clear" | "caution" | "high";
+export type AxisId = "novelty" | "market" | "defensibility" | "graveyard" | "evidence" | "big_tech";
+export interface Axis { value: number | null; inputs: Record<string, unknown>; boundary: string; note?: string; reason?: string; sample: boolean }
+export interface Scores {
+  vistadex: { value: number | null; reason?: string; sample: boolean; used: { axis: AxisId; weight: number; share: number; value: number }[]; excluded: { axis: AxisId; reason: string }[] };
+  axes: Record<AxisId, Axis>;
+}
+export type SampleField = "competitors" | "big_tech_risk" | "market" | "legal";
 
 export interface Report {
   idea_text: string;
@@ -60,6 +77,13 @@ export interface Report {
   objections: Objection[];
   legal?: Legal;
   market?: Market;
+  input?: IdeaInput;
+  competitors?: Competitor[];
+  search?: { competitors?: { queries: string[]; sources_checked: number }; graveyard?: { entries_checked: number; verified_entries: number } };
+  big_tech_risk?: BigTechRisk;
+  overlap_band?: OverlapBand;
+  scores?: Scores;
+  sample_fields?: SampleField[];
 }
 
 export type RunMode = "mock" | "live" | "proxy-mock";

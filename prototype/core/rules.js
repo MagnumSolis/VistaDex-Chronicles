@@ -24,6 +24,12 @@ const RULES = [
   { type: "defensibility", w: 2, re: /\b(cannot|can't|could not|unable to) (easily )?(replicate|copy|compete|match)\b/i, why: "cannot-replicate" },
   { type: "defensibility", w: 1, re: /\b(trained on|hard to (copy|replicate)|years ahead|head start)\b/i, why: "data/time advantage" },
 
+  // traction — users, customers, revenue, pilots, growth already achieved
+  { type: "traction", w: 3, re: /\b(mrr|arr|annual recurring revenue|monthly recurring revenue|in revenue|revenue run[- ]rate)\b/i, why: "recurring revenue" },
+  { type: "traction", w: 2, re: /\b\d[\d,.]*\s?(k|m)?\+?\s?(paying |active |monthly |daily |registered )?(users|customers|clients|subscribers|downloads|installs|sign-?ups|members)\b/i, why: "user/customer count" },
+  { type: "traction", w: 2, re: /\b(paying customers|pilots?|lois?|letters? of intent|wait-?list|pre-?orders?|design partners?)\b/i, why: "pilots/LOIs/waitlist" },
+  { type: "traction", w: 1, re: /\b\d+(\.\d+)?\s?%\s?(month[- ]on[- ]month|mom|week[- ]on[- ]week|wow)\b/i, why: "growth rate" },
+
   // other — pricing, regulation, timelines, unit economics
   // A bare price mention is weak: "no tool exists at under $200/month" is still a novelty claim.
   { type: "other", w: 1, re: /\$\s?\d[\d.,]*\s?(\/|per )\s?(month|mo|year|yr|user|seat|unit)\b/i, why: "price point" },
@@ -35,7 +41,7 @@ const RULES = [
 const ASSERTIVE = /\d|\b(no|none|nobody|only|first|every|all|never|cannot|can't|will|is worth|exists?|largest|cheapest|fastest|better|more|less|than)\b/i;
 
 export function scoreClaim(text) {
-  const scores = { novelty: 0, market_size: 0, defensibility: 0, other: 0 };
+  const scores = { novelty: 0, market_size: 0, defensibility: 0, traction: 0, other: 0 };
   const hits = [];
   for (const r of RULES) {
     if (r.re.test(text)) {

@@ -128,11 +128,11 @@ export function Report({ entry }: { entry: ReportEntry }) {
 
         <ReportSection id="legal" title="Legal" runId={runId}
           intro="Things to look up and rules that may apply in each target market. Never a judgement of whether something is allowed.">
-          <LegalSection legal={report.legal} markets={entry.markets} />
+          <LegalSection legal={report.legal} markets={entry.markets} sample={Boolean(report.sample_fields?.includes("legal"))} />
         </ReportSection>
 
         <ReportSection id="market" title="Market" runId={runId} intro="A ballpark size of the market, with its source and assumptions.">
-          <MarketSection market={report.market} />
+          <MarketSection market={report.market} sample={Boolean(report.sample_fields?.includes("market"))} />
         </ReportSection>
 
         <div className="on-light rounded-panel bg-background p-5 text-foreground md:p-8 print:hidden">

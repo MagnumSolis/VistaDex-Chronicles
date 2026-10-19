@@ -36,14 +36,14 @@ function ExtLink({ link, control }: { link: Link; control: string }) {
   );
 }
 
-export function LegalSection({ legal, markets }: { legal?: Legal; markets: Jurisdiction[] }) {
+export function LegalSection({ legal, markets, sample }: { legal?: Legal; markets: Jurisdiction[]; sample: boolean }) {
   if (!legal) {
     return <NotAvailable what="This section will list things you can look up for each target market (patents, trademarks, approvals, licences, with registry links) and rules that may apply, each naming the rule and its source. It will never say whether something is allowed." />;
   }
   const shown = legal.jurisdictions.filter(j => markets.includes(j.jurisdiction));
   return (
     <div data-tour="legal">
-      {legal.sample && <SampleBanner />}
+      {sample && <SampleBanner />}
       {shown.length === 0 ? (
         <EmptyState icon={MapPin} title="No target market was picked for this screening">
           Pick EU, USA or India on the Screen an idea page before you run, and this section covers those markets.
@@ -95,25 +95,31 @@ function Group({ title, note, children }: { title: string; note: string; childre
   );
 }
 
-export function MarketSection({ market }: { market?: Market }) {
-  if (!market) {
+export function MarketSection({ market, sample }: { market?: Market; sample: boolean }) {
+  if (!market?.tam) {
     return <NotAvailable what="This section will give a ballpark market size: the total market (TAM) with its citation, and the serviceable (SAM) and obtainable (SOM) markets, clearly labelled as estimates with their assumptions listed." />;
   }
   return (
     <div>
-      {market.sample && <SampleBanner />}
+      {sample && <SampleBanner />}
       <div className="grid gap-4 md:grid-cols-3">
         <Figure label="TAM" name="Total addressable market" value={market.tam.value} scope={market.tam.scope}>
           <p className="eyebrow text-muted-foreground">Source</p>
-          <div className="mt-1"><ExtLink link={market.tam.citation} control="market_citation_link" /></div>
+          {market.tam.quote && <blockquote className="mt-1 border-l-2 border-foreground/40 pl-3 text-sm leading-relaxed">“{market.tam.quote}”</blockquote>}
+          {market.tam.citation && <div className="mt-1"><ExtLink link={market.tam.citation} control="market_citation_link" /></div>}
         </Figure>
-        {(["sam", "som"] as const).map(k => (
+        {(["sam", "som"] as const).map(k => market[k] ? (
           <Figure key={k} label={k.toUpperCase()} name={k === "sam" ? "Serviceable addressable market" : "Serviceable obtainable market"} estimate value={market[k].value} scope={market[k].scope}>
             <p className="eyebrow text-muted-foreground">Assumptions</p>
             <ul className="mt-1 list-disc space-y-1 pl-5 text-[0.9375rem] leading-relaxed">
-              {market[k].assumptions.map(a => <li key={a}>{a}</li>)}
+              {market[k]!.assumptions.map(a => <li key={a}>{a}</li>)}
             </ul>
           </Figure>
+        ) : (
+          <div key={k} className="rounded-card bg-card p-5">
+            <p><span className="font-mono font-medium">{k.toUpperCase()}</span> <span className="text-sm text-muted-foreground">{k === "sam" ? "Serviceable addressable market" : "Serviceable obtainable market"}</span></p>
+            <p className="mt-3 text-[0.9375rem] text-muted-foreground">Not available in this version yet.</p>
+          </div>
         ))}
       </div>
       <p className="mt-4 text-sm text-muted-foreground">SAM and SOM are estimates. They are only as good as their assumptions, so check each one.</p>

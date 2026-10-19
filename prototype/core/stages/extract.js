@@ -15,14 +15,15 @@ const MIN_GROUNDING = 0.5;
 
 const EXTRACT_PROMPT = `Split the startup idea into atomic, falsifiable factual claims.
 Rules:
-- One checkable assertion per claim (about novelty, market size, defensibility, pricing, regulation, etc.).
+- One checkable assertion per claim (about novelty, market size, defensibility, traction, pricing, regulation, etc.).
 - Use the idea's own wording; do not add facts, numbers or companies that are not in the text.
 - Skip pure descriptions of what the product does.
 Return a JSON object: {"claims": [{"claim": "..."}]}. Never return a bare array.`;
 
-const TYPE_PROMPT = `Type each claim as exactly one of: novelty, market_size, defensibility, other.
+const TYPE_PROMPT = `Type each claim as exactly one of: novelty, market_size, defensibility, traction, other.
 novelty = nothing like this exists / first / only; market_size = size, growth or demand of a market;
-defensibility = moats, barriers, why others cannot copy; other = anything else.
+defensibility = moats, barriers, why others cannot copy; traction = users, customers, revenue, pilots or growth
+the company says it already has; other = anything else.
 Return a JSON object: {"types": [{"index": 0, "type": "..."}]}. Never return a bare array.`;
 
 export async function extractClaims(ideaText, { llm, trace }) {

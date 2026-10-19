@@ -4,6 +4,7 @@ import { CONFIG } from "../config.js";
 import { runScreen } from "../core/pipeline.js";
 import { validateContract } from "../core/contract.js";
 import { GRAVEYARD_DB } from "../data/graveyard.js";
+import { MOCK_SAMPLES } from "../data/samples.js";
 import { ACCESS_HEADER, getAccessCode, refusalMessage } from "./access.js";
 
 export function liveMode() {
@@ -27,7 +28,8 @@ export async function screenIdea(ideaText, { onStage, signal } = {}) {
     await onStage?.(...args);
     if (signal?.aborted) throw cancelled();
   };
-  const { report, trace } = await runScreen(ideaText, { mode: "mock", graveyard: GRAVEYARD_DB, onStage: guarded });
+  // In-browser mock only: sample placeholders for what the key-free path cannot produce (marked in sample_fields).
+  const { report, trace } = await runScreen(ideaText, { mode: "mock", graveyard: GRAVEYARD_DB, onStage: guarded, samples: MOCK_SAMPLES });
   return { report, trace, traceId: trace.trace_id, mode: "mock" };
 }
 

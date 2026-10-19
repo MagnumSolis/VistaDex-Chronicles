@@ -22,3 +22,7 @@ node_modules/
 secrets.json
 
 # Wrangler.wrangler/.dev.vars
+
+# Wrangler
+.wrangler/
+.dev.vars

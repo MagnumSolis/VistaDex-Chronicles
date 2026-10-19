@@ -12,6 +12,9 @@ import { extractClaims } from "./stages/extract.js";
 import { classifyClaims } from "./stages/classify.js";
 import { matchGraveyard } from "./stages/graveyard.js";
 import { raiseObjections } from "./stages/objector.js";
+import { findCompetitors } from "./stages/competitors.js";
+import { assessBigTech } from "./stages/bigtech.js";
+import { tamFromEvidence } from "./stages/market.js";
 
 // ideaOrInput: the idea text (string), or the structured input { title, pitch, problem, solution, moat,
 // industries, role, markets } — then idea_text is built from it (input.js) and the input is kept on the report.
@@ -37,7 +40,14 @@ export async function runScreen(ideaOrInput, deps = {}) {
   await onStage(1, "done", `${extracted.length} claims extracted`);
 
   await onStage(2, "running");
-  const claims = await classifyClaims(extracted, { llm, retrieval, trace });
+  const classified = await classifyClaims(extracted, { llm, retrieval, trace });
+  const novelPages = classified.flatMap(c => c._pages || []);
+  const claims = classified.map(({ _pages, ...c }) => c);
+  // Competitors (dedicated search on title + pitch, plus the novelty claims' pages) and Big Tech risk.
+  // Both are null when no search could run; the report then says "Not available in this version yet".
+  const competitors = await findCompetitors({ ideaText, input, novelPages }, { llm, retrieval, trace });
+  const bigTech = await assessBigTech({ ideaText, input }, { llm, retrieval, trace });
+  const market = tamFromEvidence(claims, trace);
   await onStage(2, "done", `${claims.length} claims classified`);
 
   await onStage(3, "running");
@@ -45,14 +55,20 @@ export async function runScreen(ideaOrInput, deps = {}) {
   await onStage(3, "done", `${matches.length} lead${matches.length === 1 ? "" : "s"} found`);
 
   await onStage(4, "running");
-  const objections = await raiseObjections(ideaText, claims, matches, { llm, trace });
+  const objections = await raiseObjections(ideaText, claims, matches, { llm, trace, competitors: competitors?.list ?? [] });
   await onStage(4, "done", `${objections.length} objections raised`);
 
   const raw = applySamples({
     idea_text: ideaText,
     ...(input ? { input } : {}),
     claims, graveyard_matches: matches, objections,
-    search: { graveyard: { entries_checked: graveyard.length, verified_entries: graveyard.filter(g => g.source_verified === true).length } },
+    ...(competitors ? { competitors: competitors.list } : {}),
+    ...(bigTech ? { big_tech_risk: bigTech } : {}),
+    ...(market ? { market } : {}),
+    search: {
+      ...(competitors ? { competitors: competitors.search } : {}),
+      graveyard: { entries_checked: graveyard.length, verified_entries: graveyard.filter(g => g.source_verified === true).length },
+    },
   }, deps.samples);
   const report = finalizeReport(raw);
   trace.log("run_done", {

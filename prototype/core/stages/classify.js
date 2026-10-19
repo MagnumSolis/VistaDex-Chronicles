@@ -6,10 +6,10 @@
 
 import { computeStatus, STANCES } from "../evidence.js";
 import { parseWrapped, NoProviderAvailable } from "../providers/llm.js";
+import { isVerbatim } from "../quotes.js";
 
 export const SOURCES_PER_CLAIM = 5;
-const PAGE_CHARS = 2500;
-const MIN_QUOTE_CHARS = 12;
+export const PAGE_CHARS = 2500;
 
 const JUDGE_PROMPT = `You check one factual claim against numbered web sources.
 For EACH source decide its stance toward the claim:
@@ -26,8 +26,15 @@ export async function classifyClaims(claims, { llm, retrieval, trace }) {
   return out;
 }
 
-async function classifyOne(claim, index, { llm, retrieval, trace }) {
-  const pages = await gatherEvidence(claim, index, { retrieval, trace });
+// Novelty claims also hand their fetched pages on (as _pages, never part of the contract) so the
+// competitor stage can look for named products on them without fetching again.
+async function classifyOne(claim, index, ctx) {
+  const pages = await gatherEvidence(claim, index, ctx);
+  const result = await judge(claim, index, pages, ctx);
+  return claim.type === "novelty" ? { ...result, _pages: pages } : result;
+}
+
+async function judge(claim, index, pages, { llm, trace }) {
   if (!pages.length) {
     return abstain(claim, index, trace, "abstain(no-evidence)",
       "No evidence was retrieved for this claim, so it is not marked true or false. Check it yourself.");
@@ -60,7 +67,7 @@ async function classifyOne(claim, index, { llm, retrieval, trace }) {
     const page = pages[Number(j?.source) - 1];
     const stance = STANCES.includes(j?.stance) ? j.stance : null;
     const quote = String(j?.quote ?? "").trim();
-    const verbatim = page && quote.length >= MIN_QUOTE_CHARS && norm(page.text).includes(norm(quote));
+    const verbatim = Boolean(page) && isVerbatim(page.text, quote);
     trace.log("judgment", { claim_index: index, source: page?.url ?? null, stance, quote_verified: Boolean(verbatim) });
     if (page && stance && stance !== "irrelevant" && verbatim) kept.push({ url: page.url, stance, quote });
   }
@@ -70,10 +77,16 @@ async function classifyOne(claim, index, { llm, retrieval, trace }) {
     claim_index: index, router: "llm+computed", status: result.status,
     supporting: result.supporting, contradicting: result.contradicting, conflicted: result.conflicted,
   });
-  return { ...claim, status: result.status, reasoning: explain(result, kept), source_urls: result.source_urls };
+  // One verified quote per counted source (the first found), shown next to its link in the report.
+  const evidence = [];
+  for (const url of result.source_urls) {
+    const k = kept.find(x => x.url === url);
+    if (k) evidence.push({ url, stance: k.stance, quote: k.quote.slice(0, 400) });
+  }
+  return { ...claim, status: result.status, reasoning: explain(result, kept), source_urls: result.source_urls, evidence };
 }
 
-async function gatherEvidence(claim, index, { retrieval, trace }) {
+export async function gatherEvidence(claim, index, { retrieval, trace }) {
   let hits = [];
   try {
     hits = await retrieval.search(claim.claim.slice(0, 200), { limit: SOURCES_PER_CLAIM });
@@ -107,8 +120,4 @@ function explain(result, kept) {
   const rule = result.status === "unverified" ? ` At least 2 independent sources on one side are needed for a status, so this stays unverified.` : "";
   const quotes = kept.slice(0, 2).map(k => ` ${k.stance === "supports" ? "Supporting" : "Contradicting"}: "${k.quote.slice(0, 220)}"`).join("");
   return head + rule + quotes;
-}
-
-function norm(s) {
-  return String(s).toLowerCase().replace(/[“”"‘’'`]/g, "").replace(/\s+/g, " ").trim();
 }

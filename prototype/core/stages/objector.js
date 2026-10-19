@@ -18,8 +18,8 @@ Never approve, endorse, recommend, praise or give a verdict. Do not summarise st
 Ground every objection in the draft below (claims, statuses, graveyard leads) or in a gap in the evidence. Do not invent facts, numbers or companies.
 Return a JSON object: {"objections": [{"objection": "...", "severity": "high|medium|low"}]}, at most ${MAX_OBJECTIONS} items. Never return a bare array.`;
 
-export async function raiseObjections(ideaText, claims, matches, { llm, trace }) {
-  const draft = summarizeDraft(claims, matches);
+export async function raiseObjections(ideaText, claims, matches, { llm, trace, competitors = [] }) {
+  const draft = summarizeDraft(claims, matches, competitors);
   let objections = null;
   if (llm.available("objector")) {
     try {
@@ -39,7 +39,7 @@ export async function raiseObjections(ideaText, claims, matches, { llm, trace })
     }
   }
   if (!objections || !objections.length) {
-    objections = deterministicObjections(claims, matches);
+    objections = deterministicObjections(claims, matches, competitors);
     trace.log("objector", { router: llm.available("objector") ? "rules-fallback(llm-failed)" : "rules", count: objections.length });
   }
   const sorted = sortBySeverity(objections).slice(0, MAX_OBJECTIONS);
@@ -62,8 +62,12 @@ export function filterObjections(raw, trace, provider = "llm") {
   return kept;
 }
 
-export function deterministicObjections(claims, matches) {
+export function deterministicObjections(claims, matches, competitors = []) {
   const out = [];
+  if (competitors.length) {
+    const names = competitors.slice(0, 3).map(c => c.name).join(", ");
+    out.push({ severity: competitors.length >= 3 ? "high" : "medium", objection: `Fetched pages name ${competitors.length} product${competitors.length === 1 ? "" : "s"} already doing something similar (${names}${competitors.length > 3 ? ", …" : ""}). The idea has to say why buyers would switch.` });
+  }
   const by = s => claims.filter(c => c.status === s);
   const contradicted = by("contradicted"), disputed = by("disputed"), unverified = by("unverified");
 
@@ -94,10 +98,11 @@ export function deterministicObjections(claims, matches) {
   return out;
 }
 
-function summarizeDraft(claims, matches) {
+function summarizeDraft(claims, matches, competitors = []) {
   const lines = claims.map((c, i) => `${i + 1}. [${c.type}] [${c.status}] ${c.claim}`);
   const leads = matches.map(m => `- ${m.company_name} (${m.year_closed}), similarity ${m.similarity}: ${m.cause_of_death}`);
-  return `Claims:\n${lines.join("\n") || "(none)"}\n\nGraveyard leads:\n${leads.join("\n") || "(none)"}`;
+  const comps = competitors.map(c => `- ${c.name}: ${c.why_similar}`);
+  return `Claims:\n${lines.join("\n") || "(none)"}\n\nGraveyard leads:\n${leads.join("\n") || "(none)"}\n\nExisting products named on fetched pages:\n${comps.join("\n") || "(none)"}`;
 }
 
 function sortBySeverity(list) {

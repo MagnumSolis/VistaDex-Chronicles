@@ -71,9 +71,9 @@ export function clearStoredReports() {
   emit();
 }
 
-export const demoEntries: ReportEntry[] = features.reportStore === "session-and-demo"
-  ? cohort.map(i => ({ id: i.id, runId: null, title: i.name, kind: "demo", createdAt: null, report: demoReport(i), mode: "demo", markets: [], category: i.category, traceId: null }))
-  : [];
+export const makeDemoEntries = (): ReportEntry[] =>
+  cohort.map(i => ({ id: i.id, runId: null, title: i.name, kind: "demo", createdAt: null, report: demoReport(i), mode: "demo", markets: [], category: i.category, traceId: null }));
+export const demoEntries: ReportEntry[] = features.reportStore === "session-and-demo" ? makeDemoEntries() : [];
 
 export const latestSessionReport = () => session[0] ?? null;
 export const allEntries = () => [...session, ...demoEntries];

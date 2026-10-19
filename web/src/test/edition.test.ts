@@ -18,7 +18,7 @@ describe("edition features", () => {
       home: "reports", welcome: false, walkthrough: false, telemetry: false, feedback: false,
       reportStore: "session-and-demo", badge: "Pitch edition",
     });
-    expect(featuresFor("pitch").nav[0]).toBe("reports");
+    expect(featuresFor("pitch").nav).toEqual(["home", "screen", "reports", "how", "contact"]);
   });
 });
 

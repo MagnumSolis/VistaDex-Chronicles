@@ -33,11 +33,12 @@ const same = (a: IdeaInput | undefined, b: IdeaInput) => JSON.stringify(a) === J
 const draft: { input: IdeaInput; sample: string | null } = { input: empty(), sample: null };
 export function clearDraft() { draft.input = empty(); draft.sample = null; }
 
-export function ScreenIdea() {
+/** `preview`: show this input read-only-style (the Home page's product screens); the draft is untouched. */
+export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
   const run = useRun();
   useSessionReports();
-  const last = latestSessionReport();
-  const [input, setInputState] = useState<IdeaInput>(draft.input);
+  const last = preview ? null : latestSessionReport();
+  const [input, setInputState] = useState<IdeaInput>(preview ?? draft.input);
   const [errors, setErrors] = useState<TextField[]>([]);
   const summaryRef = useRef<HTMLDivElement>(null);
   const running = run.status === "running";
@@ -64,7 +65,7 @@ export function ScreenIdea() {
     void startRun({ input: current, sample });
   }
 
-  const copy = run.error ? errorCopy(run.error.code) : null;
+  const copy = run.error && !preview ? errorCopy(run.error.code) : null;
   return (
     <div>
       <PageTitle eyebrow="Screen an idea" title="What are you building?">
@@ -72,7 +73,7 @@ export function ScreenIdea() {
       </PageTitle>
 
       <div className="space-y-4">
-        {running && (
+        {running && !preview && (
           <p className="on-light flex flex-wrap items-center gap-3 rounded-card bg-background p-4 text-foreground">
             <LoaderCircle aria-hidden className="size-5 motion-safe:animate-spin" /> A screening is running.
             <a href={href(PATHS.running)} data-control="open_last_report" data-control-value="running" className="font-medium text-link underline underline-offset-4">See its progress</a>

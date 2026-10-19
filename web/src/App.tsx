@@ -12,6 +12,8 @@ import { Running } from "@/screens/Running";
 import { ReportScreen } from "@/screens/ReportScreen";
 import { Reports } from "@/screens/Reports";
 import { Contact } from "@/screens/Contact";
+import { Home } from "@/screens/Home";
+import { rememberTarget } from "@/lib/gate";
 import { HowItWorks } from "@/screens/HowItWorks";
 import { Feedback } from "@/screens/Feedback";
 import { startWalkthrough, Walkthrough } from "@/walkthrough/Walkthrough";
@@ -23,8 +25,10 @@ function available(name: RouteName) {
   return true;
 }
 // Before the Welcome notice is answered (public, first visit), only pages that record nothing can be
-// read: Welcome, How it works and Contact us.
-const beforeNotice = (name: RouteName) => !["welcome", "how", "contact"].includes(name);
+// read: Home, Welcome, How it works and Contact us.
+const beforeNotice = (name: RouteName) => !["home", "welcome", "how", "contact"].includes(name);
+// A fresh load of the pitch edition opens on Reports; after that, Home is the landing page.
+let firstRoute = true;
 
 export function App() {
   const route = useRoute();
@@ -33,19 +37,23 @@ export function App() {
 
   useEffect(() => { telemetry.installControlTracking(); telemetry.installLifecycle(); }, []);
 
-  // Redirects: "#/" goes home; routes this edition lacks go home; first visit goes to Welcome.
+  // Redirects: routes this edition lacks go to its start page; pages that record go behind the Welcome
+  // notice on a first visit (and continue to the page asked for afterwards).
   useEffect(() => {
-    if (route.name === "home") {
-      navigate(features.home === "reports" ? PATHS.reports : answered ? PATHS.screen : PATHS.welcome, { replace: true });
-    } else if (route.name !== "notfound" && !available(route.name)) {
+    const first = firstRoute;
+    firstRoute = false;
+    if (route.name === "home" && first && features.home === "reports") {
+      navigate(PATHS.reports, { replace: true });
+    } else if (route.name !== "notfound" && route.name !== "home" && !available(route.name)) {
       navigate(features.home === "reports" ? PATHS.reports : PATHS.screen, { replace: true });
     } else if (!answered && beforeNotice(route.name)) {
+      rememberTarget(route.path);
       navigate(PATHS.welcome, { replace: true });
     }
-  }, [route.name, answered]);
+  }, [route.name, route.path, answered]);
 
   useEffect(() => {
-    if (route.name !== "home") telemetry.screenChanged(screenName(route.name));
+    telemetry.screenChanged(screenName(route.name));
   }, [route.name]);
 
   // After moving to another screen, start at the top with focus on the content (not on first load,
@@ -54,7 +62,7 @@ export function App() {
   useEffect(() => {
     const from = previous.current;
     previous.current = route.name;
-    if (from === null || from === "home") return; // first load, or its redirect from "#/"
+    if (from === null) return; // first load
     document.getElementById("main")?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [route.path]);
@@ -71,6 +79,7 @@ const screenName = (n: RouteName) => (n === "how" ? "how_it_works" : n);
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
+    case "home": return <Home />;
     case "welcome": return <Welcome onStartWalkthrough={() => startWalkthrough("welcome")} />;
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;

@@ -3,7 +3,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, vi } from "vitest";
 
-export async function loadApp({ edition = "public", hash = "", proxy = false }: { edition?: "public" | "pitch"; hash?: string; proxy?: boolean } = {}) {
+export async function loadApp({ edition = "public", hash = edition === "public" ? "#/screen" : "", proxy = false }: { edition?: "public" | "pitch"; hash?: string; proxy?: boolean } = {}) {
   vi.resetModules();
   if (edition === "pitch") sessionStorage.setItem("vistadex.edition", "pitch");
   history.replaceState(null, "", `/${hash}`);

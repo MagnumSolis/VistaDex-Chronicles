@@ -7,8 +7,10 @@
 export const CONTROLS = [
   // shell
   "skip_to_content", "nav_home", "nav_screen", "nav_how", "nav_contact",
-  "tab_screen", "tab_how", "tab_contact",
+  "tab_home", "tab_screen", "tab_how", "tab_contact",
   "help_replay_walkthrough", "header_feedback", "footer_your_data", "dialog_close",
+  // home (landing)
+  "home_try_demo", "home_how_it_works", "home_start_demo", "home_feedback",
   // welcome
   "welcome_start_walkthrough", "welcome_skip", "welcome_no_recording", "welcome_continue", "welcome_start_recording",
   "welcome_delete_session", "welcome_delete_confirm", "welcome_delete_cancel", "welcome_how_it_works",

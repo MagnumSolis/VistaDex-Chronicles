@@ -1,16 +1,17 @@
 // ── Shell.tsx — Header (floating cream bar on desktop), bottom tab bar on phones, footer ──
 // What appears is decided by `features` (edition.ts); this file never checks the edition itself.
 import type { ReactNode } from "react";
-import { BookOpen, CircleHelp, Files, Mail, MessageSquareText, ScanSearch, type LucideIcon } from "lucide-react";
+import { BookOpen, CircleHelp, Files, House, Mail, MessageSquareText, ScanSearch, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { features, type NavId } from "@/edition";
 import { href, PATHS, type RouteName } from "@/router";
 import { liveMode } from "@/proto";
 
 const NAV: Record<NavId, { label: string; short: string; path: string; icon: LucideIcon; routes: RouteName[] }> = {
+  home: { label: "Home", short: "Home", path: "/", icon: House, routes: ["home"] },
   reports: { label: "Reports", short: "Reports", path: PATHS.reports, icon: Files, routes: ["reports"] },
   screen: { label: "Screen an idea", short: "Screen", path: PATHS.screen, icon: ScanSearch, routes: ["screen", "running", "report"] },
-  how: { label: "How it works", short: "How it works", path: PATHS.how, icon: BookOpen, routes: ["how"] },
+  how: { label: "How it works", short: "How", path: PATHS.how, icon: BookOpen, routes: ["how"] },
   contact: { label: "Contact us", short: "Contact", path: PATHS.contact, icon: Mail, routes: ["contact"] },
 };
 

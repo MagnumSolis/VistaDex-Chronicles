@@ -23,21 +23,22 @@ import type { BigTechLevel } from "@/types";
 const BIG_TECH_LABEL: Record<BigTechLevel, string> = { low: "Low", medium: "Medium", high: "High", none_found: "None found", unverified: "Unverified" };
 const ROLE_LABEL = { founder: "Founder", investor: "Investor", accelerator: "Accelerator / incubator" } as const;
 
-export function Reports() {
+/** `preview`: render with these entries instead (the Home page's product screens). */
+export function Reports({ preview }: { preview?: ReportEntry[] } = {}) {
   const session = useSessionReports();
-  const entries = useMemo(() => allEntries(), [session]);
+  const entries = useMemo(() => preview ?? allEntries(), [session, preview]);
   const [sort, setSort] = useState<SortKey>("newest");
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [confirmClear, setConfirmClear] = useState(false);
   const summary = useMemo(() => summarize(entries), [entries]);
   const rows = sortEntries(filterEntries(entries, filters), sort);
   const industryOptions = useMemo(() => [...new Set(entries.flatMap(industriesOf))].sort((a, b) => INDUSTRIES.indexOf(a) - INDUSTRIES.indexOf(b)), [entries]);
-  const browser = features.reportStore === "browser";
+  const browser = !preview && features.reportStore === "browser";
 
   const title = browser ? "Your reports" : "Screened ideas";
   const lead = browser
     ? "Every report this browser has run. They are saved here only, never uploaded; clear them whenever you like."
-    : `${session.length} from this session and ${entries.length - session.length} demo ideas (hand-written examples run through the same scoring, with sample data where demo data has none). Session reports are kept until this tab is closed.`;
+    : preview ? "Sample data: demo ideas run through the same scoring." : `${session.length} from this session and ${entries.length - session.length} demo ideas (hand-written examples run through the same scoring, with sample data where demo data has none). Session reports are kept until this tab is closed.`;
 
   if (!entries.length) {
     return (

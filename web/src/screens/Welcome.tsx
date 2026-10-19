@@ -10,6 +10,7 @@ import { STATUS, STATUS_ORDER, StatusTag } from "@/components/status";
 import { liveMode, studyConfig } from "@/proto";
 import { href, navigate, PATHS } from "@/router";
 import * as telemetry from "@/telemetry";
+import { takeTarget } from "@/lib/gate";
 
 const { NOTICE, RETENTION_PERIOD, WITHDRAWAL_CONTACT } = studyConfig;
 
@@ -21,8 +22,8 @@ export function Welcome({ onStartWalkthrough }: { onStartWalkthrough: () => void
   const [deleted, setDeleted] = useState<string | null>(null);
 
   const start = () => { telemetry.acceptNotice("walkthrough"); onStartWalkthrough(); };
-  const skip = () => { telemetry.acceptNotice("skip"); navigate(PATHS.screen); };
-  const noRecording = () => { telemetry.declineRecording(); navigate(PATHS.screen); };
+  const skip = () => { telemetry.acceptNotice("skip"); navigate(takeTarget()); };
+  const noRecording = () => { telemetry.declineRecording(); navigate(takeTarget()); };
 
   async function remove() {
     setConfirming(false);
@@ -89,7 +90,7 @@ export function Welcome({ onStartWalkthrough }: { onStartWalkthrough: () => void
                 : "Nothing is being recorded in this browser.")}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button size="lg" onClick={() => navigate(PATHS.screen)} data-control="welcome_continue">Continue to the tool</Button>
+              <Button size="lg" onClick={() => navigate(takeTarget())} data-control="welcome_continue">Continue to the tool</Button>
               {code && <Button size="lg" variant="outline" onClick={() => setConfirming(true)} data-control="welcome_delete_session"><Trash2 aria-hidden /> Delete my session</Button>}
               {!code && (
                 <Button size="lg" variant="outline" onClick={() => { setDeleted(null); telemetry.acceptNotice("skip"); }} data-control="welcome_start_recording">Turn recording on</Button>

@@ -54,7 +54,7 @@ export const sendFeedback = (answers: Record<string, unknown>) => tm.sendUnlinke
 // Controls carry data-control="<id>" (ids in ./controls.ts, listed in the contract) and optionally
 // data-control-value="<enum value>". One capturing listener logs them; text fields log their length
 // (never their content) when the visitor leaves them.
-let currentScreen = "home";
+let currentScreen = "";
 let installed = false;
 export function installControlTracking() {
   if (installed || !features.telemetry) return;
@@ -93,7 +93,7 @@ function pauseScreen() { if (screenSince !== null) { screenMs += performance.now
 function resumeScreen() { if (screenSince === null && visible()) screenSince = performance.now(); }
 function endScreen(ended_by: "navigate" | "page_hidden") {
   pauseScreen();
-  if (currentScreen !== "home") track("screen_time", { screen: currentScreen, visible_ms: Math.round(screenMs), ended_by });
+  if (currentScreen) track("screen_time", { screen: currentScreen, visible_ms: Math.round(screenMs), ended_by });
   screenMs = 0;
 }
 export function screenChanged(screen: string) {

@@ -123,6 +123,7 @@
       "skip"
     ],
     "view_changed.view": [
+      "home",
       "welcome",
       "screen",
       "running",
@@ -134,6 +135,7 @@
       "contact"
     ],
     "screen_time.screen": [
+      "home",
       "welcome",
       "screen",
       "running",
@@ -304,12 +306,17 @@
     "nav_home",
     "nav_screen",
     "nav_how",
+    "tab_home",
     "tab_screen",
     "tab_how",
     "help_replay_walkthrough",
     "header_feedback",
     "footer_your_data",
     "dialog_close",
+    "home_try_demo",
+    "home_how_it_works",
+    "home_start_demo",
+    "home_feedback",
     "welcome_start_walkthrough",
     "welcome_skip",
     "welcome_no_recording",

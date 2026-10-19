@@ -26,3 +26,4 @@ secrets.json
 # Wrangler
 .wrangler/
 .dev.vars
+TINYFISH_API_KEY

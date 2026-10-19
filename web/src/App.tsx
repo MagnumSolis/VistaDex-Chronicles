@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { liveMode } from "@/proto";
 import * as study from "@/study/controller";
@@ -26,6 +26,7 @@ const NAV: { view: ViewName; label: string; short: string }[] = [
 export function App() {
   const [view, setView] = useState<ViewName>("dashboard");
   const [consentOpen, setConsentOpen] = useState(false);
+  const resumeAfterConsent = useRef<(() => void) | null>(null);
 
   useEffect(() => { study.init(); }, []);
 
@@ -79,12 +80,17 @@ export function App() {
         {!demoPreview && !swatchPreview && (
           <>
             <div hidden={view !== "dashboard"}><Dashboard /></div>
-            <div hidden={view !== "screen"}><ScreenIdea onReadStudyInfo={() => setConsentOpen(true)} /></div>
+            <div hidden={view !== "screen"}><ScreenIdea onReadStudyInfo={() => setConsentOpen(true)} onNeedConsent={resume => { resumeAfterConsent.current = resume; setConsentOpen(true); }} /></div>
             <div hidden={view !== "graveyard"}><Graveyard /></div>
           </>
         )}
       </main>
-      <ConsentDialog open={consentOpen} onDone={() => setConsentOpen(false)} />
+      <ConsentDialog open={consentOpen} onDone={() => {
+        setConsentOpen(false);
+        const resume = resumeAfterConsent.current;
+        resumeAfterConsent.current = null;
+        resume?.(); // the run the participant asked for (decline: runs; agree: asks the pre-use question first)
+      }} />
     </div>
   );
 }

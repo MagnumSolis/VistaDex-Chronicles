@@ -16,7 +16,11 @@ const STAGE_ANIMATION_MS = 600;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const idleStages = (): StageView[] => [0, 1, 2, 3].map(() => ({ state: "idle" }));
 
-export function ScreenIdea({ onReadStudyInfo }: { onReadStudyInfo: () => void }) {
+export function ScreenIdea({ onReadStudyInfo, onNeedConsent }: {
+  onReadStudyInfo: () => void;
+  // Asks the app to show the consent dialog, then calls resume() once the participant has chosen.
+  onNeedConsent: (resume: () => void) => void;
+}) {
   const { participating } = useStudyState();
   const [idea, setIdea] = useState("");
   const [stages, setStages] = useState<StageView[]>(idleStages);
@@ -35,6 +39,9 @@ export function ScreenIdea({ onReadStudyInfo }: { onReadStudyInfo: () => void })
     if (running) return;
     const text = idea.trim();
     if (!text) { setError("Please paste an idea first."); return; }
+    // Consent is normally answered on entering this screen. If a run is ever requested while it is
+    // still unanswered, ask first and then carry on with this same run — the idea text is kept.
+    if (study.consentStatus() === null) { onNeedConsent(() => { void run(); }); return; }
     if (!study.canRun()) { setNeedsTrust(true); return; }
     setNeedsTrust(false);
     setRunning(true);

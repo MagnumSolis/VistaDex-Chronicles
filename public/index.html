@@ -522,6 +522,7 @@
     <div style="text-align:right">
       <p style="font-family:var(--mono); font-size:11px; letter-spacing:.05em">DEMO_MODE · simulated pipeline<br>production: Groq + Tavily + MongoDB Atlas</p>
       <p style="margin-top:8px">BITS Pilani · F364 Human–AI Interaction</p>
+      <p id="teamTelIndicator" style="display:none; margin-top:10px; font-family:var(--mono); font-size:10px; letter-spacing:.1em; align-items:center; gap:6px; cursor:default" title="Team telemetry state — toggled via the hidden team shortcut. This indicator only appears on browsers where the toggle has been used."><span id="teamTelDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#FFB000; vertical-align:middle"></span> <span id="teamTelLabel">TELEMETRY OFF · TEAM</span></p>
     </div>
   </div>
 </footer>
@@ -584,6 +585,8 @@ let TEAM_OPT_OUT = store.getItem("vistadex_team_optout") === "true";
   const toggle = () => {
     TEAM_OPT_OUT = !TEAM_OPT_OUT;
     store.setItem("vistadex_team_optout", String(TEAM_OPT_OUT));
+    store.setItem("vistadex_team_toggle_used", "true");
+    renderTeamIndicator();
   };
   let buf = "";
   document.addEventListener("keydown", e => {
@@ -1045,7 +1048,18 @@ async function runPipeline() {
 renderStrip();
 $("ideaInput").addEventListener("input", () => { $("ideaError").style.display = "none"; });
 $("ideaInput").addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runPipeline(); });
+function renderTeamIndicator() {
+  const used = store.getItem("vistadex_team_toggle_used") === "true";
+  const el = $("teamTelIndicator");
+  if (!el) return;
+  if (!used) { el.style.display = "none"; return; }
+  el.style.display = "flex";
+  const dot = $("teamTelDot"), label = $("teamTelLabel");
+  if (TEAM_OPT_OUT) { dot.style.background = "#FFB000"; label.textContent = "TELEMETRY OFF · TEAM"; }
+  else { dot.style.background = "#35C77E"; label.textContent = "TELEMETRY ON · TEAM"; }
+}
 if (store.getItem("vistadex_consent") === null) { $("consentBanner").style.display = "flex"; document.body.classList.add("has-banner"); }
+renderTeamIndicator();
 </script>
 </body>
 </html>

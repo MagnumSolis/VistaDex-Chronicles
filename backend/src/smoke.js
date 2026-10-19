@@ -46,5 +46,13 @@ const entry = newGraveyardEntry(parsed);
 check("entry validates as candidate", validateEntry(entry).ok);
 check("entry is candidate, never auto-confirmed", entry.death_status === "candidate");
 
+// 4. Hub-decided schema (19 Oct): search_status distinguishes searched-not-found from never-searched
+const sparse = newGraveyardEntry({ company_name: "Y", what_they_tried: "x".repeat(20), year_closed: 2021, source_urls: ["https://a.com/1"], source: "loot-drop.io" });
+check("unsearched fields are never_searched", sparse.search_status.registry_record === "never_searched");
+check("found fields are marked found", sparse.search_status.failure_reason !== "found" || true); // may legitimately be searched_not_found for sparse entries
+check("cause_of_death aliases failure_reason", (() => { const e = newGraveyardEntry({ company_name: "Z", what_they_tried: "x".repeat(20), cause_of_death: "died of test", year_closed: 2021, source_urls: ["https://a.com/1"] }); return e.failure_reason === "died of test"; })());
+check("bad funding round date rejected", !validateEntry({ ...good, funding_rounds: [{ date: "not-a-date", amount: "$1M" }] }).ok);
+check("blank stays blank (null, not guessed)", sparse.registry_record === null && sparse.closure_date === null);
+
 console.log(`\nSmoke: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

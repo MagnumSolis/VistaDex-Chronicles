@@ -157,7 +157,7 @@ async function handleScreen(env, ideaText, sessionId) {
   });
 }
 
-// ── Events ingestion: POST /api/events → forward to sink (Mongo/Atlas later) ──
+// ── Events ingestion: POST /api/events → forward to sink (Mongo/Atlas or D1) ──
 async function handleEvents(env, payload) {
   const body = { ...payload, received_ts: Date.now() };
   if (env.EVENTS_SINK_URL) {
@@ -172,6 +172,77 @@ async function handleEvents(env, payload) {
     }
   }
   return json({ ok: true });
+}
+
+// ── Graveyard browse: GET /api/graveyard (public, confirmed+verified only) ──
+async function handleGraveyard(env, url) {
+  if (env.MONGODB_DATA_API_URL && env.MONGODB_DATA_API_KEY) {
+    const q = url.searchParams.get("q") || "";
+    const cause = url.searchParams.get("cause") || "";
+    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+    const limit = Math.min(50, Number(url.searchParams.get("limit")) || 50);
+    const filter = { death_status: "confirmed", source_verified: true };
+    if (q) filter.company_name = { $regex: q, $options: "i" };
+    if (cause) filter.cause_category = cause;
+    const res = await fetch(env.MONGODB_DATA_API_URL + "/action/find", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "api-key": env.MONGODB_DATA_API_KEY,
+      },
+      body: JSON.stringify({
+        database: env.MONGODB_DB || "vistadex",
+        collection: "graveyard",
+        filter,
+        sort: { year_closed: -1 },
+        limit,
+        skip: (page - 1) * limit,
+      }),
+    });
+    if (!res.ok) return json({ ok: false, error: "graveyard_query_failed" }, 502);
+    const data = await res.json();
+    return json({ ok: true, entries: data.documents || [], page, limit });
+  }
+  // No Mongo configured: serve the local seed (key-free path stays green)
+  return json({ ok: true, entries: GRAVEYARD_DB, page: 1, note: "local_seed" });
+}
+
+// ── Session withdraw: POST /api/session/withdraw (no access code needed) ──
+async function handleWithdraw(env, sessionId) {
+  if (env.EVENTS_SINK_URL) {
+    try {
+      await fetch(env.EVENTS_SINK_URL.replace(/\/+$/, "") + "/withdraw", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+    } catch {}
+  }
+  return json({ ok: true, withdrawn: true });
+}
+
+// ── Export: GET /api/export (researcher token protected) ──
+async function handleExport(env, request) {
+  const auth = request.headers.get("authorization") || "";
+  if (!env.RESEARCHER_EXPORT_TOKEN || auth !== `Bearer ${env.RESEARCHER_EXPORT_TOKEN}`) {
+    return json({ ok: false, error: "unauthorized" }, 401);
+  }
+  if (env.MONGODB_DATA_API_URL && env.MONGODB_DATA_API_KEY) {
+    const res = await fetch(env.MONGODB_DATA_API_URL + "/action/find", {
+      method: "POST",
+      headers: { "content-type": "application/json", "api-key": env.MONGODB_DATA_API_KEY },
+      body: JSON.stringify({
+        database: env.MONGODB_DB || "vistadex",
+        collection: "events",
+        filter: {},
+        limit: 10000,
+      }),
+    });
+    if (!res.ok) return json({ ok: false, error: "export_failed" }, 502);
+    const data = await res.json();
+    return json({ ok: true, events: data.documents || [] });
+  }
+  return json({ ok: false, error: "no_sink_configured" }, 503);
 }
 
 export default {
@@ -199,6 +270,24 @@ export default {
         return json({ ok: false, error: "invalid_event" }, 400);
       }
       return handleEvents(env, payload);
+    }
+
+    if (url.pathname === "/api/graveyard" && request.method === "GET") {
+      try {
+        return await handleGraveyard(env, url);
+      } catch {
+        return json({ ok: false, error: "graveyard_failed" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/session/withdraw" && request.method === "POST") {
+      const { session_id } = await request.json().catch(() => ({}));
+      if (!session_id) return json({ ok: false, error: "invalid_session" }, 400);
+      return handleWithdraw(env, session_id);
+    }
+
+    if (url.pathname === "/api/export" && request.method === "GET") {
+      return handleExport(env, request);
     }
 
     if (url.pathname === "/api/health") return json({ ok: true, ts: Date.now() });

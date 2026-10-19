@@ -1027,8 +1027,10 @@ async function runPipeline() {
     const data = await r.json();
     if (!data.ok) throw new Error(data.error || "screen_failed");
     res = data.result;
+    window.__lastRunMode = "real";
     [1,2,3,4].forEach(n => stepState(n, "done", "done"));
   } catch (err) {
+    window.__lastRunMode = "demo";
     logEvent("pipeline_fallback", { reason: String(err) });
     const claims = await runStage(1, 900, () => extractClaims(text));
     const verified = await runStage(2, 1300, () => claims.map(classifyClaim));
@@ -1036,7 +1038,21 @@ async function runPipeline() {
     const objections = await runStage(4, 900, () => buildObjections(verified, matches));
     res = { claims: verified, graveyard_matches: matches, objections };
   }
-  logEvent("run_complete", { ms: Math.round(performance.now() - t0), verdict: verdictFor(res.claims, res.graveyard_matches).cls });
+  const runMode = window.__lastRunMode || "demo";
+  fetch("/api/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      session_id: SESSION_ID,
+      mode: runMode,
+      idea_hash: String(hash(text)).slice(0, 64),
+      claims_count: res.claims.length,
+      graveyard_count: res.graveyard_matches.length,
+      objections_count: res.objections.length,
+      duration_ms: Math.round(performance.now() - t0)
+    })
+  }).catch(() => {});
+  logEvent("run_complete", { ms: Math.round(performance.now() - t0), mode: runMode, verdict: verdictFor(res.claims, res.graveyard_matches).cls });
   renderReport(res, name, text);
   go("report");
   $("runBtn").textContent = "▶ Run the analysis";

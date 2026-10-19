@@ -93,9 +93,14 @@ async function stageVerifyClaims(env, claims) {
     const parsed = safeJsonParse(content, { status: "unverified", reasoning: "", source_indices: [] });
     const status = ["confirmed", "contradicted", "disputed", "unverified"].includes(parsed.status) ? parsed.status : "unverified";
     // Cite ONLY real retrieved URLs, by index — never model-invented ones.
+    // ToS-restricted platforms (LinkedIn, Facebook, X/Twitter) are excluded from
+    // citations per AGENTS.md rule 1 — reading search results is fine, citing
+    // them as evidence sources is not.
+    const BLOCKED = ["linkedin.com", "facebook.com", "x.com", "twitter.com"];
+    const isAllowed = u => { try { const h = new URL(u).hostname.replace(/^www\./, ""); return !BLOCKED.some(d => h === d || h.endsWith("." + d)); } catch { return false; } };
     const sources = (parsed.source_indices || [])
       .map(i => evidence[Number(i)]?.url)
-      .filter(Boolean)
+      .filter(u => u && isAllowed(u))
       .slice(0, 5);
     results.push({ ...claim, status, reasoning: parsed.reasoning || "", sources, provider, evidence_count: evidence.length });
   }

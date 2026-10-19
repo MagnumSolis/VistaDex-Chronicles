@@ -11,8 +11,8 @@ class LLMProvider {
 }
 
 export class GroqProvider extends LLMProvider {
-  constructor({ apiKey }) {
-    super({ apiKey, model: "llama-3.3-70b-versatile" });
+  constructor({ apiKey, model = "openai/gpt-oss-120b" }) {
+    super({ apiKey, model });
     this.name = "groq";
   }
   async chat({ system, user, json }) {

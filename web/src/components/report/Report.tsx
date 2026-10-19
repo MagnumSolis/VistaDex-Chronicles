@@ -43,7 +43,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
   const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: report.graveyard_matches.length, objections: report.objections.length };
 
   return (
-    <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8">
+    <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8 print:block">
       {/* Jump nav: sticky rail on desktop, sticky horizontal chips on phones. */}
       <nav aria-label="Report sections" className="sticky top-0 z-30 -mx-4 mb-4 bg-page px-4 py-2.5 md:top-[5.5rem] md:-mx-6 md:px-6 lg:top-28 lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 print:hidden">
         <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible">

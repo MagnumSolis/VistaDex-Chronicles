@@ -9,6 +9,7 @@ export async function loadApp({ edition = "public", hash = "", proxy = false }: 
   history.replaceState(null, "", `/${hash}`);
   const { CONFIG } = await import("@proto/config.js");
   CONFIG.PROXY_URL = proxy ? "https://proxy.test" : "";
+  await import("@/boot"); // as in main.tsx: link fragments are captured before the router
   const tm = await import("@proto/ui/telemetry.js");
   const { App } = await import("@/App");
   const utils = render(<App />);

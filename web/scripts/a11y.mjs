@@ -1,77 +1,110 @@
-// ── a11y.mjs — Accessibility pass for every screen and study surface ──
-// 1. axe-core (WCAG 2.x A + AA rules) on each UI state, desktop and phone.
-// 2. Keyboard-only participant flow: consent → trust → idea → run → evidence → rating → survey.
-// 3. No horizontal scrolling at 320 and 375 px.
+// ── a11y.mjs — Accessibility pass over every screen and state, both editions ──
+// 1. axe-core (WCAG 2.2 A + AA rules) on each state at 1280, 375, 360 and 320 px.
+// 2. No horizontal scrolling at any of those widths.
+// 3. Keyboard-only flow with visible focus: Welcome → idea → Run → report → sources → graveyard sheet.
+// 4. prefers-reduced-motion: no running CSS animations or transitions.
 // Usage: node scripts/a11y.mjs   (dev server on :5173 or VD_BASE=<url>, installed Chrome). Exit 1 on failure.
-import { chromium } from "playwright-core";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import { launch, LEGAL_IDEA, openApp, runIdea, setProxy, STUB } from "./lib.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE = fs.readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
-const BASE = process.env.VD_BASE || "http://localhost:5173/";
-const IDEA = "We are building an AI-powered legal contract review tool for early-stage startups. No such tool exists today that combines LLM-based review with a human lawyer backstop at under $200/month. The legal-tech market is worth $27B globally.";
 const problems = [];
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+const browser = await launch();
 
 async function axe(page, label) {
-  await page.waitForTimeout(250);
-  await page.addScriptTag({ content: AXE });
+  await page.waitForTimeout(300);
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: AXE });
   const res = await page.evaluate(async () => (await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } })).violations
     .map(v => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map(n => n.target.join(" ")) })));
   for (const v of res) problems.push(`[axe ${label}] ${v.id} (${v.impact}): ${v.help} — ${v.nodes.join(" | ")}`);
-  return res.length;
 }
-
-async function noHorizontalScroll(page, label) {
+async function overflow(page, label) {
   const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
   if (sw > iw + 1) problems.push(`[overflow ${label}] page is ${sw}px wide in a ${iw}px viewport`);
 }
+const both = async (page, label) => { await axe(page, label); await overflow(page, label); };
 
-// ── 1 + 3: axe on every state, desktop and phone; overflow at 320/375 ──
-for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone-375", { width: 375, height: 812 }], ["phone-320", { width: 320, height: 640 }]]) {
-  const page = await browser.newPage({ viewport: vp });
-  const nav = re => page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: re });
-  await page.goto(BASE); await page.evaluate(() => localStorage.clear()); await page.reload();
-  await page.getByRole("heading", { name: "Cohort dashboard" }).waitFor();
-  await axe(page, `${name} dashboard`); await noHorizontalScroll(page, `${name} dashboard`);
-  await page.getByRole("button", { name: /View report/ }).first().click();
+const VIEWPORTS = [["1280", { width: 1280, height: 900 }, false], ["375", { width: 375, height: 812 }, true], ["360", { width: 360, height: 780 }, true], ["320", { width: 320, height: 640 }, true]];
+
+// ── 1 + 2: public edition ──
+for (const [name, viewport, isMobile] of VIEWPORTS) {
+  const { ctx, page } = await openApp(browser, { viewport, isMobile });
+  await page.getByRole("heading", { name: /See the evidence/ }).waitFor();
+  await both(page, `${name} welcome`);
+  await page.getByRole("button", { name: "Start with walkthrough" }).click();
+  await page.getByRole("heading", { name: "Paste an idea" }).waitFor();
+  await both(page, `${name} screen + walkthrough`);
+  await page.locator("[data-control=walkthrough_skip]").click();
+  await page.getByRole("button", { name: /^Run$/ }).click(); // empty idea → inline message
+  await both(page, `${name} screen empty-idea message`);
+  // refusal message (daily cap) through a stubbed proxy
+  await page.route(`${STUB}/**`, r => r.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: "daily_cap" }), headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access" } }));
+  await setProxy(page, STUB);
+  await runIdea(page);
+  await both(page, `${name} screen daily-cap message`);
+  await setProxy(page, "");
+  await page.getByRole("button", { name: /^Run$/ }).click();
+  await page.getByRole("heading", { name: "Screening your idea" }).waitFor();
+  await both(page, `${name} running`);
+  await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
+  await both(page, `${name} report`);
+  await page.locator("[data-control=nav_graveyard], [data-control=tab_graveyard]").locator("visible=true").first().click();
+  await page.getByRole("heading", { name: "Startups that shut down" }).waitFor();
+  await both(page, `${name} graveyard`);
+  await page.locator("[data-control=graveyard_entry_open]").first().click();
   await page.getByRole("dialog").waitFor();
-  await axe(page, `${name} demo dialog`);
+  await both(page, `${name} graveyard sheet`);
   await page.keyboard.press("Escape");
-  await nav(/Screen/).click();
+  await page.locator("[data-control=graveyard_search]").fill("zzzz");
+  await both(page, `${name} graveyard no results`);
+  await page.evaluate(() => { location.hash = "#/how-it-works"; });
+  await page.getByRole("heading", { name: "Evidence first. You decide." }).waitFor();
+  await both(page, `${name} how it works`);
+  await page.evaluate(() => { location.hash = "#/feedback"; });
+  await page.getByRole("heading", { name: "What did you think?" }).waitFor();
+  await both(page, `${name} feedback`);
+  await page.locator("[data-control=feedback_submit]").click();
+  await both(page, `${name} feedback validation`);
+  await page.evaluate(() => { location.hash = "#/welcome"; });
+  await page.getByRole("button", { name: "Delete my session" }).click();
   await page.getByRole("dialog").waitFor();
-  await axe(page, `${name} consent`);
-  await page.getByRole("button", { name: "I agree — take part" }).click();
-  await page.locator("#trustPreInput").waitFor();
-  await axe(page, `${name} screen + trust`); await noHorizontalScroll(page, `${name} screen`);
-  await page.locator("#trustPreInput").fill("4");
-  await page.fill("#ideaInput", IDEA);
-  await page.getByRole("button", { name: "Run pipeline" }).click();
-  await page.getByText("Screening report").waitFor({ timeout: 15000 });
-  await page.getByRole("button", { name: "Show evidence" }).first().click();
-  await axe(page, `${name} report + survey`); await noHorizontalScroll(page, `${name} report`);
-  await page.getByRole("button", { name: "Withdraw & delete my data" }).click();
-  await page.getByRole("dialog").waitFor();
-  await axe(page, `${name} withdraw dialog`);
-  await page.getByRole("button", { name: "Cancel" }).click();
-  await nav(/Graveyard/).click();
-  await axe(page, `${name} graveyard`); await noHorizontalScroll(page, `${name} graveyard`);
-  await page.close();
+  await both(page, `${name} delete-session dialog`);
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => { location.hash = "#/running"; });
+  await page.getByRole("heading", { name: "Nothing is running" }).waitFor();
+  await both(page, `${name} running empty`);
+  await page.evaluate(() => { location.hash = "#/nowhere"; });
+  await both(page, `${name} not found`);
+  await ctx.close();
 }
 
-// ── 2: keyboard-only participant flow ──
+// ── pitch edition ──
+for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[3]]) {
+  const { ctx, page } = await openApp(browser, { viewport, isMobile, hash: "#edition=pitch" });
+  await page.getByRole("heading", { name: "Screened ideas" }).waitFor();
+  await both(page, `${name} pitch dashboard`);
+  await page.locator("[data-control=dashboard_open_report]").first().click();
+  await page.getByRole("heading", { name: "LegalAI for Startups" }).waitFor();
+  await page.getByRole("button", { name: /Show sources/ }).first().click();
+  await both(page, `${name} pitch demo report`);
+  await page.evaluate(() => { location.hash = "#/report/missing"; });
+  await both(page, `${name} pitch report not found`);
+  await ctx.close();
+}
+
+// ── 3: keyboard-only flow ──
 {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await page.goto(BASE); await page.evaluate(() => localStorage.clear()); await page.reload();
-  await page.getByRole("heading", { name: "Cohort dashboard" }).waitFor();
+  const { ctx, page } = await openApp(browser);
+  await page.getByRole("heading", { name: /See the evidence/ }).waitFor();
   const focused = () => page.evaluate(() => {
     const el = document.activeElement;
     const cs = getComputedStyle(el);
-    const ring = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0 || cs.boxShadow !== "none";
-    return { tag: el.tagName, text: (el.getAttribute("aria-label") || el.textContent || el.id || "").trim().slice(0, 40), id: el.id, ring };
+    const ring = (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== "none";
+    return { tag: el.tagName, text: (el.getAttribute("aria-label") || el.textContent || el.id || "").trim().slice(0, 60), id: el.id, control: el.dataset?.control, ring };
   });
-  const tabTo = async (pred, label, max = 60) => {
+  const tabTo = async (pred, label, max = 80) => {
     for (let i = 0; i < max; i++) {
       await page.keyboard.press("Tab");
       const f = await focused();
@@ -80,57 +113,50 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone-375
     problems.push(`[keyboard] could not reach ${label} with Tab`);
     return null;
   };
-  // Skip link is the first stop.
   await page.keyboard.press("Tab");
   const first = await focused();
   if (!/Skip to content/.test(first.text)) problems.push(`[keyboard] first Tab stop is "${first.text}", expected the skip link`);
-  await tabTo(f => /^Screen/.test(f.text), "nav: Screen an idea");
+  await tabTo(f => f.control === "welcome_skip", "Welcome: Skip to the tool");
   await page.keyboard.press("Enter");
-  await page.getByRole("dialog").waitFor();
-  // Consent: Esc must not dismiss it; focus stays inside.
-  await page.keyboard.press("Escape");
-  if (!(await page.getByRole("dialog").isVisible())) problems.push("[keyboard] Esc dismissed the consent dialog");
-  await tabTo(f => /I agree/.test(f.text), "consent: I agree");
-  await page.keyboard.press("Enter");
-  await tabTo(f => f.id === "trustPreInput", "pre-use trust slider");
-  await page.keyboard.press("ArrowRight");
-  const preLogged = await page.evaluate(() => (JSON.parse(localStorage.getItem("vistadex.study.v1")).events || []).some(e => e.type === "trust_pre"));
-  if (!preLogged) problems.push("[keyboard] arrow key on the pre-use slider did not record trust_pre");
   await tabTo(f => f.id === "ideaInput", "idea text");
-  await page.keyboard.type(IDEA);
-  await tabTo(f => /Run pipeline/.test(f.text), "Run pipeline");
-  await page.keyboard.press("Enter");
-  await page.getByText("Screening report").waitFor({ timeout: 15000 });
-  await tabTo(f => /Show evidence/.test(f.text), "Show evidence");
-  await page.keyboard.press("Enter");
-  if (!(await page.getByRole("button", { name: "Hide evidence" }).first().isVisible())) problems.push("[keyboard] Enter did not open the evidence");
-  await tabTo(f => f.text === "Agree", "agreement: Agree");
+  await page.keyboard.type(LEGAL_IDEA);
+  await tabTo(f => f.control === "market_toggle", "target market EU");
   await page.keyboard.press("Space");
-  await tabTo(f => f.id === "trustPostInput", "post-use trust slider", 120);
-  await page.keyboard.press("End");
-  for (let item = 0; item < 5; item++) {
-    await tabTo(f => f.tag === "INPUT" && f.id === "", `survey item ${item + 1}`);
-    await page.keyboard.press("ArrowRight"); // radio group: arrow selects
-  }
-  await tabTo(f => f.text === "Submit", "Submit");
+  await tabTo(f => f.control === "run_screening", "Run");
   await page.keyboard.press("Enter");
-  if (!(await page.getByText("Thank you").isVisible())) problems.push("[keyboard] survey could not be submitted by keyboard");
-  const types = await page.evaluate(() => JSON.parse(localStorage.getItem("vistadex.study.v1")).events.map(e => e.type));
-  for (const t of ["consent_given", "trust_pre", "run_started", "run_completed", "claim_expanded", "claim_rating", "trust_post", "survey_submitted"]) {
-    if (!types.includes(t)) problems.push(`[keyboard] flow did not record ${t}`);
-  }
-  // Demo dialog: Esc closes it and focus returns to the trigger.
-  await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: /Cohort|Dashboard/ }).click();
-  await page.getByRole("button", { name: /View report/ }).first().focus();
+  await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
+  await tabTo(f => f.control === "report_section_jump" && /Objections/.test(f.text), "jump nav: Objections");
+  await page.keyboard.press("Enter");
+  const afterJump = await focused();
+  if (afterJump.id !== "section-objections-title") problems.push(`[keyboard] jump nav did not move focus to the Objections heading (on "${afterJump.text}")`);
+  await tabTo(f => f.control === "report_save_pdf", "Save as PDF", 200);
+  await page.evaluate(() => { location.hash = "#/graveyard"; });
+  await tabTo(f => f.control === "graveyard_entry_open", "a graveyard entry");
+  const opener = await focused();
   await page.keyboard.press("Enter");
   await page.getByRole("dialog").waitFor();
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(400); // focus returns after the close animation
+  await page.waitForTimeout(400);
   const back = await focused();
-  if (!/View report/.test(back.text)) problems.push(`[keyboard] focus did not return to "View report" after closing the dialog (on "${back.text}")`);
-  await page.close();
+  if (back.text !== opener.text) problems.push(`[keyboard] focus did not return to the graveyard entry after closing the sheet (on "${back.text}")`);
+  await ctx.close();
+}
+
+// ── 4: reduced motion ──
+{
+  const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  const { BASE } = await import("./lib.mjs");
+  await page.goto(BASE);
+  await page.getByRole("button", { name: "Skip to the tool" }).click();
+  await page.locator("#ideaInput").fill(LEGAL_IDEA);
+  await page.getByRole("button", { name: /^Run$/ }).click();
+  await page.getByRole("heading", { name: "Screening your idea" }).waitFor();
+  const moving = await page.evaluate(() => document.getAnimations().filter(a => (a.effect?.getTiming?.().duration ?? 0) > 1).length);
+  if (moving) problems.push(`[motion] ${moving} animation(s) still run with prefers-reduced-motion: reduce`);
+  await ctx.close();
 }
 
 await browser.close();
 if (problems.length) { console.error(`A11Y: ${problems.length} problem(s)\n- ` + problems.join("\n- ")); process.exit(1); }
-console.log("A11Y OK: axe (WCAG 2.2 A/AA rules) clean on all states at 1280/375/320 px; keyboard-only flow complete with visible focus; no horizontal scroll.");
+console.log("A11Y OK: axe (WCAG 2.2 A/AA) clean on every screen and state at 1280/375/360/320 px in both editions; no horizontal scroll; keyboard-only flow with visible focus; no animation under reduced motion.");

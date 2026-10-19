@@ -101,6 +101,17 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
   });
 });
 
+describe("link fragments", () => {
+  it("a #code= opened in a tab already showing the app is captured before the router redirects", async () => {
+    await loadApp();
+    await screen.findByRole("button", { name: "Skip to the tool" });
+    go("#code=K7Q2-MX9P");
+    await waitFor(() => expect(location.hash).toBe("#/welcome"));
+    expect(sessionStorage.getItem("vistadex.access")).toBe("K7Q2-MX9P");
+    expect(location.href).not.toContain("K7Q2");
+  });
+});
+
 describe("walkthrough", () => {
   const card = () => screen.getByRole("dialog", { name: /./ });
   it("starts from Welcome, never blocks the tool, follows the run to the report, and can be skipped and replayed", async () => {

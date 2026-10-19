@@ -150,6 +150,13 @@
   html {
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
+    /* Keep focused and scrolled-to elements clear of the sticky header / jump nav and, on phones,
+       the bottom tab bar (WCAG 2.4.11 focus not obscured). */
+    scroll-padding-top: 4.5rem;
+    scroll-padding-bottom: 6rem;
+  }
+  @media (min-width: 768px) {
+    html { scroll-padding-top: 8rem; scroll-padding-bottom: 1.5rem; }
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -184,7 +191,7 @@
   @page { margin: 14mm; }
   html, body { background: #fff !important; color: var(--foreground) !important; }
   .bg-page, .bg-background, .bg-card, .bg-muted, .bg-charcoal { background: #fff !important; }
-  .on-page, .text-on-page, .text-on-page-muted { color: var(--foreground) !important; }
+  .on-page, .text-on-page, .text-on-page-muted, .text-lime { color: var(--foreground) !important; }
   main { padding: 0 !important; max-width: none !important; }
   [data-print-expand][hidden] { display: block !important; }
   section, article, li { break-inside: avoid-page; }

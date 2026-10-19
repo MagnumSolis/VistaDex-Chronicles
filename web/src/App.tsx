@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageTitle } from "@/components/ui-vd";
@@ -49,7 +49,13 @@ export function App() {
     if (route.name !== "home") telemetry.screenChanged(screenName(route.name));
   }, [route.name]);
 
+  // After moving to another screen, start at the top with focus on the content (not on first load,
+  // so the skip link stays the first Tab stop).
+  const previous = useRef<RouteName | null>(null);
   useEffect(() => {
+    const from = previous.current;
+    previous.current = route.name;
+    if (from === null || from === "home") return; // first load, or its redirect from "#/"
     document.getElementById("main")?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [route.path]);

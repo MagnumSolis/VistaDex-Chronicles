@@ -83,14 +83,12 @@ export function Graveyard() {
       <Sheet open={open !== null} onOpenChange={o => { if (!o) setOpenId(null); }} closeControl="graveyard_sheet_close"
         title={open?.company_name} description={open ? `${causeLabel(open.cause_category)} · closed ${open.year_closed}` : undefined}>
         {open && (
-          <dl className="space-y-3">
-            <Detail label="What they tried">{open.what_they_tried}</Detail>
-            <Detail label="Cause of death">{open.cause_of_death}</Detail>
-            <div className="grid grid-cols-2 gap-3">
-              <Detail label="Funding">{open.raised || "Not known"}</Detail>
-              <Detail label="Years active">Closed {open.year_closed}; founding year not recorded</Detail>
-            </div>
-            <Detail label="Source">
+          <dl className="grid grid-cols-2 gap-3">
+            <Detail label="What they tried" wide>{open.what_they_tried}</Detail>
+            <Detail label="Cause of death" wide>{open.cause_of_death}</Detail>
+            <Detail label="Funding">{open.raised || "Not known"}</Detail>
+            <Detail label="Years active">Closed {open.year_closed}; founding year not recorded</Detail>
+            <Detail label="Source" wide>
               <span className="flex items-center gap-1.5 font-medium">
                 {open.source_verified ? <CircleCheck aria-hidden className="size-4" /> : <CircleDashed aria-hidden className="size-4" />}
                 {open.source_verified ? "Checked by the team" : "Not yet checked by the team"}
@@ -115,9 +113,9 @@ export function Graveyard() {
   );
 }
 
-function Detail({ label, children }: { label: string; children: ReactNode }) {
+function Detail({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
   return (
-    <div className="rounded-inner bg-card p-4">
+    <div className={wide ? "col-span-2 rounded-inner bg-card p-4" : "rounded-inner bg-card p-4"}>
       <dt className="eyebrow text-muted-foreground">{label}</dt>
       <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">{children}</dd>
     </div>

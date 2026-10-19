@@ -15,13 +15,24 @@ let state = load();
 let flushTimer = null;
 
 function blank() {
-  return { session_id: null, consent: null, consent_at: null, seq: 0, events: [], sent: 0 };
+  return { session_id: null, consent: null, consent_at: null, consent_version: null, seq: 0, events: [], sent: 0 };
+}
+
+// Consent — given or declined — only counts for the study version it was answered under. A
+// stored answer from another version (or from before versions were recorded, i.e. pilot-1) is
+// discarded, so the participant sees the consent dialog again with the current wording. Anything
+// stored locally under the old version is dropped with it (it was never part of this version).
+export function readStored(raw, version = STUDY_VERSION) {
+  if (!raw) return blank();
+  let s;
+  try { s = { ...blank(), ...JSON.parse(raw) }; } catch { return blank(); }
+  if (s.consent && s.consent_version !== version) return blank();
+  return s;
 }
 
 function load() {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...blank(), ...JSON.parse(raw) } : blank();
+    return readStored(localStorage.getItem(KEY));
   } catch {
     return blank();
   }
@@ -41,14 +52,14 @@ export function sessionCode() { return state.session_id ? state.session_id.slice
 export function events() { return state.events.slice(); }
 
 export function giveConsent() {
-  state = { ...blank(), session_id: crypto.randomUUID(), consent: "given", consent_at: new Date().toISOString() };
+  state = { ...blank(), session_id: crypto.randomUUID(), consent: "given", consent_at: new Date().toISOString(), consent_version: STUDY_VERSION };
   save();
   log("consent_given", { study_version: STUDY_VERSION });
 }
 
 // Declining is remembered locally (so we don't ask again) but never sent anywhere.
 export function declineConsent() {
-  state = { ...blank(), consent: "declined", consent_at: new Date().toISOString() };
+  state = { ...blank(), consent: "declined", consent_at: new Date().toISOString(), consent_version: STUDY_VERSION };
   save();
 }
 
@@ -104,7 +115,7 @@ export async function withdraw() {
       server = "failed (network)";
     }
   }
-  state = { ...blank(), consent: "declined", consent_at: new Date().toISOString() };
+  state = { ...blank(), consent: "declined", consent_at: new Date().toISOString(), consent_version: STUDY_VERSION };
   save();
   return { session_id: id, server };
 }

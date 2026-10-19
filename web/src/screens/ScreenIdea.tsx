@@ -42,7 +42,15 @@ export function ScreenIdea({ onReadStudyInfo, onNeedConsent }: {
     // Consent is normally answered on entering this screen. If a run is ever requested while it is
     // still unanswered, ask first and then carry on with this same run — the idea text is kept.
     if (study.consentStatus() === null) { onNeedConsent(() => { void run(); }); return; }
-    if (!study.canRun()) { setNeedsTrust(true); return; }
+    if (!study.canRun()) {
+      // The pre-use question must be answered first. Bring it into view and focus it (as the
+      // original UI did), so the click on Run never looks like it did nothing.
+      setNeedsTrust(true);
+      const slider = document.getElementById("trustPreInput");
+      slider?.scrollIntoView({ behavior: "smooth", block: "center" });
+      slider?.focus({ preventScroll: true });
+      return;
+    }
     setNeedsTrust(false);
     setRunning(true);
     setError(null);

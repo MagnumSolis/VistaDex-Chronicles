@@ -43,3 +43,27 @@ test("CSV export escapes quotes, commas and newlines", async () => {
   assert.equal(header, "session_id,seq,ts,type,study_version,payload");
   assert.equal(row, String.raw`s,1,t,survey_submitted,v,"{""comments"":""a, \""b\""\nc""}"`);
 });
+
+test("stored consent only counts for the study version it was given under", async () => {
+  const { readStored } = await import("../prototype/ui/telemetry.js");
+  const { STUDY_VERSION } = await import("../prototype/ui/study-config.js");
+  const old = { session_id: "s", consent: "given", consent_at: "t", seq: 1, sent: 0, events: [{ type: "consent_given" }] };
+  assert.equal(readStored(JSON.stringify(old)).consent, null, "pilot-1 record without consent_version is discarded");
+  assert.equal(readStored(JSON.stringify({ ...old, consent_version: "2026-10-pilot-1" })).consent, null, "older version discarded");
+  assert.equal(readStored(JSON.stringify({ ...old, consent: "declined", consent_version: "2026-10-pilot-1" })).consent, null, "an old decline is asked again too");
+  const current = readStored(JSON.stringify({ ...old, consent_version: STUDY_VERSION }));
+  assert.equal(current.consent, "given");
+  assert.equal(current.events.length, 1);
+  assert.equal(readStored("not json").consent, null);
+  assert.equal(readStored(null).consent, null);
+});
+
+test("giving or declining consent records the current study version", async () => {
+  const tm = await import("../prototype/ui/telemetry.js");
+  const { STUDY_VERSION } = await import("../prototype/ui/study-config.js");
+  tm.declineConsent();
+  assert.equal(JSON.parse(localStorage.getItem("vistadex.study.v1")).consent_version, STUDY_VERSION);
+  tm.giveConsent();
+  assert.equal(JSON.parse(localStorage.getItem("vistadex.study.v1")).consent_version, STUDY_VERSION);
+  await tm.withdraw();
+});

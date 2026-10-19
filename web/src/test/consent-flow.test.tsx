@@ -37,6 +37,7 @@ describe("consent dialog keeps the idea and the run", () => {
     fireEvent.click(screen.getByRole("button", { name: "Load sample idea" }));
     fireEvent.click(screen.getByRole("button", { name: /Run pipeline/ }));
     expect(await screen.findByText(/answer the question above/)).toBeTruthy(); // pre-use question required first
+    expect(document.activeElement?.id).toBe("trustPreInput"); // brought into view and focused, not a silent no-op
     expect(ideaBox().value).toBe(SAMPLE_IDEA);
     fireEvent.change(document.getElementById("trustPreInput")!, { target: { value: "4" } });
     fireEvent.click(screen.getByRole("button", { name: /Run pipeline/ }));
@@ -56,6 +57,16 @@ describe("consent dialog keeps the idea and the run", () => {
       fireEvent.click(await screen.findByRole("button", { name: choice }));
       expect(ideaBox().value, choice).toBe(SAMPLE_IDEA);
     }
+  }, 15000);
+});
+
+describe("consent from an earlier study version is asked again", () => {
+  it("a pilot-1 consent in storage does not suppress the dialog", async () => {
+    localStorage.setItem("vistadex.study.v1", JSON.stringify({ session_id: "s", consent: "given", consent_at: "t", seq: 1, sent: 0, events: [] }));
+    const { App } = await loadApp();
+    render(<App />);
+    fireEvent.click(nav(/Screen/));
+    expect(await screen.findByRole("button", { name: "I agree — take part" })).toBeTruthy();
   }, 15000);
 });
 

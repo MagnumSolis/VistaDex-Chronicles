@@ -308,7 +308,7 @@ const COHORT_IDEAS = [
     submitter: "Kiran Bose",
     category: "Web3 / GreenTech",
     status: "high-risk",
-    graveyard_match: "Bright Roll",
+    graveyard_match: null,
     graveyard_match_id: null,
     confidence_pct: 44,
     sources_checked: 7,

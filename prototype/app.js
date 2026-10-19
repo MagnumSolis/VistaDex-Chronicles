@@ -4,6 +4,7 @@
 let currentStatusFilter = 'all';
 let currentCauseFilter = 'all';
 let pipelineRunning = false;
+let liveReportId = Date.now().toString(36); // per-run id for reviewer-note persistence
 
 // ── View Router ───────────────────────────────────────────────────────
 function showView(viewName) {
@@ -22,16 +23,16 @@ function renderTable(ideas) {
     const conf = idea.confidence_pct;
     const confColor = conf >= 70 ? '#22c55e' : conf >= 50 ? '#f59e0b' : '#ef4444';
     const graveyardCell = idea.graveyard_match
-      ? `<span class="graveyard-match"><strong>${idea.graveyard_match}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">verify yourself</span></span>`
+      ? `<span class="graveyard-match"><strong>${escapeHTML(idea.graveyard_match)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">verify yourself</span></span>`
       : `<span style="color:var(--text-muted);font-size:0.82rem;">—</span>`;
     return `
       <tr onclick="openIdeaModal('${idea.id}')" style="cursor:pointer;">
         <td>
-          <div class="idea-name">${idea.name}</div>
-          <div class="idea-desc">${idea.desc}</div>
+          <div class="idea-name">${escapeHTML(idea.name)}</div>
+          <div class="idea-desc">${escapeHTML(idea.desc)}</div>
         </td>
-        <td class="submitter">${idea.submitter}</td>
-        <td><span class="category-tag">${idea.category}</span></td>
+        <td class="submitter">${escapeHTML(idea.submitter)}</td>
+        <td><span class="category-tag">${escapeHTML(idea.category)}</span></td>
         <td>${statusBadge(idea.status)}</td>
         <td>${graveyardCell}</td>
         <td>
@@ -57,6 +58,13 @@ function statusBadge(status) {
   };
   const [cls, label] = map[status] || ['badge-unverified', status];
   return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ── HTML escaping — all user-provided text must pass through this before template injection ──
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"'/]/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;'
+  }[ch]));
 }
 
 function claimStatusBadge(status) {
@@ -103,8 +111,8 @@ function openIdeaModal(ideaId) {
       <div class="ghost-card">
         <div class="ghost-top">
           <div>
-            <div class="ghost-name">${entry.company_name}</div>
-            <div class="ghost-tried">${entry.what_they_tried}</div>
+            <div class="ghost-name">${escapeHTML(entry.company_name)}</div>
+            <div class="ghost-tried">${escapeHTML(entry.what_they_tried)}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
             <span class="ghost-year">${entry.year_closed}</span>
@@ -113,7 +121,7 @@ function openIdeaModal(ideaId) {
         </div>
         <div class="ghost-cod">
           <span class="cod-label">Cause:</span>
-          <span class="cod-value">${entry.cause_of_death}</span>
+          <span class="cod-value">${escapeHTML(entry.cause_of_death)}</span>
         </div>
         <div><span class="verify-label">⚠ verify yourself — not a verdict</span></div>
       </div>`;
@@ -124,11 +132,11 @@ function openIdeaModal(ideaId) {
       <div class="claim-top">
         <span class="claim-type-tag type-${c.type}">${c.type.replace('_', ' ')}</span>
         ${claimStatusBadge(c.status)}
-        <div class="claim-text" style="margin-left:4px;">${c.claim}</div>
+        <div class="claim-text" style="margin-left:4px;">${escapeHTML(c.claim)}</div>
       </div>
-      <div class="claim-reasoning">${c.reasoning}</div>
+      <div class="claim-reasoning">${escapeHTML(c.reasoning)}</div>
       <div class="claim-sources">
-        ${(c.sources || []).map(s => `<span class="source-chip">🔗 ${s}</span>`).join('')}
+        ${(c.sources || []).map(s => `<span class="source-chip">🔗 ${escapeHTML(s)}</span>`).join('')}
       </div>
     </div>
   `).join('');
@@ -138,7 +146,7 @@ function openIdeaModal(ideaId) {
       <div class="severity-dot sev-${o.severity}"></div>
       <div>
         <div class="severity-label sev-label-${o.severity}" style="margin-bottom:4px;">${o.severity.toUpperCase()}</div>
-        <div class="objection-text">${o.objection}</div>
+        <div class="objection-text">${escapeHTML(o.objection)}</div>
       </div>
     </div>
   `).join('');
@@ -148,10 +156,10 @@ function openIdeaModal(ideaId) {
       <div class="report-meta">
         ${statusBadge(idea.status)}
         <span class="category-tag">${idea.category}</span>
-        <span style="color:var(--text-muted);font-size:0.82rem;">Submitted by ${idea.submitter}</span>
+        <span style="color:var(--text-muted);font-size:0.82rem;">Submitted by ${escapeHTML(idea.submitter)}</span>
       </div>
-      <div class="report-title">${idea.name}</div>
-      <div style="color:var(--text-secondary);font-size:0.875rem;">${idea.desc}</div>
+      <div class="report-title">${escapeHTML(idea.name)}</div>
+      <div style="color:var(--text-secondary);font-size:0.875rem;">${escapeHTML(idea.desc)}</div>
       <div class="report-footer-line">
         ${idea.sources_checked} sources checked · ${idea.claims.length} claims extracted · Confidence ${idea.confidence_pct}%
       </div>
@@ -185,14 +193,26 @@ function openIdeaModal(ideaId) {
 
       <div class="card" style="display:flex;flex-direction:column;gap:8px;">
         <div class="section-title">Reviewer Notes</div>
-        <textarea style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text-primary);font-family:var(--font);font-size:0.875rem;resize:vertical;min-height:80px;outline:none;" placeholder="Add your own notes — these feed the accuracy feedback loop…"></textarea>
-        <div style="font-size:0.75rem;color:var(--text-muted);font-style:italic;">Notes are saved locally. In the full product, these train the confidence model.</div>
+        <textarea id="modalNotes" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text-primary);font-family:var(--font);font-size:0.875rem;resize:vertical;min-height:80px;outline:none;" placeholder="Add your own notes — these feed the accuracy feedback loop…">${escapeHTML(loadReviewerNote(ideaId))}</textarea>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-style:italic;" id="modalNotesHint">Notes are saved locally. In the full product, these train the confidence model.</div>
       </div>
     </div>
   `;
 
   document.getElementById('reportModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  const notesEl = document.getElementById('modalNotes');
+  notesEl.addEventListener('input', () => saveReviewerNote(ideaId, notesEl.value));
+}
+
+// ── Reviewer notes persistence (localStorage; reviewer_note telemetry hooks in here once Phase 3 lands) ──
+function reviewerNoteKey(ideaId) { return `vistadex_note_${ideaId}`; }
+function loadReviewerNote(ideaId) {
+  try { return localStorage.getItem(reviewerNoteKey(ideaId)) || ''; } catch { return ''; }
+}
+function saveReviewerNote(ideaId, value) {
+  try { localStorage.setItem(reviewerNoteKey(ideaId), value); } catch {}
 }
 
 function closeModal(e) {
@@ -261,10 +281,10 @@ function renderLiveReport(ideaText, { claims, graveyard, objections }) {
         <span class="claim-type-tag type-${c.type}">${c.type.replace('_',' ')}</span>
         ${claimStatusBadge(c.status)}
       </div>
-      <div class="claim-text" style="margin-bottom:10px;">${c.claim}</div>
-      <div class="claim-reasoning">${c.reasoning}</div>
+      <div class="claim-text" style="margin-bottom:10px;">${escapeHTML(c.claim)}</div>
+      <div class="claim-reasoning">${escapeHTML(c.reasoning)}</div>
       <div class="claim-sources">
-        ${(c.sources || []).map(s => `<span class="source-chip">🔗 ${s}</span>`).join('')}
+        ${(c.sources || []).map(s => `<span class="source-chip">🔗 ${escapeHTML(s)}</span>`).join('')}
       </div>
     </div>
   `).join('');
@@ -294,7 +314,7 @@ function renderLiveReport(ideaText, { claims, graveyard, objections }) {
       <div class="severity-dot sev-${o.severity}"></div>
       <div>
         <div class="severity-label sev-label-${o.severity}" style="margin-bottom:4px;">${o.severity.toUpperCase()}</div>
-        <div class="objection-text">${o.objection}</div>
+        <div class="objection-text">${escapeHTML(o.objection)}</div>
       </div>
     </div>
   `).join('');
@@ -306,7 +326,7 @@ function renderLiveReport(ideaText, { claims, graveyard, objections }) {
         <span style="color:var(--text-muted);font-size:0.82rem;">Live pipeline run</span>
       </div>
       <div class="report-title">Screening Report</div>
-      <div style="color:var(--text-secondary);font-size:0.845rem;margin-top:4px;line-height:1.5;">${ideaText.slice(0, 120)}…</div>
+      <div style="color:var(--text-secondary);font-size:0.845rem;margin-top:4px;line-height:1.5;">${escapeHTML(ideaText.slice(0, 120))}${ideaText.length > 120 ? '…' : ''}</div>
       <div class="report-footer-line">
         ${sourcesChecked} sources checked · ${claims.length} claims extracted · Confidence ${Math.max(20, Math.min(confidence, 95))}% · Graveyard: ${graveyard.length} match${graveyard.length !== 1 ? 'es' : ''}
       </div>
@@ -333,12 +353,18 @@ function renderLiveReport(ideaText, { claims, graveyard, objections }) {
 
       <div class="card" style="display:flex;flex-direction:column;gap:8px;">
         <div class="section-title">Reviewer Notes</div>
-        <textarea style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text-primary);font-family:var(--font);font-size:0.875rem;resize:vertical;min-height:80px;outline:none;" placeholder="Add your own notes…"></textarea>
+        <textarea id="liveNotes" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text-primary);font-family:var(--font);font-size:0.875rem;resize:vertical;min-height:80px;outline:none;" placeholder="Add your own notes…">${escapeHTML(loadReviewerNote('live_' + liveReportId))}</textarea>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-style:italic;" id="liveNotesHint">Notes are saved locally in your browser.</div>
       </div>
     </div>
   `;
 
   panel.style.display = 'block';
+
+  const liveNotesEl = document.getElementById('liveNotes');
+  if (liveNotesEl) {
+    liveNotesEl.addEventListener('input', () => saveReviewerNote('live_' + liveReportId, liveNotesEl.value));
+  }
 
   // Add spin animation for loading button
   const style = document.createElement('style');
@@ -354,10 +380,10 @@ function renderGraveyard(entries) {
   grid.innerHTML = entries.map(entry => `
     <div class="gyard-entry">
       <div class="gyard-top">
-        <div class="gyard-name">${entry.company_name}</div>
+        <div class="gyard-name">${escapeHTML(entry.company_name)}</div>
         <div class="gyard-year">${entry.year_closed}</div>
       </div>
-      <div class="gyard-tried">${entry.what_they_tried}</div>
+      <div class="gyard-tried">${escapeHTML(entry.what_they_tried)}</div>
       <div class="gyard-footer">
         <span class="cause-badge cause-${entry.cause_category}">${causeCategoryLabel(entry.cause_category)}</span>
         <span class="gyard-sources">${entry.raised || 'n/a raised'}</span>
@@ -398,6 +424,22 @@ function filterCause(btn, cause) {
   filterGraveyard();
 }
 
+// ── Computed stats (never hardcode counts — they must track the data) ──
+function renderStats() {
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set('stat-total', COHORT_IDEAS.length);
+  set('stat-clear', COHORT_IDEAS.filter(i => i.status === 'clear').length);
+  set('stat-caution', COHORT_IDEAS.filter(i => i.status === 'caution').length);
+  set('stat-highrisk', COHORT_IDEAS.filter(i => i.status === 'high-risk').length);
+  const sub = document.getElementById('dashSubtitle');
+  if (sub) sub.textContent = `Fall 2026 Screening Batch · ${COHORT_IDEAS.length} ideas submitted`;
+  const gy = document.getElementById('graveyardCountBadge');
+  if (gy) gy.textContent = `${GRAVEYARD_DB.length} entries`;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Sort ideas: riskiest first
@@ -406,5 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return (order[a.status] ?? 3) - (order[b.status] ?? 3);
   });
   renderTable(sorted);
+  renderStats();
   renderGraveyard(GRAVEYARD_DB);
 });

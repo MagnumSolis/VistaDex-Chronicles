@@ -67,7 +67,7 @@ function classifyClaim(claim) {
     reasoning = "Multiple independent market research reports (Grand View Research, Statista, IBIS World) corroborate the market size figure within a 15% margin. The growth rate is consistent across sources.";
     sources = ["grandviewresearch.com/industry-report", "statista.com/market-data", "ibisworld.com/forecast"];
   } else if (claim.type === "novelty") {
-    if (text.includes("no ") || text.includes("nobody") || text.includes("doesn't exist") || text.includes("no existing")) {
+    if (/\b(no\s+(such|existing|current|direct|tool|one)|nobody|doesn'?t exist|does not exist)\b/i.test(text)) {
       status = Math.random() > 0.4 ? "contradicted" : "disputed";
       reasoning = status === "contradicted"
         ? "Web evidence reveals at least 2–3 existing products with significant market traction and funding that address this exact use case. The novelty claim is not supported."
@@ -108,22 +108,24 @@ async function simulateGraveyardMatching(ideaText) {
   const matches = [];
   const threshold = 0.35;
 
+  // Word-boundary regex rules — raw substring includes on short tokens
+  // (e.g. "ar", "no ") caused false matches ("market".includes("ar")).
   const scoringRules = [
-    { check: k => k.includes("legal") || k.includes("contract") || k.includes("lawyer"), ids: ["atrium"], sim: () => 85 + rand(10) },
-    { check: k => k.includes("clean") || k.includes("laundry") || k.includes("home service"), ids: ["homejoy", "washio"], sim: () => 60 + rand(20) },
-    { check: k => k.includes("video") || k.includes("stream") || k.includes("short") || k.includes("reel"), ids: ["vine", "meerkat"], sim: () => 50 + rand(20) },
-    { check: k => k.includes("food") || k.includes("meal") || k.includes("delivery") || k.includes("restaurant"), ids: ["sprig", "washio"], sim: () => 55 + rand(20) },
-    { check: k => k.includes("music") || k.includes("audio") || k.includes("podcast"), ids: ["rdio"], sim: () => 60 + rand(15) },
-    { check: k => k.includes("ar") || k.includes("augmented") || k.includes("hardware") || k.includes("wearable"), ids: ["daqri", "jawbone"], sim: () => 65 + rand(20) },
-    { check: k => k.includes("drone") || k.includes("autonomo") || k.includes("robot"), ids: ["daqri"], sim: () => 45 + rand(20) },
-    { check: k => k.includes("social") || k.includes("community") || k.includes("network") || k.includes("anon"), ids: ["yik-yak", "google-plus"], sim: () => 55 + rand(20) },
-    { check: k => k.includes("journal") || k.includes("note") || k.includes("productivity") || k.includes("knowledge"), ids: ["springpad"], sim: () => 48 + rand(18) },
-    { check: k => k.includes("blood") || k.includes("health") || k.includes("diagnostic") || k.includes("clinical"), ids: ["theranos"], sim: () => 42 + rand(20) },
-    { check: k => k.includes("mental") || k.includes("therapy") || k.includes("wellness") || k.includes("mindfulness"), ids: ["circa", "springpad"], sim: () => 38 + rand(20) },
-    { check: k => k.includes("workflow") || k.includes("automation") || k.includes("slack") || k.includes("enterprise"), ids: ["springpad", "timehop"], sim: () => 40 + rand(20) },
-    { check: k => k.includes("carbon") || k.includes("climate") || k.includes("emission") || k.includes("blockchain"), ids: ["circa"], sim: () => 35 + rand(20) },
-    { check: k => k.includes("ship") || k.includes("package") || k.includes("courier"), ids: ["shyp", "washio"], sim: () => 65 + rand(15) },
-    { check: k => k.includes("assist") || k.includes("virtual") || k.includes("secretary"), ids: ["zirtual"], sim: () => 70 + rand(15) },
+    { check: makeMatcher(["legal", "contract", "lawyer", "law firm"]), ids: ["atrium"], sim: () => 85 + rand(10) },
+    { check: makeMatcher(["clean(ing)?", "laundry", "dry.?clean", "home service"]), ids: ["homejoy", "washio"], sim: () => 60 + rand(20) },
+    { check: makeMatcher(["video", "stream", "short[- ]form", "reel"]), ids: ["vine", "meerkat"], sim: () => 50 + rand(20) },
+    { check: makeMatcher(["food", "meal", "restaurant", "grocery"]), ids: ["sprig", "washio"], sim: () => 55 + rand(20) },
+    { check: makeMatcher(["music", "audio", "podcast"]), ids: ["rdio"], sim: () => 60 + rand(15) },
+    { check: makeMatcher(["\\bar\\b|augmented reality|smart helmet|wearable|fitness track"]), ids: ["daqri", "jawbone"], sim: () => 65 + rand(20) },
+    { check: makeMatcher(["drone", "autonom(ous|omy)", "robot"]), ids: ["daqri"], sim: () => 45 + rand(20) },
+    { check: makeMatcher(["social (network|media|app)", "community", "anonymous"]), ids: ["yik-yak", "google-plus"], sim: () => 55 + rand(20) },
+    { check: makeMatcher(["journal", "note.?tak", "productivity", "knowledge", "bookmark"]), ids: ["springpad"], sim: () => 48 + rand(18) },
+    { check: makeMatcher(["blood", "diagnostic", "clinical"]), ids: ["theranos"], sim: () => 42 + rand(20) },
+    { check: makeMatcher(["mental health", "therap(y|ist)", "wellness", "mindfulness"]), ids: ["circa", "springpad"], sim: () => 38 + rand(20) },
+    { check: makeMatcher(["workflow", "automation", "slack", "teams?"]), ids: ["springpad", "timehop"], sim: () => 40 + rand(20) },
+    { check: makeMatcher(["carbon", "climate", "emission"]), ids: ["circa"], sim: () => 35 + rand(20) },
+    { check: makeMatcher(["\\bship(ping)?\\b", "package", "courier"]), ids: ["shyp", "washio"], sim: () => 65 + rand(15) },
+    { check: makeMatcher(["assistant", "virtual assistant", "secretar(y|ial)"]), ids: ["zirtual"], sim: () => 70 + rand(15) },
   ];
 
   for (const rule of scoringRules) {
@@ -223,7 +225,12 @@ async function runPipelineOn(ideaText) {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-function rand(n) { return Math.floor(Math.random() * n); }
+function rand(n) { return Math.floor(Math.random() * n); } // DEMO_MODE simulation only — never use in production paths
+
+function makeMatcher(patterns) {
+  const re = new RegExp(`\\b(${patterns.join("|")})\\b`, "i");
+  return text => re.test(text);
+}
 
 function setStage(n, state, statusText) {
   const el = document.getElementById(`stage${n}`);

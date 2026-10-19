@@ -29,8 +29,9 @@ export class GroqProvider extends LLMProvider {
         ...(json ? { response_format: { type: "json_object" } } : {}),
       }),
     });
-    if (!res.ok) throw new Error(`groq ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error(`${this.name}  ${res.status}: ${await res.text()}`);
     const data = await res.json();
+    this.lastUsage = data.usage ? { prompt: data.usage.prompt_tokens, completion: data.usage.completion_tokens } : null;
     return data.choices?.[0]?.message?.content ?? "";
   }
 }
@@ -56,6 +57,7 @@ export class MistralProvider extends LLMProvider {
     });
     if (!res.ok) throw new Error(`mistral ${res.status}: ${await res.text()}`);
     const data = await res.json();
+    this.lastUsage = data.usage ? { prompt: data.usage.prompt_tokens, completion: data.usage.completion_tokens } : null;
     return data.choices?.[0]?.message?.content ?? "";
   }
 }

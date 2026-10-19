@@ -30,10 +30,14 @@ const GRAVEYARD_DB = [
   { id: "timehop", company_name: "Timehop", what_they_tried: "Daily memory resurfacing app — your social media posts from years ago", cause_of_death: "Competition — Facebook, Snapchat, Google Photos shipped native 'memories'", year_closed: 2021 },
 ];
 
+// Same-origin only: the frontend is served by this same Worker. Cross-origin
+// callers get no CORS headers. (Flip to a specific origin if the UI ever
+// moves to a different host.)
 const CORS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "content-type",
+  "access-control-allow-origin": "https://vistadex.vistadex-team.workers.dev",
+  "access-control-allow-methods": "POST, GET, OPTIONS",
+  "access-control-allow-headers": "content-type, authorization",
+  "vary": "origin",
 };
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...CORS } });
@@ -62,12 +66,20 @@ function safeJsonParse(text, fallback) {
 
 // ── Stage 1: claim extraction — {"claims": [...]} per json_object contract ──
 async function stageExtractClaims(env, ideaText) {
-  const { provider, content } = await chatWithFallback(env, {
-    system: EXTRACTION_PROMPT,
-    user: `Idea:\n"""\n${ideaText}\n"""`,
-    json: true,
-  });
-  const parsed = safeJsonParse(content, { claims: [] });
+  let provider = "unknown", content = "";
+  let parsed = { claims: [] };
+  // One retry on empty/malformed extraction before the screen fails — extraction
+  // is the one stage with no downstream salvage if it returns nothing.
+  for (let attempt = 0; attempt < 2 && (!Array.isArray(parsed.claims) || parsed.claims.length === 0); attempt++) {
+    const r = await chatWithFallback(env, {
+      system: EXTRACTION_PROMPT,
+      user: `Idea:\n"""\n${ideaText.slice(0, 4000)}\n"""`,
+      json: true,
+    });
+    provider = r.provider;
+    content = r.content;
+    parsed = safeJsonParse(content, { claims: [] });
+  }
   const claims = (Array.isArray(parsed.claims) ? parsed.claims : [])
     .filter(c => c && typeof c.claim === "string" && c.claim.trim().length > 0)
     .slice(0, 8)
@@ -79,12 +91,27 @@ async function stageExtractClaims(env, ideaText) {
 }
 
 // ── Stage 2: Tavily retrieval per claim + LLM classification against snippets ──
-async function stageVerifyClaims(env, claims) {
-  const results = [];
-  for (const claim of claims) {
-    const evidence = await tavilySearch(env, { query: claim.claim.slice(0, 300), maxResults: 5 })
-      .catch(() => []);
-    const numbered = evidence.map((e, i) => `[${i}] ${e.title} (${e.url}):\n${e.snippet}`).join("\n\n");
+// Claims verify in PARALLEL (Promise.all); each claim isolates its own errors:
+// any failure degrades that claim to "unverified" — abstain, never crash the screen.
+const BLOCKED_CITATIONS = ["linkedin.com", "facebook.com", "x.com", "twitter.com", "instagram.com", "threads.net", "tiktok.com", "reddit.com"];
+const isAllowedCitation = u => {
+  try {
+    const h = new URL(u).hostname.replace(/^www\./, "");
+    return !BLOCKED_CITATIONS.some(d => h === d || h.endsWith("." + d));
+  } catch { return false; }
+};
+
+async function verifyOneClaim(env, claim) {
+  let evidence = [];
+  try {
+    evidence = await tavilySearch(env, { query: claim.claim.slice(0, 300), maxResults: 5 });
+  } catch {
+    evidence = []; // search failure → unverified, not an error
+  }
+  const numbered = evidence
+    .map((e, i) => `[${i}] ${e.title} (${e.url}):\n${String(e.snippet || "").slice(0, 400)}`)
+    .join("\n\n");
+  try {
     const { provider, content } = await chatWithFallback(env, {
       system: CLASSIFY_PROMPT,
       user: `Claim: "${claim.claim}"\n\nEvidence snippets:\n${numbered || "(no evidence retrieved)"}`,
@@ -93,18 +120,20 @@ async function stageVerifyClaims(env, claims) {
     const parsed = safeJsonParse(content, { status: "unverified", reasoning: "", source_indices: [] });
     const status = ["confirmed", "contradicted", "disputed", "unverified"].includes(parsed.status) ? parsed.status : "unverified";
     // Cite ONLY real retrieved URLs, by index — never model-invented ones.
-    // ToS-restricted platforms (LinkedIn, Facebook, X/Twitter) are excluded from
-    // citations per AGENTS.md rule 1 — reading search results is fine, citing
-    // them as evidence sources is not.
-    const BLOCKED = ["linkedin.com", "facebook.com", "x.com", "twitter.com"];
-    const isAllowed = u => { try { const h = new URL(u).hostname.replace(/^www\./, ""); return !BLOCKED.some(d => h === d || h.endsWith("." + d)); } catch { return false; } };
+    // ToS-restricted platforms excluded from citations per AGENTS.md rule 1.
     const sources = (parsed.source_indices || [])
       .map(i => evidence[Number(i)]?.url)
-      .filter(u => u && isAllowed(u))
+      .filter(u => u && isAllowedCitation(u))
       .slice(0, 5);
-    results.push({ ...claim, status, reasoning: parsed.reasoning || "", sources, provider, evidence_count: evidence.length });
+    return { ...claim, status, reasoning: parsed.reasoning || "", sources, provider, evidence_count: evidence.length };
+  } catch (e) {
+    // Per-claim isolation: one bad classification never kills the screen.
+    return { ...claim, status: "unverified", reasoning: "Verification failed for this claim (" + String(e && e.message || e).slice(0, 120) + "). Treated as unverified per the honesty contract.", sources: [], provider: "none", evidence_count: evidence.length };
   }
-  return results;
+}
+
+async function stageVerifyClaims(env, claims) {
+  return Promise.all(claims.map(c => verifyOneClaim(env, c)));
 }
 
 // ── Stage 3: graveyard matching (stopgap cosine over local DB; Atlas later) ──
@@ -114,13 +143,13 @@ function stageGraveyard(ideaText) {
 
 // ── Stage 4: Objector pass — may only argue AGAINST the conclusion ──
 async function stageObjector(env, ideaText, claims, graveyardMatches) {
-  const claimSummary = claims.map(c => `- [${c.status}] (${c.type}) ${c.claim}`).join("\n");
+  const claimSummary = claims.map(c => `- [${c.status}] (${c.type}) ${c.claim.slice(0, 200)}`).join("\n");
   const graveyardSummary = graveyardMatches.length
-    ? graveyardMatches.map(g => `- ${g.company_name} (${g.year_closed}, ${g.similarity}% similar): ${g.what_they_tried}`).join("\n")
+    ? graveyardMatches.map(g => `- ${g.company_name} (${g.year_closed}, ${g.similarity}% similar): ${String(g.what_they_tried || "").slice(0, 200)}`).join("\n")
     : "(no graveyard matches)";
   const { provider, content } = await chatWithFallback(env, {
     system: OBJECTOR_PROMPT,
-    user: `Idea:\n"""\n${ideaText}\n"""\n\nScreening conclusion the system reached:\n${claimSummary}\n\nGraveyard matches:\n${graveyardSummary}`,
+    user: `Idea:\n"""\n${ideaText.slice(0, 3000)}\n"""\n\nScreening conclusion the system reached:\n${claimSummary.slice(0, 2400)}\n\nGraveyard matches:\n${graveyardSummary.slice(0, 1200)}`,
     json: true,
   }, { preferObjector: true });
   const parsed = safeJsonParse(content, { objections: [] });
@@ -132,6 +161,30 @@ async function stageObjector(env, ideaText, claims, graveyardMatches) {
       severity: ["high", "medium", "low"].includes(o.severity) ? o.severity : "medium",
     }));
   return { provider, objections };
+}
+
+// Fix #4: contract validation — the response the UI consumes is enforced here,
+// not trusted from the LLM chain. Invalid shapes are normalized, never propagated.
+function validateScreenResult(result) {
+  const claims = (Array.isArray(result?.claims) ? result.claims : []).map(c => ({
+    claim: String(c.claim || "").slice(0, 1000),
+    type: ["novelty", "market_size", "defensibility", "other"].includes(c.type) ? c.type : "other",
+    status: ["confirmed", "contradicted", "disputed", "unverified"].includes(c.status) ? c.status : "unverified",
+    reasoning: String(c.reasoning || "").slice(0, 2000),
+    sources: (Array.isArray(c.sources) ? c.sources : []).filter(u => typeof u === "string" && /^https?:\/\//.test(u)).slice(0, 6),
+  }));
+  const graveyard_matches = (Array.isArray(result?.graveyard_matches) ? result.graveyard_matches : []).map(g => ({
+    company_name: String(g.company_name || "").slice(0, 200),
+    what_they_tried: String(g.what_they_tried || "").slice(0, 1000),
+    cause_of_death: String(g.cause_of_death || g.failure_reason || "").slice(0, 1000),
+    year_closed: Number(g.year_closed) || null,
+    similarity: Math.max(0, Math.min(100, Number(g.similarity) || 0)),
+  }));
+  const objections = (Array.isArray(result?.objections) ? result.objections : []).map(o => ({
+    objection: String(o.objection || "").slice(0, 1500),
+    severity: ["high", "medium", "low"].includes(o.severity) ? o.severity : "medium",
+  }));
+  return { claims, graveyard_matches, objections };
 }
 
 async function handleScreen(env, ideaText, sessionId) {
@@ -156,8 +209,8 @@ async function handleScreen(env, ideaText, sessionId) {
 
   return json({
     ok: true,
-    // Unified output contract — identical shape to DEMO_MODE results.
-    result: { claims, graveyard_matches: graveyardMatches, objections: s4.objections },
+    // Unified output contract — identical shape to DEMO_MODE results, validated.
+    result: validateScreenResult({ claims, graveyard_matches: graveyardMatches, objections: s4.objections }),
     trace,
   });
 }
@@ -206,6 +259,10 @@ async function handleRunRecord(env, payload) {
 // ── Session withdraw: POST /api/session/withdraw (no access code needed) ──
 async function handleWithdraw(env, sessionId) {
   try {
+    // Soft-delete first (audit trail for research ethics), then hard delete.
+    await env.EVENTS.prepare(
+      "INSERT INTO withdrawn_sessions (session_id, withdrawn_ts) VALUES (?, ?)"
+    ).bind(sessionId, Date.now()).run();
     await env.EVENTS.prepare("DELETE FROM events WHERE session_id = ?").bind(sessionId).run();
     await env.EVENTS.prepare("DELETE FROM runs WHERE session_id = ?").bind(sessionId).run();
   } catch {}
@@ -253,6 +310,9 @@ async function handleExport(env, request, url) {
   const format = url.searchParams.get("format") || "json";
   const cutoff = Date.now() - 365 * 24 * 3600 * 1000; // 12-month retention window
   try {
+    // Enforce retention on every export: delete rows older than the window.
+    await env.EVENTS.prepare("DELETE FROM events WHERE received_ts < ?").bind(cutoff).run();
+    await env.EVENTS.prepare("DELETE FROM runs WHERE created_ts < ?").bind(cutoff).run();
     const events = await env.EVENTS.prepare(
       "SELECT session_id, ts, event, payload, received_ts FROM events WHERE received_ts >= ? ORDER BY received_ts DESC"
     ).bind(cutoff).all();

@@ -27,3 +27,9 @@ CREATE TABLE IF NOT EXISTS runs (
   created_ts INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_runs_session ON runs(session_id);
+
+-- Withdrawn sessions audit trail (soft-delete marker; data itself is hard-deleted)
+CREATE TABLE IF NOT EXISTS withdrawn_sessions (
+  session_id TEXT PRIMARY KEY,
+  withdrawn_ts INTEGER NOT NULL
+);

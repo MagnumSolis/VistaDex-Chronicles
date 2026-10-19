@@ -13,7 +13,7 @@
 
 export type Edition = "public" | "pitch";
 
-export type NavId = "reports" | "screen" | "graveyard" | "how";
+export type NavId = "reports" | "screen" | "how" | "contact";
 export interface Features {
   /** Where "#/" lands. */
   home: "welcome" | "reports";
@@ -33,13 +33,13 @@ export function featuresFor(edition: Edition): Features {
     return {
       home: "reports", welcome: false, walkthrough: false, telemetry: false, feedback: false,
       reportStore: "session-and-demo", badge: "Pitch edition",
-      nav: ["reports", "screen", "graveyard", "how"],
+      nav: ["reports", "screen", "how", "contact"],
     };
   }
   return {
     home: "welcome", welcome: true, walkthrough: true, telemetry: true, feedback: true,
     reportStore: "browser", badge: null,
-    nav: ["screen", "reports", "graveyard", "how"],
+    nav: ["screen", "reports", "how", "contact"],
   };
 }
 

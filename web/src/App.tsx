@@ -11,7 +11,7 @@ import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Running } from "@/screens/Running";
 import { ReportScreen } from "@/screens/ReportScreen";
 import { Reports } from "@/screens/Reports";
-import { Graveyard } from "@/screens/Graveyard";
+import { Contact } from "@/screens/Contact";
 import { HowItWorks } from "@/screens/HowItWorks";
 import { Feedback } from "@/screens/Feedback";
 import { startWalkthrough, Walkthrough } from "@/walkthrough/Walkthrough";
@@ -22,9 +22,9 @@ function available(name: RouteName) {
   if (name === "feedback") return features.feedback;
   return true;
 }
-// Before the Welcome notice is answered (public, first visit), only Welcome and How it works
-// (linked from the notice, for reading first) are shown.
-const beforeNotice = (name: RouteName) => name !== "welcome" && name !== "how";
+// Before the Welcome notice is answered (public, first visit), only pages that record nothing can be
+// read: Welcome, How it works and Contact us.
+const beforeNotice = (name: RouteName) => !["welcome", "how", "contact"].includes(name);
 
 export function App() {
   const route = useRoute();
@@ -76,7 +76,7 @@ function Screen({ route }: { route: Route }) {
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;
     case "reports": return <Reports />;
-    case "graveyard": return <Graveyard />;
+    case "contact": return <Contact />;
     case "how": return <HowItWorks onReplay={features.walkthrough ? () => startWalkthrough("how_it_works") : undefined} />;
     case "feedback": return <Feedback />;
     case "notfound": return <NotFound />;

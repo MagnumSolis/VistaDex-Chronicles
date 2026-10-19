@@ -94,8 +94,8 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     expect(screen.getByText("Idea title is required.")).toBeTruthy();
     fillIdea();
     expect(screen.queryByText("Idea title is required.")).toBeNull();
-    go("#/graveyard");
-    await screen.findByRole("heading", { name: "Startups that shut down" });
+    go("#/how-it-works");
+    await screen.findByRole("heading", { name: "Evidence first. You decide." });
     go("#/screen");
     expect((await screen.findByLabelText(/^Solution/) as HTMLTextAreaElement).value).toBe("No such thing exists.");
   });

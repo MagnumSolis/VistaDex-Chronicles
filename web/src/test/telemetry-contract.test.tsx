@@ -47,16 +47,11 @@ describe("every interactive element on every screen has a registered data-contro
     fireEvent.click(screen.getByRole("button", { name: "Skip to the tool" }));
     await screen.findByLabelText(/^Idea title/);
     missing.push(...unregistered());
-    for (const path of ["#/graveyard", "#/how-it-works", "#/feedback", "#/report", "#/running", "#/nope", "#/welcome"]) {
+    for (const path of ["#/reports", "#/how-it-works", "#/contact", "#/feedback", "#/report", "#/running", "#/nope", "#/welcome"]) {
       go(path);
       await new Promise(r => setTimeout(r, 0));
       missing.push(...unregistered());
     }
-    go("#/graveyard");
-    fireEvent.click((await screen.findAllByRole("button", { name: /Atrium/ }))[0]);
-    await screen.findByRole("dialog");
-    missing.push(...unregistered());
-    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     go("#/screen");
     fireEvent.click(await screen.findByRole("button", { name: "AI contract review for startups" }));
     fireEvent.click(screen.getByRole("button", { name: /^EU/ }));
@@ -65,6 +60,13 @@ describe("every interactive element on every screen has a registered data-contro
     missing.push(...unregistered());
     await reportShown();
     const toggle = screen.queryAllByRole("button", { name: /Show sources/ })[0]; if (toggle) fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole("button", { name: /How this was calculated/ }));
+    missing.push(...unregistered());
+    go("#/reports");
+    await screen.findByText("Ideas analysed");
+    missing.push(...unregistered());
+    fireEvent.click(screen.getByRole("button", { name: /Clear my reports/ }));
+    await screen.findByRole("dialog");
     missing.push(...unregistered());
     expect([...new Set(missing)]).toEqual([]);
   }, 30000);
@@ -78,8 +80,9 @@ describe("emitted events match the contract", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
     await reportShown();
     fireEvent.click(screen.getAllByRole("button", { name: /Show sources|Summary/ })[0]);
-    go("#/graveyard");
-    await screen.findByRole("heading", { name: "Startups that shut down" });
+    go("#/reports");
+    await screen.findByText("Ideas analysed");
+    fireEvent.change(screen.getByLabelText("Sort by"), { target: { value: "score" } });
     window.dispatchEvent(new Event("pagehide"));
     const events = tm.events() as { type: string; payload: Record<string, unknown> }[];
     expect(events.length).toBeGreaterThan(5);

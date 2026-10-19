@@ -1,6 +1,406 @@
 {
-  "exported_at": null,
-  "count": 0,
-  "entries": [],
-  "note": "Run backend `npm run db:export` (from a machine with Mongo access) to regenerate this snapshot from Atlas; commit and redeploy."
+  "exported_at": "2026-10-19T17:24:21.307Z",
+  "count": 20,
+  "entries": [
+    {
+      "company_name": "23andMe",
+      "what_they_tried": "23andMe pioneered direct-to-consumer genetic testing, democratizing access to ancestry and health insights that previously required expensive clinical testing. Founded in 2006 during the genomics revolution following the Human Genome Project completion, they capitalized on plummeting sequencing costs (from $100M+ to under $1000) and consumer curiosity about personal genetics. The value proposition was transformative: spit in a tube, mail it in, and receive detailed ancestry breakdowns plus health risk assessments for conditions like Alzheimer's, Parkinson's, and BRCA cancer mutations. They positioned genetics as consumer empowerment rather than medical gatekeeping, riding the quantified-self movement alongside Fitbit and early health tech. The 'why now' was perfect timing: sequencing costs dropped 10,000x, social media enabled viral sharing of results, and consumers increasingly distrust",
+      "cause_of_death": "23andMe pioneered direct-to-consumer genetic testing, democratizing access to ancestry and health insights that previously required expensive clinical testing. Founded in 2006 during the genomics revolution following the Human Genome Project completion, they capitalized on plummeting sequencing costs (from $100M+ to under $1000) and consumer curiosity about personal genetics. The value proposition",
+      "cause_category": "other",
+      "year_closed": 2025,
+      "closure_date": null,
+      "raised": "$1.1B",
+      "funding_rounds": [],
+      "sector": "Health Care",
+      "product_type": "Medical",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2562-23andme",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Plenty Unlimited",
+      "what_they_tried": "Plenty Unlimited pioneered vertical farming technology to grow fresh produce indoors using 99% less water and 99% less land than traditional agriculture. Founded in 2014, they raised nearly $1B from marquee investors like SoftBank and Bezos Expeditions to build massive indoor farms with proprietary LED lighting, robotics, and AI-driven climate control. The value proposition was compelling: pesticide-free, locally-grown produce available year-round in urban centers, eliminating supply chain waste and reducing carbon footprint. The 'why now' was climate change anxiety, urbanization trends, and advances in LED efficiency making indoor farming economically viable. They built flagship facilities in San Francisco and Compton, partnered with Walmart and Albertsons, and positioned themselves as the Tesla of agriculture—high-tech, mission-driven, capital-intensive infrastructure play. The vision",
+      "cause_of_death": "Plenty Unlimited pioneered vertical farming technology to grow fresh produce indoors using 99% less water and 99% less land than traditional agriculture. Founded in 2014, they raised nearly $1B from marquee investors like SoftBank and Bezos Expeditions to build massive indoor farms with proprietary LED lighting, robotics, and AI-driven climate control. The value proposition was compelling: pestici",
+      "cause_category": "other",
+      "year_closed": 2025,
+      "closure_date": null,
+      "raised": "$944.0M",
+      "funding_rounds": [],
+      "sector": "Materials",
+      "product_type": "Robotics",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2563-plenty-unlimited",
+        "https://www.reddit.com/r/verticalfarming/comments/1jl9hn4/what_happened_to_plenty/",
+        "https://ideaproof.io/failure/plenty-unlimited"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Bridgetech",
+      "what_they_tried": "Bridgetech was a Chinese healthcare technology venture backed by C-Bridge Capital with $140M in funding between 2021-2025. Operating during China's digital health boom post-COVID, the company likely aimed to bridge traditional healthcare infrastructure with modern digital solutions—potentially focusing on telemedicine platforms, hospital digitization, or healthcare data integration. The timing seemed perfect: China's healthcare market was rapidly digitizing, regulatory frameworks were evolving to support telehealth, and COVID-19 had accelerated adoption of remote care solutions. The 'Why Now' was compelling—aging population, government push for healthcare reform, rising middle class demanding better care access, and technology maturity in AI diagnostics and cloud infrastructure. However, despite massive capital and favorable macro conditions, Bridgetech failed to achieve product-market f",
+      "cause_of_death": "Bridgetech was a Chinese healthcare technology venture backed by C-Bridge Capital with $140M in funding between 2021-2025. Operating during China's digital health boom post-COVID, the company likely aimed to bridge traditional healthcare infrastructure with modern digital solutions—potentially focusing on telemedicine platforms, hospital digitization, or healthcare data integration. The timing see",
+      "cause_category": "other",
+      "year_closed": 2025,
+      "closure_date": null,
+      "raised": "$140.0M",
+      "funding_rounds": [],
+      "sector": "Health Care",
+      "product_type": "SaaS (B2B)",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2546-bridgetech",
+        "https://www.merriam-webster.com/dictionary/shut",
+        "https://shutnyc.com/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Thunder Power",
+      "what_they_tried": "Thunder Power was a Chinese electric vehicle manufacturer founded in 2015 by Shen Wei with ambitious plans to compete in the premium EV segment. The company positioned itself as a luxury EV maker targeting European and Asian markets, unveiling concept vehicles at major auto shows including the 2015 Frankfurt Motor Show. Thunder Power promised cutting-edge battery technology, sleek design, and performance metrics comparable to Tesla. The 'Why Now' was compelling: EV adoption was accelerating globally, Chinese government subsidies were generous, and Tesla had validated the premium EV market. Thunder Power raised $100M to build manufacturing facilities and develop production vehicles. However, the company struggled to transition from concept to production, facing the brutal reality that automotive manufacturing requires exponentially more capital, supply chain expertise, and regulatory navi",
+      "cause_of_death": "Thunder Power was a Chinese electric vehicle manufacturer founded in 2015 by Shen Wei with ambitious plans to compete in the premium EV segment. The company positioned itself as a luxury EV maker targeting European and Asian markets, unveiling concept vehicles at major auto shows including the 2015 Frankfurt Motor Show. Thunder Power promised cutting-edge battery technology, sleek design, and perf",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$100.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Consumer Electronics",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2544-thunder-power",
+        "https://ideaproof.io/failure/thunder-power",
+        "https://timpte.com/wp-content/uploads/2019/11/26_Thunder-5000-Power-Tarp-Operation_Thunder-5000-Tarp-System-Operation-Instructions-Rev-G-.pdf"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Wukong Rental",
+      "what_they_tried": "Wukong Rental launched in 2014 as China's answer to the sharing economy boom, focusing on peer-to-peer rental of consumer goods and equipment. The platform allowed users to rent out underutilized assets—from cameras and drones to power tools and camping gear—to others in their community. The value proposition was compelling: asset owners could monetize idle inventory while renters accessed expensive items without purchase commitments. The timing seemed perfect, riding the wave of China's mobile-first consumer revolution and the global sharing economy narrative that had propelled Airbnb and Uber to unicorn status. With $70M in funding, Wukong positioned itself as the 'Rent the Runway meets Craigslist' for physical goods in China's rapidly urbanizing tier-1 and tier-2 cities. The platform promised to unlock billions in dormant asset value while promoting sustainable consumption patterns al",
+      "cause_of_death": "Wukong Rental launched in 2014 as China's answer to the sharing economy boom, focusing on peer-to-peer rental of consumer goods and equipment. The platform allowed users to rent out underutilized assets—from cameras and drones to power tools and camping gear—to others in their community. The value proposition was compelling: asset owners could monetize idle inventory while renters accessed expensi",
+      "cause_category": "other",
+      "year_closed": 2024,
+      "closure_date": null,
+      "raised": "$70.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Marketplace",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2549-wukong-rental",
+        "https://ideaproof.io/failure/wukong-rental",
+        "https://www.gtmright.com/data"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Weidai",
+      "what_they_tried": "Weidai was a Chinese peer-to-peer (P2P) lending platform founded in 2011 that connected individual borrowers with investors, focusing on microloans and consumer credit. The company emerged during China's fintech boom when traditional banks underserved small businesses and individuals, creating massive demand for alternative lending. Weidai raised $110M from investors including Crystal Stream, positioning itself as a technology-enabled credit intermediary. The platform used data analytics for credit scoring and automated loan matching. The 'why now' was compelling: China's credit gap, smartphone penetration, and regulatory tolerance for P2P lending created a perfect storm. However, Weidai operated in an increasingly crowded market with over 6,000 P2P platforms at peak, and the business model depended on continuous liquidity, borrower quality, and regulatory stability—all of which deterior",
+      "cause_of_death": "Weidai was a Chinese peer-to-peer (P2P) lending platform founded in 2011 that connected individual borrowers with investors, focusing on microloans and consumer credit. The company emerged during China's fintech boom when traditional banks underserved small businesses and individuals, creating massive demand for alternative lending. Weidai raised $110M from investors including Crystal Stream, posi",
+      "cause_category": "other",
+      "year_closed": 2023,
+      "closure_date": null,
+      "raised": "$110.0M",
+      "funding_rounds": [],
+      "sector": "Financials",
+      "product_type": "Financial &amp; Fintech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2548-weidai",
+        "https://ideaproof.io/failure/weidai-china-p2p",
+        "https://faildex.com/en/company/14b9efb1-dc6d-450d-ad38-a0b6eccc6d18/weidai"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Qkids",
+      "what_they_tried": "Qkids was an online English education platform connecting Chinese children (ages 4-12) with North American teachers for live, small-group classes. Founded in 2015 during China's EdTech boom, Qkids capitalized on three converging trends: Chinese parents' obsession with English proficiency for their children's future competitiveness, the rise of affordable high-speed internet enabling real-time video learning, and a large pool of underemployed English-speaking teachers in North America seeking flexible remote work. The platform differentiated itself through gamified curriculum, 1-on-4 small group classes (vs. competitors' 1-on-1 model), and competitive pricing at ~$10-15 per 30-minute session. With $100M in funding from IDG Capital, Qkids scaled rapidly to over 800,000 students and 30,000+ teachers by 2019. The 'Why Now' was perfect: regulatory arbitrage allowed foreign teachers without Ch",
+      "cause_of_death": "Qkids was an online English education platform connecting Chinese children (ages 4-12) with North American teachers for live, small-group classes. Founded in 2015 during China's EdTech boom, Qkids capitalized on three converging trends: Chinese parents' obsession with English proficiency for their children's future competitiveness, the rise of affordable high-speed internet enabling real-time vide",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$100.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2557-qkids",
+        "https://teacher.qkids.com/",
+        "https://www.reddit.com/r/WorkOnline/comments/e6ocuk/an_honest_comprehensive_overview_of_working_for/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Hujiang",
+      "what_they_tried": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and proprietary learning apps. The company raised $187M from top-tier investors including Baidu and SIG China, capitalizing on China's explosive demand for English proficiency and professional skills training during the country's economic boom. Hujiang's 'Why Now' was compelling: China's middle class was expanding rapidly, internet penetration was accelerating, and parents were willing to pay premium prices for children's education. The platform aggregated thousands of teachers, offered courses in languag",
+      "cause_of_death": "Hujiang was China's pioneering online education platform, founded in 2001 as a community-driven language learning website that evolved into a comprehensive EdTech ecosystem. Starting as a free forum for English learners, Hujiang built massive user engagement through user-generated content and peer learning before pivoting to a freemium model with premium courses, live streaming classes, and propri",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$187.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2556-hujiang",
+        "https://ideaproof.io/failure/hujiang-china",
+        "https://cn.hujiang.com/new/p525861"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Changingedu",
+      "what_they_tried": "Changingedu was a Chinese EdTech platform founded in 2014 that aimed to revolutionize K-12 education through online tutoring and adaptive learning technology. The company raised $188M from top-tier investors including IDG Capital and Sequoia China during China's EdTech boom (2014-2020), when the sector saw explosive growth driven by middle-class parents' willingness to spend heavily on children's education. Changingedu positioned itself as a comprehensive online education solution combining live-streaming classes, AI-powered personalized learning paths, and one-on-one tutoring services. The timing seemed perfect: China's education market was valued at over $100B annually, internet penetration was accelerating, and COVID-19 (2020) forced mass adoption of online learning. The company grew rapidly, acquiring millions of users and expanding into multiple subjects and grade levels. However, t",
+      "cause_of_death": "Changingedu was a Chinese EdTech platform founded in 2014 that aimed to revolutionize K-12 education through online tutoring and adaptive learning technology. The company raised $188M from top-tier investors including IDG Capital and Sequoia China during China's EdTech boom (2014-2020), when the sector saw explosive growth driven by middle-class parents' willingness to spend heavily on children's",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$188.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2555-changingedu",
+        "https://ideaproof.io/failure/changingedu",
+        "https://www.holoniq.com/edtech-unicorns"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "CodeMao",
+      "what_they_tried": "CodeMao was China's largest coding education platform for children aged 7-16, offering visual programming tools (similar to Scratch), online courses, and gamified learning experiences. Founded in 2015 during China's EdTech boom, CodeMao capitalized on parental anxiety around STEM education and government initiatives promoting coding literacy. The platform attracted 30+ million registered users and raised $360M from top-tier investors including Hillhouse Capital and Baring PE. The value proposition was compelling: make programming accessible to Chinese children through localized, game-based learning that prepared them for an AI-driven future. The timing seemed perfect as China's middle class exploded and parents invested heavily in supplemental education. CodeMao built proprietary visual programming languages, created an online community for sharing projects, and partnered with 11,000+ sc",
+      "cause_of_death": "CodeMao was China's largest coding education platform for children aged 7-16, offering visual programming tools (similar to Scratch), online courses, and gamified learning experiences. Founded in 2015 during China's EdTech boom, CodeMao capitalized on parental anxiety around STEM education and government initiatives promoting coding literacy. The platform attracted 30+ million registered users and",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$360.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2554-codemao",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Huohua Siwei",
+      "what_they_tried": "Huohua Siwei (火花思维, Spark Thinking) was a Chinese online education platform focused on math and logic training for children aged 3-12. Founded in 2016 by Jian Luo, the company rode the wave of China's booming K-12 online education market, offering live small-group classes (typically 4-6 students) taught by instructors using gamified, interactive courseware. The value proposition was compelling: combine the engagement of gaming with rigorous math curriculum development, delivered through a scalable online model that could reach tier-2 and tier-3 cities where quality education resources were scarce. The 'why now' was perfect timing—China's middle class was exploding, parents were obsessed with educational outcomes, mobile internet penetration had reached critical mass, and COVID-19 accelerated online learning adoption. Huohua raised $593M from top-tier investors including Tencent, GGV Capi",
+      "cause_of_death": "Huohua Siwei (火花思维, Spark Thinking) was a Chinese online education platform focused on math and logic training for children aged 3-12. Founded in 2016 by Jian Luo, the company rode the wave of China's booming K-12 online education market, offering live small-group classes (typically 4-6 students) taught by instructors using gamified, interactive courseware. The value proposition was compelling: co",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$593.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2553-huohua-siwei",
+        "https://ideaproof.io/failure/huohua-siwei",
+        "https://www.cbinsights.com/company/huohua"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "17zuoye",
+      "what_they_tried": "17zuoye (literally '17 Homework') was China's largest K-12 online homework and adaptive learning platform, serving over 50 million students, 4 million teachers, and 40 million parents at its peak. Founded in 2011 by Liu Chang (former Sina executive), the platform digitized homework submission, automated grading, and provided AI-powered personalized learning paths. The value proposition was compelling: reduce teacher workload through automated grading, give students instant feedback with gamified learning, and provide parents real-time visibility into academic progress. The 'Why Now' was perfect timing with China's mobile internet explosion (2011-2015), rising middle-class anxiety about education, and government push for education technology. With $585M from tier-1 investors like DST Global and Temasek, 17zuoye became the poster child for Chinese EdTech, achieving unicorn status by 2018.",
+      "cause_of_death": "17zuoye (literally '17 Homework') was China's largest K-12 online homework and adaptive learning platform, serving over 50 million students, 4 million teachers, and 40 million parents at its peak. Founded in 2011 by Liu Chang (former Sina executive), the platform digitized homework submission, automated grading, and provided AI-powered personalized learning paths. The value proposition was compell",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$585.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2552-17zuoye",
+        "https://ir.17zuoye.com/pdf/Fiscal%20Year%202024%20Annual%20Report.pdf",
+        "https://edtechchina.medium.com/by-burning-billions-of-dollars-which-homework-product-will-find-success-at-the-k12-education-280a64f0299f"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "DaDaABC",
+      "what_they_tried": "DaDaABC was a Chinese online English tutoring platform connecting native English-speaking teachers with Chinese children aged 4-16 through one-on-one live video lessons. Founded in 2013 by Grace Zhu (a former English teacher), DaDa capitalized on China's massive demand for English education and parental willingness to pay premium prices for native speakers. The platform differentiated itself through fixed teacher-student pairings (building long-term relationships vs. rotating tutors), proprietary video technology optimized for China's internet infrastructure, and a curriculum aligned with international standards. The 'Why Now' was perfect: China's rising middle class, regulatory push for English proficiency, mobile internet penetration reaching tier-2/3 cities, and parental anxiety about competitive advantages. DaDa raised $863M from top-tier investors like Tiger Global and Warburg Pincu",
+      "cause_of_death": "DaDaABC was a Chinese online English tutoring platform connecting native English-speaking teachers with Chinese children aged 4-16 through one-on-one live video lessons. Founded in 2013 by Grace Zhu (a former English teacher), DaDa capitalized on China's massive demand for English education and parental willingness to pay premium prices for native speakers. The platform differentiated itself throu",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$863.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2551-dadaabc",
+        "https://www.reddit.com/r/OnlineESLTeaching/comments/9suyv0/how_is_dadaabc_my_honest_experience_teaching_with/",
+        "https://ideaproof.io/failure/dadaabc-china"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Koolearn (K-12)",
+      "what_they_tried": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching resources to deliver test prep, subject tutoring, and enrichment courses across China's massive K-12 market. The 'Why Now' was compelling: China's education-obsessed middle class was rapidly adopting smartphones and broadband, creating unprecedented demand for scalable, affordable tutoring that could reach second and third-tier cities. Tencent's $164M investment validated the thesis that online education could democratize access to elite instruction while achieving superior unit economics versus",
+      "cause_of_death": "Koolearn was the K-12 online education subsidiary of New Oriental Education & Technology Group, China's largest private education company. Founded in 2005 and spun off as an independent entity, Koolearn operated a dual-revenue model combining live online classes with recorded course content for primary and secondary school students. The platform leveraged New Oriental's brand equity and teaching r",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$164.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2550-koolearn-k-12",
+        "https://pdf.dfcfw.com/pdf/H3_AP202009181414361222_1.pdf",
+        "https://www.fool.com/earnings/call-transcripts/2020/07/28/new-oriental-education-technology-group-inc-edu-q4.aspx"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Magic Ears",
+      "what_they_tried": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculum, gamified learning experiences, and 1-to-4 teacher-student ratios that balanced personalization with unit economics. The 'Why Now' was compelling: China's rising middle class, regulatory push for English proficiency, mobile internet penetration reaching tier-2/3 cities, and parental anxiety about educational competitiveness. The platform raised $50M from ZhenFund and others, riding the wave of online education that saw competitors like VIPKid and VIPKID raise billions. However, Magic Ears oper",
+      "cause_of_death": "Magic Ears was a Chinese EdTech platform launched in 2016 that connected North American English teachers with Chinese children (ages 4-12) for live, small-group online English lessons. The company capitalized on China's massive demand for English education and parents' willingness to pay premium prices for native English instruction. Magic Ears differentiated itself through a proprietary curriculu",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$50.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2559-magic-ears",
+        "https://www.merriam-webster.com/dictionary/shut",
+        "https://shutnyc.com/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Chuming",
+      "what_they_tried": "Chuming was a Chinese startup that operated from 2000 to 2021, raising $67M over two decades. While specific product details are limited, the timeline suggests it was an early internet-era company that survived the dot-com crash but ultimately failed to adapt through multiple technology paradigm shifts. The 21-year lifespan indicates it found some product-market fit initially but couldn't evolve its business model or technology stack to remain competitive. The substantial funding and long runway suggest the failure wasn't immediate capital exhaustion but rather a slow decline as the market moved past its original value proposition. Given the China market context and timeline, it likely competed in e-commerce, social networking, or digital services during a period of explosive growth by Alibaba, Tencent, and ByteDance.",
+      "cause_of_death": "Chuming was a Chinese startup that operated from 2000 to 2021, raising $67M over two decades. While specific product details are limited, the timeline suggests it was an early internet-era company that survived the dot-com crash but ultimately failed to adapt through multiple technology paradigm shifts. The 21-year lifespan indicates it found some product-market fit initially but couldn't evolve i",
+      "cause_category": "other",
+      "year_closed": 2021,
+      "closure_date": null,
+      "raised": "$67.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "SaaS (B2C)",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2547-chuming",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Xueba100",
+      "what_they_tried": "Xueba100 was a Chinese EdTech platform launched in 2013 that aimed to democratize access to premium K-12 tutoring through an online marketplace connecting students with top teachers. The 'Why Now' was compelling: China's hyper-competitive education system created massive demand for supplemental tutoring, mobile internet penetration was exploding, and parents were willing to pay premium prices for educational advantage. Xueba100 raised $100M from tier-1 investors (SIG, Qiming) to build a two-sided marketplace where students could book live 1-on-1 or small group sessions with verified 'xueba' (academic masters). The platform promised convenience, transparency, and access to elite tutors previously available only through expensive offline agencies. However, the business model faced structural challenges: high customer acquisition costs in a crowded market, difficulty maintaining teacher qua",
+      "cause_of_death": "Xueba100 was a Chinese EdTech platform launched in 2013 that aimed to democratize access to premium K-12 tutoring through an online marketplace connecting students with top teachers. The 'Why Now' was compelling: China's hyper-competitive education system created massive demand for supplemental tutoring, mobile internet penetration was exploding, and parents were willing to pay premium prices for",
+      "cause_category": "other",
+      "year_closed": 2020,
+      "closure_date": null,
+      "raised": "$100.0M",
+      "funding_rounds": [],
+      "sector": "Communication Services",
+      "product_type": "EdTech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2534-xueba100",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Qianhe",
+      "what_they_tried": "Qianhe was a Chinese peer-to-peer (P2P) lending platform launched in 2014 during China's explosive fintech boom. The company facilitated direct lending between individuals and small businesses, bypassing traditional banks by offering higher returns to lenders and easier access to capital for borrowers. The 'Why Now' was compelling: China's underbanked SME sector desperately needed capital, traditional banks were risk-averse, and mobile internet penetration was skyrocketing. Qianhe raised $100M to build marketplace infrastructure, credit scoring algorithms, and customer acquisition engines. The value proposition was democratizing finance—connecting surplus capital with unmet demand through technology. However, the platform operated in a regulatory gray zone where oversight was minimal, risk management was immature, and the unit economics relied on continuous growth rather than sustainable",
+      "cause_of_death": "Qianhe was a Chinese peer-to-peer (P2P) lending platform launched in 2014 during China's explosive fintech boom. The company facilitated direct lending between individuals and small businesses, bypassing traditional banks by offering higher returns to lenders and easier access to capital for borrowers. The 'Why Now' was compelling: China's underbanked SME sector desperately needed capital, traditi",
+      "cause_category": "other",
+      "year_closed": 2019,
+      "closure_date": null,
+      "raised": "$100.0M",
+      "funding_rounds": [],
+      "sector": "Financials",
+      "product_type": "Financial &amp; Fintech",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2545-qianhe",
+        "https://www.tshe.org/ea/pdf/EA14(3)/EA14(3)_01.pdf",
+        "https://us.trip.com/moments/detail/chongqing-158-147923749/"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Gobee.bike",
+      "what_they_tried": "Gobee.bike launched in 2017 as Hong Kong's first dockless bike-sharing platform, attempting to replicate the explosive growth of Mobike and Ofo in mainland China. The value proposition was compelling: GPS-enabled bikes accessible via smartphone app, no docking stations required, pay-per-ride pricing at ~$0.50 per 30 minutes. The 'why now' was perfect timing—bike-sharing was experiencing hypergrowth in Asia, cities were desperate for last-mile solutions, and smartphone penetration had reached critical mass. Gobee expanded aggressively to Europe (France, Belgium, Italy) within months, deploying thousands of bikes across multiple cities. The vision was to become the Uber of bikes, leveraging network effects and first-mover advantage in Western markets before Chinese giants arrived. However, the business model had a fatal flaw: it assumed rational user behavior and civic responsibility that",
+      "cause_of_death": "Gobee.bike launched in 2017 as Hong Kong's first dockless bike-sharing platform, attempting to replicate the explosive growth of Mobike and Ofo in mainland China. The value proposition was compelling: GPS-enabled bikes accessible via smartphone app, no docking stations required, pay-per-ride pricing at ~$0.50 per 30 minutes. The 'why now' was perfect timing—bike-sharing was experiencing hypergrowt",
+      "cause_category": "other",
+      "year_closed": 2018,
+      "closure_date": null,
+      "raised": "$9.0M",
+      "funding_rounds": [],
+      "sector": "Consumer",
+      "product_type": "Mobile App",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2560-gobeebike",
+        "https://downdetector.com/",
+        "https://en.wikipedia.org/wiki/Down_(band)"
+      ],
+      "source_verified": false
+    },
+    {
+      "company_name": "Xiaoming Bike",
+      "what_they_tried": "Xiaoming Bike was a Chinese bike-sharing startup that launched in 2016 during the explosive growth phase of China's shared mobility revolution. The company entered a market that saw over 70 bike-sharing companies emerge between 2015-2017, competing for urban commuters seeking last-mile transportation solutions. Xiaoming positioned itself as a convenient, app-based alternative to public transit and walking, deploying GPS-enabled bikes across Chinese cities. The value proposition centered on solving the 'last mile problem' - the gap between metro stations and final destinations - while reducing urban congestion and pollution. The timing seemed perfect: smartphone penetration was accelerating, mobile payments (Alipay/WeChat Pay) were ubiquitous, and Chinese cities were experiencing severe traffic congestion. However, Xiaoming entered a market already dominated by well-funded giants like Mob",
+      "cause_of_death": "Xiaoming Bike was a Chinese bike-sharing startup that launched in 2016 during the explosive growth phase of China's shared mobility revolution. The company entered a market that saw over 70 bike-sharing companies emerge between 2015-2017, competing for urban commuters seeking last-mile transportation solutions. Xiaoming positioned itself as a convenient, app-based alternative to public transit and",
+      "cause_category": "other",
+      "year_closed": 2018,
+      "closure_date": null,
+      "raised": "$15.0M",
+      "funding_rounds": [],
+      "sector": "Industrials",
+      "product_type": "Mobile App",
+      "country": null,
+      "registry_record": null,
+      "source_urls": [
+        "https://www.loot-drop.io/startup/2561-xiaoming-bike",
+        "https://ideaproof.io/failure/xiaoming-bike",
+        "https://www.chinatravelnews.com/article/107040/"
+      ],
+      "source_verified": false
+    }
+  ]
 }

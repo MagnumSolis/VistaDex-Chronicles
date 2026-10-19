@@ -10,6 +10,7 @@ on:
       - "public/**"
       - "worker/**"
       - "wrangler.jsonc"
+      - "worker/data/graveyard.json"
   workflow_dispatch: {}
 
 concurrency:

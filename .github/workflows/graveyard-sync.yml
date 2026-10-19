@@ -61,7 +61,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new confirmed entries — nothing to commit."
           else
-            git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
+            git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip graveyard-sync]"
             git push
             echo "Snapshot pushed — deploy workflow will follow."
           fi

@@ -34,7 +34,7 @@ export function Dashboard() {
   const tiles: { label: string; value: number; icon: typeof Ghost; tint?: ClaimStatus }[] = [
     { label: "Ideas screened", value: entries.length, icon: ListChecks },
     { label: "With graveyard leads", value: withLeads, icon: Ghost },
-    ...STATUS_ORDER.map(s => ({ label: `With a ${STATUS[s].label.toLowerCase()} claim`, value: entries.filter(e => count(e, s) > 0).length, icon: STATUS[s].icon, tint: s })),
+    ...STATUS_ORDER.map(s => ({ label: `With ${s === "unverified" ? "an" : "a"} ${STATUS[s].label.toLowerCase()} claim`, value: entries.filter(e => count(e, s) > 0).length, icon: STATUS[s].icon, tint: s })),
   ];
   const clear = () => { setQ(""); setStatus("all"); setCategory("all"); };
 

@@ -71,7 +71,9 @@ export function Walkthrough({ route }: { route: RouteName }) {
     const el = document.querySelector<HTMLElement>(step.target);
     if (!el) { setRect(null); return; }
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    // Phones: the card docks at the bottom, so put the target at the top, above it.
+    const narrow = !matchMedia("(min-width: 768px)").matches;
+    el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: narrow ? "start" : "center" });
     let frame = 0;
     const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => setRect(el.getBoundingClientRect())); };
     update();
@@ -83,12 +85,15 @@ export function Walkthrough({ route }: { route: RouteName }) {
   useLayoutEffect(() => { if (on) cardRef.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true }); }, [on, i]);
 
   if (!on) return null;
-  const wide = typeof window !== "undefined" && window.innerWidth >= 768;
+  const wide = matchMedia("(min-width: 768px)").matches; // same breakpoint as the CSS (md)
+  // Beside the target when the card fits below or above it; otherwise docked in a corner, never on top of it.
+  const CARD_H = 260;
   const style: CSSProperties = {};
-  if (wide && rect) {
-    const below = rect.bottom + 16;
-    const fitsBelow = below + 260 < window.innerHeight;
-    style.top = Math.max(16, fitsBelow ? below : rect.top - 16 - 260);
+  const fitsBelow = rect ? rect.bottom + 16 + CARD_H < window.innerHeight : false;
+  const fitsAbove = rect ? rect.top - 16 - CARD_H > 16 : false;
+  const placed = wide && rect && (fitsBelow || fitsAbove);
+  if (placed) {
+    style.top = fitsBelow ? rect.bottom + 16 : rect.top - 16 - CARD_H;
     style.left = Math.min(Math.max(16, rect.left), window.innerWidth - 16 - 352);
   }
 
@@ -99,7 +104,7 @@ export function Walkthrough({ route }: { route: RouteName }) {
           style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }} />
       )}
       <div ref={cardRef} role="dialog" aria-modal="false" aria-labelledby="tour-title" aria-describedby="tour-body"
-        className={wide && rect
+        className={placed
           ? "on-page fixed z-50 w-[22rem] rounded-card bg-charcoal p-5 text-on-charcoal print:hidden"
           : "on-page fixed inset-x-4 bottom-24 z-50 mx-auto max-w-md rounded-card bg-charcoal p-5 text-on-charcoal md:bottom-6 md:left-auto md:right-6 md:mx-0 md:w-[22rem] print:hidden"}
         style={style}>

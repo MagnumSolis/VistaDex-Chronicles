@@ -39,9 +39,9 @@ export function ScreenIdea() {
   };
 
   function submit() {
-    const text = idea.trim();
+    const text = draft.text.trim(); // the draft, not the render closure, so a Run right after a sample load sees it
     if (!text) { setEmpty(true); document.getElementById("ideaInput")?.focus(); return; }
-    void startRun({ ideaText: text, markets, sample: draft.sample && SAMPLES.find(s => s.id === draft.sample)?.text === idea ? draft.sample : null });
+    void startRun({ ideaText: text, markets: draft.markets, sample: draft.sample && SAMPLES.find(s => s.id === draft.sample)?.text === draft.text ? draft.sample : null });
   }
 
   const copy = run.error ? errorCopy(run.error.code) : null;

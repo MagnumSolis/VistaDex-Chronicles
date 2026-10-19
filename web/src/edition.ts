@@ -1,9 +1,9 @@
 // ── edition.ts — The ONE place that knows which edition is running ──
 // One codebase, one build, two editions:
-//   public (default) — anyone from the LinkedIn link: Welcome, walkthrough, telemetry, feedback,
-//                      and only the report the visitor just ran.
-//   pitch            — the team, in investor pitches and for testing: Dashboard home, every screened
-//                      idea, no walkthrough, no feedback and NO telemetry at all.
+//   public (default) — anyone from the LinkedIn link: Welcome, walkthrough, telemetry, feedback; the
+//                      Reports page lists the reports this browser has run (localStorage).
+//   pitch            — the team, in investor pitches and for testing: Reports home with every screened
+//                      idea (session + demo cohort), no walkthrough, no feedback and NO telemetry at all.
 // Components read `features` and never compare edition names themselves (a test enforces this).
 //
 // The pitch edition is unlocked from the link fragment: …/#edition=pitch&code=<access code>.
@@ -13,17 +13,16 @@
 
 export type Edition = "public" | "pitch";
 
-export type NavId = "dashboard" | "screen" | "graveyard" | "how";
+export type NavId = "reports" | "screen" | "graveyard" | "how";
 export interface Features {
   /** Where "#/" lands. */
-  home: "welcome" | "dashboard";
+  home: "welcome" | "reports";
   welcome: boolean;
   walkthrough: boolean;
   telemetry: boolean;
   feedback: boolean;
-  dashboard: boolean;
-  /** true: every screened idea is listed and has its own #/report/:id; false: only the latest run. */
-  reportHistory: boolean;
+  /** Where the Reports page's reports come from. */
+  reportStore: "browser" | "session-and-demo";
   /** Small persistent header badge so the wrong edition is never demoed. */
   badge: string | null;
   nav: NavId[];
@@ -32,15 +31,15 @@ export interface Features {
 export function featuresFor(edition: Edition): Features {
   if (edition === "pitch") {
     return {
-      home: "dashboard", welcome: false, walkthrough: false, telemetry: false, feedback: false,
-      dashboard: true, reportHistory: true, badge: "Pitch edition",
-      nav: ["dashboard", "screen", "graveyard", "how"],
+      home: "reports", welcome: false, walkthrough: false, telemetry: false, feedback: false,
+      reportStore: "session-and-demo", badge: "Pitch edition",
+      nav: ["reports", "screen", "graveyard", "how"],
     };
   }
   return {
     home: "welcome", welcome: true, walkthrough: true, telemetry: true, feedback: true,
-    dashboard: false, reportHistory: false, badge: null,
-    nav: ["screen", "graveyard", "how"],
+    reportStore: "browser", badge: null,
+    nav: ["screen", "reports", "graveyard", "how"],
   };
 }
 

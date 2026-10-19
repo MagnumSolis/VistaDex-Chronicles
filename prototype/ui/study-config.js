@@ -18,6 +18,7 @@ export const NOTICE = {
   ideaText: "The idea text you paste is not stored in these records; we only note how long it is.",
   ideaTextMock: "In this version the screening runs in your browser, so the idea text never leaves it.",
   ideaTextLive: "To make the report, the idea text is sent to our server. The server keeps a technical log of each screening (the claims it pulled out of your text and the sources it checked) so we can find bugs; deleting your session deletes those logs too.",
+  reportsLocal: "Your reports, including the idea text, are saved in this browser only so you can find them on the Reports page. They are never uploaded; clear them there at any time.",
   // TODO(team): opt-out policy. Default: a visible "Use without recording" choice on Welcome.
   optOut: "Use without recording",
 };

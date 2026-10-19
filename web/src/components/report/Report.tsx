@@ -27,7 +27,7 @@ const dateLabel = (d: Date | null) => (d ? d.toLocaleString("en-GB", { day: "num
 export function Report({ entry }: { entry: ReportEntry }) {
   const { report } = entry;
   // Telemetry follows only this session's runs; demo reports are never instrumented.
-  const runId = entry.kind === "session" ? entry.id : null;
+  const runId = entry.runId;
   const active = useScrollSpy();
   const counts = Object.fromEntries(STATUS_ORDER.map(s => [s, report.claims.filter(c => c.status === s).length]));
   const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
@@ -166,7 +166,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
 
         <div className="on-light rounded-panel bg-background p-5 text-foreground md:p-8 print:hidden">
           <p className="font-display text-2xl">Done reviewing?</p>
-          <p className="mt-2 text-[0.9375rem] text-muted-foreground">Save this report as a PDF before you leave{features.reportHistory ? "" : ": it is not kept after you close this tab"}.</p>
+          <p className="mt-2 text-[0.9375rem] text-muted-foreground">{features.reportStore === "browser" ? "This report is saved in this browser only; find it again on the Reports page, or save it as a PDF." : "Reports run here are kept until this tab is closed. Save this one as a PDF to keep it."}</p>
           <Actions onAnother={another} />
         </div>
 

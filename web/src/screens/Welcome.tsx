@@ -66,7 +66,7 @@ export function Welcome({ onStartWalkthrough }: { onStartWalkthrough: () => void
         <ul className="grid gap-3 md:grid-cols-2">
           <NoticeItem icon={Fingerprint} title="What">{NOTICE.recorded}</NoticeItem>
           <NoticeItem icon={Clock} title="How long">Kept for {RETENTION_PERIOD}. {NOTICE.identity}</NoticeItem>
-          <NoticeItem icon={FileText} title="Your idea text">{NOTICE.ideaText} {liveMode() ? NOTICE.ideaTextLive : NOTICE.ideaTextMock}</NoticeItem>
+          <NoticeItem icon={FileText} title="Your idea text">{NOTICE.ideaText} {liveMode() ? NOTICE.ideaTextLive : NOTICE.ideaTextMock} {NOTICE.reportsLocal}</NoticeItem>
           <NoticeItem icon={Trash2} title="Changing your mind">
             You can delete your session at any time from “Your data &amp; privacy” at the bottom of every page. Questions or data requests: <span className="font-medium">{WITHDRAWAL_CONTACT}</span>.
           </NoticeItem>

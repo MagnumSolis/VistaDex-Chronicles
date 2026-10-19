@@ -130,7 +130,8 @@
       "graveyard",
       "how_it_works",
       "feedback",
-      "notfound"
+      "notfound",
+      "reports"
     ],
     "screen_time.screen": [
       "welcome",
@@ -140,7 +141,8 @@
       "graveyard",
       "how_it_works",
       "feedback",
-      "notfound"
+      "notfound",
+      "reports"
     ],
     "screen_time.ended_by": [
       "navigate",
@@ -300,11 +302,9 @@
   "controls": [
     "skip_to_content",
     "nav_home",
-    "nav_dashboard",
     "nav_screen",
     "nav_graveyard",
     "nav_how",
-    "tab_dashboard",
     "tab_screen",
     "tab_graveyard",
     "tab_how",
@@ -368,11 +368,19 @@
     "feedback_email",
     "feedback_submit",
     "feedback_screen_another",
-    "dashboard_search",
-    "dashboard_filter_status",
-    "dashboard_filter_category",
-    "dashboard_open_report",
-    "dashboard_clear",
+    "reports_sort",
+    "reports_filter_status",
+    "reports_filter_band",
+    "reports_filter_industry",
+    "reports_filter_role",
+    "reports_clear_filters",
+    "reports_open",
+    "reports_empty_screen",
+    "reports_clear",
+    "reports_clear_cancel",
+    "reports_clear_confirm",
+    "nav_reports",
+    "tab_reports",
     "walkthrough_next",
     "walkthrough_back",
     "walkthrough_skip",

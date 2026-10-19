@@ -64,6 +64,14 @@
   --st-unverified: #661a58;
   --st-unverified-bg: #f6daef;
 
+  /* categories in charts (industry mix): a lightness ramp of brand greens — never a status hue */
+  --cat-1: #0b3b2c;
+  --cat-2: #2e6b4d;
+  --cat-3: #5e9474;
+  --cat-4: #9dbf7a;
+  --cat-5: #cbef6a;
+  --cat-6: #f9fbf4;
+
   --radius: 0.375rem;
 
   /* unused shadcn slots kept neutral */

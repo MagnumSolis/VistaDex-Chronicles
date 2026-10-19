@@ -6,17 +6,19 @@ import { captureEdition, featuresFor } from "@/edition";
 const fakeHistory = () => ({ state: null, calls: [] as string[], replaceState(_s: unknown, _t: string, url: string) { this.calls.push(url); } });
 
 describe("edition features", () => {
-  it("public: welcome, walkthrough, telemetry, feedback; no dashboard; only the latest report", () => {
+  it("public: welcome, walkthrough, telemetry, feedback; reports saved in this browser", () => {
     expect(featuresFor("public")).toMatchObject({
       home: "welcome", welcome: true, walkthrough: true, telemetry: true, feedback: true,
-      dashboard: false, reportHistory: false, badge: null, nav: ["screen", "graveyard", "how"],
+      reportStore: "browser", badge: null,
     });
+    expect(featuresFor("public").nav).toContain("reports");
   });
-  it("pitch: dashboard home, every report, a badge, and telemetry fully off", () => {
+  it("pitch: Reports home with session + demo reports, a badge, and telemetry fully off", () => {
     expect(featuresFor("pitch")).toMatchObject({
-      home: "dashboard", welcome: false, walkthrough: false, telemetry: false, feedback: false,
-      dashboard: true, reportHistory: true, badge: "Pitch edition", nav: ["dashboard", "screen", "graveyard", "how"],
+      home: "reports", welcome: false, walkthrough: false, telemetry: false, feedback: false,
+      reportStore: "session-and-demo", badge: "Pitch edition",
     });
+    expect(featuresFor("pitch").nav[0]).toBe("reports");
   });
 });
 

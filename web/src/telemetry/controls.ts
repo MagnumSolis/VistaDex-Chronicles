@@ -6,8 +6,8 @@
 
 export const CONTROLS = [
   // shell
-  "skip_to_content", "nav_home", "nav_dashboard", "nav_screen", "nav_graveyard", "nav_how",
-  "tab_dashboard", "tab_screen", "tab_graveyard", "tab_how",
+  "skip_to_content", "nav_home", "nav_screen", "nav_graveyard", "nav_how",
+  "tab_screen", "tab_graveyard", "tab_how",
   "help_replay_walkthrough", "header_feedback", "footer_your_data",
   // welcome
   "welcome_start_walkthrough", "welcome_skip", "welcome_no_recording", "welcome_continue", "welcome_start_recording",
@@ -27,8 +27,11 @@ export const CONTROLS = [
   "how_replay_walkthrough", "how_registry_link", "how_try_it",
   // feedback
   "feedback_role", "feedback_useful", "feedback_section", "feedback_wrong", "feedback_would_use", "feedback_email", "feedback_submit", "feedback_screen_another",
-  // dashboard (pitch edition only: never logged, registered so the coverage test covers it)
-  "dashboard_search", "dashboard_filter_status", "dashboard_filter_category", "dashboard_open_report", "dashboard_clear",
+  // reports
+  "reports_sort", "reports_filter_status", "reports_filter_band", "reports_filter_industry", "reports_filter_role",
+  "reports_clear_filters", "reports_open", "reports_empty_screen", "reports_clear", "reports_clear_cancel", "reports_clear_confirm",
+  // shell: "tab_reports" / "nav_reports"
+  "nav_reports", "tab_reports",
   // walkthrough
   "walkthrough_next", "walkthrough_back", "walkthrough_skip", "walkthrough_done", "walkthrough_how_it_works", "walkthrough_resume",
   // not found

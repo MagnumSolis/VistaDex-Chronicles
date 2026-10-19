@@ -10,7 +10,7 @@ import { Welcome } from "@/screens/Welcome";
 import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Running } from "@/screens/Running";
 import { ReportScreen } from "@/screens/ReportScreen";
-import { Dashboard } from "@/screens/Dashboard";
+import { Reports } from "@/screens/Reports";
 import { Graveyard } from "@/screens/Graveyard";
 import { HowItWorks } from "@/screens/HowItWorks";
 import { Feedback } from "@/screens/Feedback";
@@ -18,7 +18,6 @@ import { startWalkthrough, Walkthrough } from "@/walkthrough/Walkthrough";
 
 // Routes an edition does not have.
 function available(name: RouteName) {
-  if (name === "dashboard") return features.dashboard;
   if (name === "welcome") return features.welcome;
   if (name === "feedback") return features.feedback;
   return true;
@@ -37,9 +36,9 @@ export function App() {
   // Redirects: "#/" goes home; routes this edition lacks go home; first visit goes to Welcome.
   useEffect(() => {
     if (route.name === "home") {
-      navigate(features.home === "dashboard" ? PATHS.dashboard : answered ? PATHS.screen : PATHS.welcome, { replace: true });
+      navigate(features.home === "reports" ? PATHS.reports : answered ? PATHS.screen : PATHS.welcome, { replace: true });
     } else if (route.name !== "notfound" && !available(route.name)) {
-      navigate(features.home === "dashboard" ? PATHS.dashboard : PATHS.screen, { replace: true });
+      navigate(features.home === "reports" ? PATHS.reports : PATHS.screen, { replace: true });
     } else if (!answered && beforeNotice(route.name)) {
       navigate(PATHS.welcome, { replace: true });
     }
@@ -76,7 +75,7 @@ function Screen({ route }: { route: Route }) {
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;
-    case "dashboard": return <Dashboard />;
+    case "reports": return <Reports />;
     case "graveyard": return <Graveyard />;
     case "how": return <HowItWorks onReplay={features.walkthrough ? () => startWalkthrough("how_it_works") : undefined} />;
     case "feedback": return <Feedback />;

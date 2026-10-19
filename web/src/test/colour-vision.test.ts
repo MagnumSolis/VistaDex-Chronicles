@@ -44,3 +44,15 @@ describe("status colours have equal visual weight and are never green", () => {
     }
   });
 });
+
+describe("chart category ramp (industry pie) stays distinguishable and away from status hues", () => {
+  const CATS = [1, 2, 3, 4, 5, 6].map(i => `cat-${i}`);
+  for (const [vision, matrix] of Object.entries(CVD)) {
+    it(`${vision}: every pair of category colours differs (ΔE2000 ≥ 10)`, () => {
+      for (let i = 0; i < CATS.length; i++) for (let j = i + 1; j < CATS.length; j++) {
+        const d = deltaE2000(lab(simulate(token(CATS[i]), matrix)), lab(simulate(token(CATS[j]), matrix)));
+        expect(d, `${CATS[i]} vs ${CATS[j]}`).toBeGreaterThanOrEqual(10);
+      }
+    });
+  }
+});

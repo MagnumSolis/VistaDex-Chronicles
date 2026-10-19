@@ -48,7 +48,7 @@ export function useRun() {
   return useSyncExternalStore(l => { listeners.add(l); return () => { listeners.delete(l); }; }, getRun);
 }
 
-export const reportPath = (id: string) => (features.reportHistory ? `${PATHS.report}/${encodeURIComponent(id)}` : PATHS.report);
+export const reportPath = (id: string) => `${PATHS.report}/${encodeURIComponent(id)}`;
 
 export async function startRun({ input, sample }: { input: IdeaInput; sample: string | null }) {
   const ideaText = buildIdeaText(input) as string;
@@ -77,7 +77,7 @@ export async function startRun({ input, sample }: { input: IdeaInput; sample: st
     const data = (await screenIdea(input, { onStage, signal })) as ScreenResult;
     if (signal.aborted) throw Object.assign(new Error("cancelled"), { code: "cancelled" });
     const report = data.report; // in mock mode the pipeline already carries the sample placeholders (sample_fields)
-    addSessionReport({ id: runId, createdAt: new Date(), report, mode: data.mode, markets, traceId: data.traceId });
+    const entry = addSessionReport({ runId, createdAt: new Date(), report, mode: data.mode, markets, traceId: data.traceId });
     telemetry.runCompleted(runId, { report, traceId: data.traceId, mode: data.mode }, Math.round(performance.now() - t0));
     const done = idleStages();
     const notes: Record<StageKey, string> = {
@@ -88,7 +88,7 @@ export async function startRun({ input, sample }: { input: IdeaInput; sample: st
     };
     for (const s of STAGES) done[s.key] = { state: s.key === "legal" && !report.legal ? "skipped" : "done", note: notes[s.key] };
     set({ status: "done", stages: done, server: false });
-    navigate(reportPath(runId));
+    navigate(reportPath(entry.id));
   } catch (err) {
     const code = (err as { code?: string })?.code;
     if (code === "cancelled" || signal.aborted) {

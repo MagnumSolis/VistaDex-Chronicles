@@ -64,10 +64,17 @@ export function installControlTracking() {
     if (!el) return;
     const control = el.dataset.control!;
     if (!isControl(control)) { console.warn(`telemetry: unregistered control "${control}"`); return; }
-    // Text fields report field_edited (length only) when left, not a press.
-    if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && ["text", "search", "email"].includes(el.type))) return;
+    // Text fields report field_edited (length only) when left, not a press; selects report their change.
+    if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el instanceof HTMLInputElement && ["text", "search", "email"].includes(el.type))) return;
     const value = el.dataset.controlValue;
     track("control_pressed", { control, screen: currentScreen, ...(value !== undefined ? { value } : {}) });
+  }, true);
+  document.addEventListener("change", e => {
+    const el = e.target as HTMLElement | null;
+    if (!(el instanceof HTMLSelectElement)) return;
+    const control = el.dataset.control;
+    if (!control || !isControl(control)) return;
+    track("control_pressed", { control, screen: currentScreen, value: el.value });
   }, true);
   document.addEventListener("focusout", e => {
     const el = e.target as HTMLElement | null;

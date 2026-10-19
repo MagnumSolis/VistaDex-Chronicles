@@ -29,12 +29,15 @@ describe("pitch edition", () => {
     await screen.findByLabelText(/^Idea title/);
     fillIdea();
     run();
-    await waitFor(() => expect(location.hash).toMatch(/^#\/report\/r1$/), { timeout: 10000 });
+    await waitFor(() => expect(location.hash).toMatch(/^#\/report\/[a-z0-9]+-r1$/), { timeout: 10000 });
     go("#/welcome");
-    await waitFor(() => expect(location.hash).toBe("#/dashboard")); // no Welcome in pitch
+    await waitFor(() => expect(location.hash).toBe("#/reports")); // no Welcome in pitch
     go("#/feedback");
-    await waitFor(() => expect(location.hash).toBe("#/dashboard")); // no Feedback in pitch
-    expect(await screen.findByText("Ideas screened")).toBeTruthy();
+    await waitFor(() => expect(location.hash).toBe("#/reports")); // no Feedback in pitch
+    expect(await screen.findByText("Ideas analysed")).toBeTruthy();
+    // demo reports went through the same scoring: every card has a score or says why not
+    expect(screen.getAllByText("VistaDex Score").length).toBeGreaterThanOrEqual(8);
+    expect(localStorage.getItem("vistadex.reports.v1")).toBeNull(); // pitch keeps session reports in memory only
 
     window.dispatchEvent(new Event("pagehide"));
     document.dispatchEvent(new Event("visibilitychange"));

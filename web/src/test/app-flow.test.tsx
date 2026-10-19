@@ -1,6 +1,6 @@
 // App flows: Welcome gate and telemetry, running a screening, refusals, cancel, report states, editions.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { fillIdea, go, json, loadApp, PROXY_REPORT, reportShown, stubFetch } from "./helpers";
 
 const field = (label: RegExp) => screen.getByLabelText(label) as HTMLTextAreaElement;
@@ -112,26 +112,54 @@ describe("public edition: Welcome notice comes before any telemetry", () => {
     expect(types(tm)).not.toContain("run_completed");
   }, 15000);
 
-  it("public reports have no history or shareable URL: #/report/<id> goes to #/report; nothing before a run", async () => {
+  it("public Reports lists the reports this browser ran, keeps them across reloads, and clears them", async () => {
     await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
-    go("#/report/idea-01");
-    await waitFor(() => expect(location.hash).toBe("#/report"));
-    expect(await screen.findByText("You haven't screened an idea in this tab yet.")).toBeTruthy();
-    go("#/dashboard");
-    await waitFor(() => expect(location.hash).toBe("#/screen")); // no dashboard in the public edition
-  });
-});
+    go("#/reports");
+    expect(await screen.findByText("No reports yet")).toBeTruthy();
+    go("#/screen");
+    fireEvent.click(await screen.findByRole("button", { name: "AI contract review for startups" }));
+    run();
+    await reportShown();
+    const stored = JSON.parse(localStorage.getItem("vistadex.reports.v1") || "[]");
+    expect(stored.length).toBe(1);
+    expect(stored[0].report.input.title).toBe("LegalAI for Startups");
 
-describe("link fragments", () => {
-  it("a #code= opened in a tab already showing the app is captured before the router redirects", async () => {
+    // a fresh page in the same browser still has it
+    cleanup();
+    await loadApp({ hash: "#/reports" });
+    expect(await screen.findByRole("heading", { name: "LegalAI for Startups" })).toBeTruthy();
+    expect(screen.getByText("Ideas analysed")).toBeTruthy();
+    expect(screen.getByText(/Counts only: a pattern needs at least 5 reports/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Open report: LegalAI/ }));
+    await waitFor(() => expect(location.hash).toMatch(/^#\/report\//));
+    expect(await screen.findByRole("heading", { name: "Your report" })).toBeTruthy();
+    go("#/reports");
+    fireEvent.click(await screen.findByRole("button", { name: /Clear my reports/ }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Clear my reports" }));
+    expect(await screen.findByText("No reports yet")).toBeTruthy();
+    expect(localStorage.getItem("vistadex.reports.v1")).toBeNull();
+    go("#/report/nope");
+    expect(await screen.findByText("That report isn't here.")).toBeTruthy();
+    go("#/dashboard");
+    await waitFor(() => expect(location.hash).toBe("#/dashboard"));
+    expect(await screen.findByText("No reports yet")).toBeTruthy(); // old Dashboard links open Reports
+  }, 20000);
+
+  it("Reports still works when storage is blocked (kept for the tab only)", async () => {
+    const get = vi.spyOn(Storage.prototype, "getItem");
+    const set = vi.spyOn(Storage.prototype, "setItem");
     await loadApp();
-    await screen.findByRole("button", { name: "Skip to the tool" });
-    go("#code=K7Q2-MX9P");
-    await waitFor(() => expect(location.hash).toBe("#/welcome"));
-    expect(sessionStorage.getItem("vistadex.access")).toBe("K7Q2-MX9P");
-    expect(location.href).not.toContain("K7Q2");
-  });
+    fireEvent.click(await screen.findByRole("button", { name: "Use without recording" }));
+    get.mockImplementation(() => { throw new Error("blocked"); });
+    set.mockImplementation(() => { throw new Error("blocked"); });
+    fireEvent.click(await screen.findByRole("button", { name: "Mental-health journaling app" }));
+    run();
+    await reportShown();
+    go("#/reports");
+    expect(await screen.findByRole("heading", { name: "Mental-health journaling app" })).toBeTruthy();
+    get.mockRestore(); set.mockRestore();
+  }, 20000);
 });
 
 describe("feedback", () => {

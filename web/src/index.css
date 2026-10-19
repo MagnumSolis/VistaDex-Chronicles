@@ -3,60 +3,87 @@
 @import "shadcn/tailwind.css";
 
 /* ── VistaDex design tokens ─────────────────────────────────────────
-   Light only (no OS-dependent dark mode during the study — see CLAUDE.md).
-   Rules: ink for all reading text; the indigo accent ONLY for interactive
-   elements (primary button, active nav, links, focus, pipeline steps);
-   status colours ONLY for status (tags, count tiles, status icons) — never
-   for body text, numbering or severity. Every text/background pair meets
-   WCAG AA (src/test/contrast.test.ts). Status never relies on colour alone. */
+   One fixed theme for everyone (not OS-dependent). Deep-green page, flat
+   colour-blocked surfaces (no shadows, no borders for depth), cream and paper
+   reading surfaces with dark-green ink, lime for brand blocks and the primary
+   action. Status hues are used ONLY for status and are never green, so the
+   brand never reads as "confirmed". Every text/background pair meets WCAG AA
+   (src/test/contrast.test.ts); the four status hues stay distinguishable under
+   protanopia, deuteranopia and tritanopia (src/test/colour-vision.test.ts).
+   CLAUDE.md describes how the tokens are used. */
 
 :root {
-  /* base */
-  --background: #f6f5f1;          /* warm paper */
-  --foreground: #1b1f2a;          /* ink: body, claim and objection text */
-  --card: #ffffff;
-  --card-foreground: #1b1f2a;
-  --popover: #ffffff;
-  --popover-foreground: #1b1f2a;
-  --muted: #f3f2ee;               /* flat nested surfaces inside cards */
-  --muted-foreground: #5b6475;    /* helper text */
-  --secondary: #f3f2ee;
-  --secondary-foreground: #1b1f2a;
-  --border: #e4e2dc;
-  --border-strong: #cdcac2;
-  --input: #96948f;               /* field outline: 3.03:1 on white (WCAG 1.4.11 minimum) */
+  /* page (the deep-green frame around every screen) */
+  --page: #0b3b2c;
+  --on-page: #eef2e2;              /* text on the page */
+  --on-page-muted: #b5ccbc;        /* helper text on the page */
+  --page-raised: #144a38;          /* flat blocks on the page (tab bar, inactive chips) */
 
-  /* the one accent: interactive elements only */
-  --primary: #3b4cca;
-  --primary-foreground: #ffffff;
-  --accent: #eceefb;              /* accent tint (hover / running step) */
-  --accent-foreground: #3b4cca;
-  --ring: #3b4cca;
-  --destructive: #b4413c;
+  /* brand blocks */
+  --lime: #cbef6a;
+  --on-lime: #0b2e22;
+  --charcoal: #232623;             /* "product window" surfaces */
+  --on-charcoal: #eef2e2;
+  --on-charcoal-muted: #b9bfb8;
 
-  /* claim statuses — text/icon colour + tint; used only for status */
-  --st-contradicted: #b4413c;
-  --st-contradicted-bg: #fbedec;
-  --st-disputed: #9a6410;
-  --st-disputed-bg: #fbf3e4;
-  --st-confirmed: #2e7b60;          /* spec #2F7D62 was 4.41:1 on its tint; nudged to 4.53:1 */
-  --st-confirmed-bg: #e9f4ef;
-  --st-unverified: #5b6475;
-  --st-unverified-bg: #eef0f4;
+  /* reading surfaces */
+  --background: #eef2e2;           /* cream: panels, forms, the report */
+  --foreground: #0b2e22;           /* ink: all body, claim and objection text */
+  --card: #f9fbf4;                 /* paper: cards inside cream panels */
+  --card-foreground: #0b2e22;
+  --popover: #f9fbf4;
+  --popover-foreground: #0b2e22;
+  --muted: #e3ead3;                /* nested surfaces */
+  --muted-foreground: #45584c;     /* helper text */
+  --secondary: #e3ead3;
+  --secondary-foreground: #0b2e22;
+  --border: #d3dcc2;               /* decorative dividers only */
+  --border-strong: #b9c5a6;
+  --input: #6e7f6f;                /* field outline: ≥ 3:1 on paper and cream (WCAG 1.4.11) */
 
-  --radius: 0.75rem;
+  /* actions */
+  --primary: #0b3b2c;              /* solid primary button on light surfaces */
+  --primary-foreground: #cbef6a;
+  --accent: #dde8c2;               /* hover tint on light surfaces */
+  --accent-foreground: #0b2e22;
+  --link: #1f5a36;                 /* inline links on light surfaces */
+  --ring: #0b3b2c;                 /* focus ring on light surfaces (redefined on the page) */
+  --destructive: #661812;
+
+  /* claim statuses: strong colour (icon / text) + tint (tag / tile). Status only. */
+  --st-contradicted: #661812;
+  --st-contradicted-bg: #eecbc7;
+  --st-disputed: #705713;
+  --st-disputed-bg: #fbe2a3;
+  --st-confirmed: #084bc9;
+  --st-confirmed-bg: #cad6f7;
+  --st-unverified: #661a58;
+  --st-unverified-bg: #f6daef;
+
+  --radius: 0.375rem;
 
   /* unused shadcn slots kept neutral */
-  --chart-1: #3b4cca; --chart-2: #5b6475; --chart-3: #8b92a0; --chart-4: #cdcac2; --chart-5: #1b1f2a;
-  --sidebar: #ffffff; --sidebar-foreground: #1b1f2a; --sidebar-primary: #3b4cca; --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eceefb; --sidebar-accent-foreground: #3b4cca; --sidebar-border: #e4e2dc; --sidebar-ring: #3b4cca;
+  --chart-1: #0b3b2c; --chart-2: #45584c; --chart-3: #6e7f6f; --chart-4: #b9c5a6; --chart-5: #0b2e22;
+  --sidebar: #f9fbf4; --sidebar-foreground: #0b2e22; --sidebar-primary: #0b3b2c; --sidebar-primary-foreground: #cbef6a;
+  --sidebar-accent: #dde8c2; --sidebar-accent-foreground: #0b2e22; --sidebar-border: #d3dcc2; --sidebar-ring: #0b3b2c;
 }
 
 @theme inline {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --font-heading: var(--font-display);
-  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-page: var(--page);
+  --color-on-page: var(--on-page);
+  --color-on-page-muted: var(--on-page-muted);
+  --color-page-raised: var(--page-raised);
+  --color-lime: var(--lime);
+  --color-on-lime: var(--on-lime);
+  --color-charcoal: var(--charcoal);
+  --color-on-charcoal: var(--on-charcoal);
+  --color-on-charcoal-muted: var(--on-charcoal-muted);
+  --color-link: var(--link);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -94,19 +121,21 @@
   --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Shape hierarchy: report header > evidence cards > nested surfaces > pills. */
-  --radius-panel: 1.75rem;   /* 28px — report header, input */
-  --radius-card: 1.5rem;     /* 24px — claim / objection / lead cards */
-  --radius-inner: 1rem;      /* 16px — nested surfaces, fields */
-  --shadow-card: 0 1px 2px rgb(21 25 42 / 0.04), 0 10px 28px -12px rgb(21 25 42 / 0.14);
-  --shadow-panel: 0 1px 2px rgb(21 25 42 / 0.05), 0 18px 40px -18px rgb(21 25 42 / 0.18);
-  --radius-sm: calc(var(--radius) * 0.67);
+  /* Shape ladder: panels > cards/tiles > nested surfaces > controls. */
+  --radius-panel: 1.75rem;   /* 28px — cream panels on the page */
+  --radius-card: 1.25rem;    /* 20px — claim / objection / lead cards, tiles */
+  --radius-inner: 0.875rem;  /* 14px — nested surfaces */
+  --radius-control: 0.375rem;/* 6px — buttons, fields, chips */
+  /* Flat by design: depth comes from colour blocks, never from shadows. */
+  --shadow-card: none;
+  --shadow-panel: none;
+  --radius-sm: 0.25rem;
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) * 1.33);
-  --radius-xl: calc(var(--radius) * 1.67);
-  --radius-2xl: calc(var(--radius) * 2);
-  --radius-3xl: calc(var(--radius) * 2.5);
-  --radius-4xl: calc(var(--radius) * 3);
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
+  --radius-4xl: 1.75rem;
 }
 
 @layer base {
@@ -119,39 +148,36 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "tnum" 1; /* aligned figures for counts and scores */
+    font-feature-settings: "tnum" 1; /* aligned figures for counts */
   }
-  /* Visible, consistent keyboard focus everywhere. */
+  /* Soft serif, regular weight, tight leading (design brief: headlines). */
+  .font-display {
+    font-variation-settings: "SOFT" 100, "WONK" 0;
+    letter-spacing: -0.015em;
+  }
+  /* Visible, consistent keyboard focus everywhere; lime on the dark page, ink on light surfaces. */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+  .on-page { --ring: var(--lime); }
+  .on-light { --ring: #0b3b2c; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
 
-/* ── Trust slider (native range) ── */
 @layer components {
-  .trust-range { appearance: none; height: 2.25rem; background: transparent; cursor: pointer; }
-  .trust-range::-webkit-slider-runnable-track { height: 0.5rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--input); }
-  .trust-range::-moz-range-track { height: 0.5rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--input); }
-  .trust-range::-webkit-slider-thumb {
-    appearance: none; width: 1.75rem; height: 1.75rem; margin-top: -0.69rem; border-radius: 9999px;
-    background: var(--primary); border: 4px solid var(--card); box-shadow: 0 0 0 1px var(--primary), 0 2px 6px rgb(27 31 42 / 0.2);
+  /* Small uppercase, letter-spaced label above headings and in legends. */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
-  .trust-range::-moz-range-thumb {
-    width: 1.25rem; height: 1.25rem; border-radius: 9999px;
-    background: var(--primary); border: 4px solid var(--card); box-shadow: 0 0 0 1px var(--primary), 0 2px 6px rgb(27 31 42 / 0.2);
-  }
-  /* Untouched: no answer is implied, so the thumb is hollow until the participant moves it. */
-  .trust-range.untouched::-webkit-slider-thumb { background: var(--card); box-shadow: 0 0 0 2px var(--input); }
-  .trust-range.untouched::-moz-range-thumb { background: var(--card); box-shadow: 0 0 0 2px var(--input); }
-  .trust-range:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 9999px; }
-  .trust-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
-  .trust-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring); }
 }

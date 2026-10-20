@@ -38,7 +38,13 @@ export default {
 };
 
 export async function handle(request, env, { store, fetchImpl, now = () => new Date().toISOString() }) {
-  const origin = request.headers.get("Origin");
+  // A browser Origin header equal to the request's own origin means a
+  // same-origin call (the research console pages calling /research/* APIs).
+  // Treat it as no-origin so the CORS allow-list (for foreign browser origins)
+  // does not reject the proxy's own pages.
+  const requestOrigin = new URL(request.url).origin;
+  let origin = request.headers.get("Origin");
+  if (origin === requestOrigin) origin = null;
   const cors = corsHeaders(origin, env);
   if (request.method === "OPTIONS") return new Response(null, { status: cors ? 204 : 403, headers: cors || {} });
   // Browsers from other origins are refused; non-browser callers (no Origin) only reach /export.

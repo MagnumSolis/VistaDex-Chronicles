@@ -52,6 +52,10 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     const del = url.pathname.match(/^\/session\/([^/]+)$/);
     if (request.method === "DELETE" && del) return await withdraw(decodeURIComponent(del[1]), { store, now, cors });
     if (request.method === "GET" && isExport) return await exportData(request, url, env, { store });
+    // Research console: GET /research (login + dashboard, token via ?t= or cookie)
+    if (url.pathname === "/research") return await researchConsole(request, url, env, { store });
+    if (url.pathname === "/research/data" && request.method === "GET") return await researchData(request, url, env, { store });
+    if (url.pathname === "/research/purge" && request.method === "POST") return await researchPurge(request, env, { store });
     return json({ error: "not found" }, 404, cors);
   } catch (err) {
     // Never echo provider responses (they can contain key fragments); log a short message only.
@@ -215,3 +219,100 @@ export function toCSV(rows) {
   };
   return [cols.join(","), ...rows.map(r => cols.map(c => cell(r[c])).join(","))].join("\n");
 }
+
+
+// ── Research console: view / edit / download study data (token-gated) ──
+// GET  /research          login page (?t=TOKEN sets the session cookie) + dashboard
+// GET  /research/data     JSON: sessions, events-by-type, latest events, traces count
+// POST /research/purge    { session_ids: [...] } deletes those sessions' events + traces
+function researchAuthed(request, url, env) {
+  if (!env.EXPORT_TOKEN) return null;
+  const cookie = (request.headers.get("Cookie") || "").match(/vdx_research=([^;]+)/)?.[1];
+  const q = url.searchParams.get("t");
+  if (q && timingSafeEqual(q, env.EXPORT_TOKEN)) return "query";
+  if (cookie && timingSafeEqual(cookie, env.EXPORT_TOKEN)) return "cookie";
+  return null;
+}
+
+async function researchConsole(request, url, env, { store }) {
+  const authed = researchAuthed(request, url, env);
+  if (!authed) {
+    return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>VistaDex · Research Console</title><meta name="robots" content="noindex"><style>body{font-family:ui-monospace,monospace;background:#0A2622;color:#F5F1E8;display:grid;place-items:center;min-height:100vh;margin:0}.box{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:14px;padding:34px;width:min(380px,90vw)}h1{font-size:15px;margin:0 0 6px}p{color:#A9B5AC;font-size:12.5px;margin:0 0 18px}input{width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid rgba(234,226,210,.2);background:#06201B;color:#F5F1E8;font-family:inherit;margin-bottom:14px}button{width:100%;padding:11px;border:none;border-radius:9px;background:linear-gradient(135deg,#FF6B1A,#FF9E4A);color:#1D0A00;font-weight:700;cursor:pointer}</style></head>
+<body><form class="box" method="GET" action="/research"><h1>VistaDex Research Console</h1><p>Team access only. Enter the research token.</p><input type="password" name="t" placeholder="Research token" autofocus><button type="submit">Enter</button></form></body></html>`,
+      { status: 200, headers: { "Content-Type": "text/html" } });
+  }
+  const headers = { "Content-Type": "text/html" };
+  if (authed === "query") headers["Set-Cookie"] = `vdx_research=${env.EXPORT_TOKEN}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`;
+  return new Response(RESEARCH_PAGE, { status: 200, headers });
+}
+
+async function researchData(request, url, env, { store }) {
+  if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
+  const events = await store.exportEvents();
+  const traces = await store.exportTraces();
+  const byType = {};
+  for (const e of events) byType[e.type] = (byType[e.type] || 0) + 1;
+  const sessions = {};
+  for (const e of events) {
+    const s = sessions[e.session_id] = sessions[e.session_id] || { session_id: e.session_id, events: 0, first: e.ts, last: e.ts, types: {} };
+    s.events++; if (e.ts < s.first) s.first = e.ts; if (e.ts > s.last) s.last = e.ts;
+    s.types[e.type] = (s.types[e.type] || 0) + 1;
+  }
+  return json({
+    ok: true,
+    totals: { events: events.length, traces: traces.length, sessions: Object.keys(sessions).length },
+    events_by_type: byType,
+    sessions: Object.values(sessions).sort((a, b) => b.last.localeCompare(a.last)),
+    latest_events: events.slice(-50).reverse(),
+  });
+}
+
+async function researchPurge(request, env, { store }) {
+  if (!researchAuthed(request, new URL(request.url), env)) return json({ error: "unauthorized" }, 401);
+  const body = await readJSON(request);
+  const ids = Array.isArray(body?.session_ids) ? body.session_ids.filter(i => typeof i === "string" && UUID.test(i)) : [];
+  if (!ids.length) return json({ error: "send session_ids: [uuid, ...]" }, 400);
+  const out = [];
+  for (const id of ids) out.push(await store.deleteSession(id, new Date().toISOString()));
+  return json({ ok: true, purged: ids.length, deleted: out });
+}
+
+const RESEARCH_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>VistaDex · Research Console</title><meta name="robots" content="noindex"><style>body{font-family:ui-monospace,monospace;background:#0A2622;color:#F5F1E8;margin:0;padding:40px;font-size:13px}h1{font-size:18px}h2{font-size:14px;color:#FF9E4A;margin:30px 0 8px}table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid rgba(234,226,210,.13);padding:7px 12px;text-align:left;font-size:12px}th{color:#A9B5AC}.cards{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}.card{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:12px;padding:16px 20px}.card b{font-size:24px;display:block}.card span{color:#A9B5AC;font-size:10px;letter-spacing:.08em}a{color:#FF9E4A}button{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(234,226,210,.2);background:#143A33;color:#F5F1E8;cursor:pointer}pre{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:10px;padding:12px;overflow:auto;max-height:300px;font-size:11px}.muted{color:#A9B5AC}.warn{color:#FFB000}</style></head><body>
+<h1>VistaDex Research Console</h1>
+<div class="cards" id="cards"></div>
+<h2>Events by type</h2><table id="types"><tr><th>Type</th><th>Count</th></tr></table>
+<h2>Sessions <span class="muted">(select + purge removes test/junk sessions: events + linked traces)</span></h2>
+<table id="sessions"><tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr></table>
+<p><button id="purgeBtn" class="warn">Purge selected sessions</button> <span id="purgeMsg" class="muted"></span></p>
+<h2>Latest 50 events</h2><pre id="latest">loading…</pre>
+<h2>Download</h2>
+<p><a href="/export?table=events&format=csv">⬇ events.csv</a> · <a href="/export?table=events">events.json</a> · <a href="/export?table=traces&format=csv">⬇ traces.csv</a> · <a href="/export?table=traces">traces.json</a><br><span class="muted">Tip: for the downloads use curl with the Bearer token — the browser cannot send the Authorization header on a normal navigation.</span></p>
+<p><button id="refreshBtn">Refresh</button> <span class="muted">auto-refreshes every 30s</span></p>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function load() {
+  const r = await fetch("/research/data");
+  if (r.status === 401) { location.href = "/research"; return; }
+  const d = await r.json();
+  document.getElementById("cards").innerHTML =
+    \`<div class="card"><b>\${d.totals.sessions}</b><span>SESSIONS</span></div>\` +
+    \`<div class="card"><b>\${d.totals.events}</b><span>EVENTS</span></div>\` +
+    \`<div class="card"><b>\${d.totals.traces}</b><span>TRACES</span></div>\`;
+  document.getElementById("types").innerHTML = "<tr><th>Type</th><th>Count</th></tr>" +
+    Object.entries(d.events_by_type).sort((a,b) => b[1]-a[1]).map(([t,n]) => \`<tr><td>\${esc(t)}</td><td>\${n}</td></tr>\`).join("");
+  document.getElementById("sessions").innerHTML = "<tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr>" +
+    d.sessions.map(s => \`<tr><td><input type="checkbox" class="sel" value="\${esc(s.session_id)}"></td><td>\${esc(s.session_id.slice(0,13))}…</td><td>\${s.events}</td><td>\${esc(s.first.slice(0,19))}</td><td>\${esc(s.last.slice(0,19))}</td><td>\${esc(Object.entries(s.types).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>t+":"+n).join(" "))}</td></tr>\`).join("");
+  document.getElementById("latest").textContent = d.latest_events.map(e => e.ts.slice(11,19) + " " + e.type + " " + JSON.stringify(e.payload).slice(0,80)).join("\n") || "(no events yet)";
+}
+document.getElementById("purgeBtn").onclick = async () => {
+  const ids = [...document.querySelectorAll(".sel:checked")].map(c => c.value);
+  if (!ids.length) { document.getElementById("purgeMsg").textContent = "select sessions first"; return; }
+  if (!confirm("Delete " + ids.length + " session(s) and their traces? This cannot be undone.")) return;
+  const r = await fetch("/research/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_ids: ids }) });
+  const d = await r.json();
+  document.getElementById("purgeMsg").textContent = d.ok ? "purged " + d.purged : "failed: " + JSON.stringify(d);
+  load();
+};
+document.getElementById("refreshBtn").onclick = load;
+load(); setInterval(load, 30000);
+</script></body></html>`;

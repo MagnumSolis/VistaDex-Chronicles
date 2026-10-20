@@ -8,9 +8,12 @@ compatibility_date = "2026-10-01"
 [vars]
 # Comma-separated browser origins allowed to call the proxy.
 ALLOWED_ORIGINS = "https://vistadex-app.pages.dev,https://magnumsolis.github.io,http://localhost:5173,http://127.0.0.1:5173"
-# /screen and /events need the study access code (secret ACCESS_CODES). With this set and no
-# codes configured the Worker answers 503 — it fails closed.
-ACCESS_REQUIRED = "true"
+# Access code gate is OFF for the public launch: anyone from a shared link can run
+# the demo and their consented telemetry is recorded (that is the field study).
+# Abuse is still bounded by the per-IP rate limits below + SCREEN_DAILY_CAP.
+# To re-enable a code gate later: set ACCESS_REQUIRED="true" AND put codes in the
+# ACCESS_CODES secret (the worker fails closed if required but no codes exist).
+ACCESS_REQUIRED = "false"
 # Global cap on /screen runs per UTC day (counted in D1). "0" disables it.
 SCREEN_DAILY_CAP = "300"
 

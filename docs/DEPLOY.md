@@ -58,6 +58,10 @@ Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
 - `MISTRAL_SMALL_MODEL=mistral-small-latest`
 - `MISTRAL_OBJECTOR_MODEL=mistral-medium-latest`
 
+## 3. Links (updated 20 Oct 2026)
+
+The access-code gate is currently OFF (`ACCESS_REQUIRED="false"`, ACCESS_CODES secret removed): the public link is simply `https://vistadex-app.pages.dev/` — anyone can run the demo and consented telemetry is recorded. To re-enable a code gate, set ACCESS_REQUIRED="true" and `npx wrangler secret put ACCESS_CODES` (comma-separated codes); the worker fails closed if codes are required but none exist.
+
 ## 3. Allowed origins
 
 `ALLOWED_ORIGINS` in `wrangler.toml` lists the browser origins that may call the proxy. For GitHub Pages the origin is just the scheme and host, `https://magnumsolis.github.io`, not the repo path. Remove the localhost entries if you don't want local frontends to reach the deployed proxy.

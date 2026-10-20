@@ -4,7 +4,7 @@
 
 VistaDex is an idea-novelty and overlap screener for **founders, VCs, accelerators and universities**. A person describes an idea; VistaDex produces an evidence-linked report with an **explainable VistaDex Score** (every axis, input, search boundary and weight one tap away; axes without enough data are left out, never guessed); **a human always makes the decision — VistaDex never calls an idea good or bad.**
 
-One app, two editions: a **public demo** (the LinkedIn link: Welcome notice, walkthrough, usage telemetry, feedback) and a **pitch / internal** edition (`#edition=pitch&code=…`: Dashboard of every screened idea, no telemetry at all). The BITS F364 study UI is retired from the routes (`web/src/retired/study/`).
+One app, two editions: a **public demo** (the LinkedIn link: Welcome notice, walkthrough, usage telemetry, feedback) and a **pitch / internal** edition (`#edition=pitch`: Reports with this session's runs and the demo cohort, no telemetry at all). The pitch edition is **not protected**: the link fragment switches it on in the browser and no code is checked (see [`docs/BACKEND-HANDOFF.md`](docs/BACKEND-HANDOFF.md) §7). The BITS F364 study UI is retired from the routes (`web/src/retired/study/`).
 
 ---
 
@@ -16,6 +16,7 @@ The frontend is a Vite + React + TypeScript app in `web/` (Tailwind + shadcn/ui)
 npm --prefix web install   # once
 npm run serve              # http://localhost:5173
 npm test                   # pipeline, proxy and telemetry tests — no keys or network needed
+npm run test:web           # web/ tests (flows, editions, telemetry contract, contrast, colour vision)
 npm run build              # static site in web/dist (GitHub Pages)
 ```
 
@@ -32,7 +33,7 @@ With no configuration the whole pipeline runs **key-free in the browser**: deter
 | `#/screen` | The form: title, pitch, problem, solution, moat, industry, role, markets; three samples; Run; refusal and daily-cap messages | both (the LinkedIn link) |
 | `#/running` | Five-stage tracker with Cancel | both |
 | `#/report/:id` | One long page: Summary (VistaDex Score + "How this was calculated", overlap band, status counts) · Profile (radar + donut) · Claims & evidence · Leads to check (competitors + graveyard) · Objections · Big Tech risk · Legal · Market; Save as PDF, Screen another idea | both |
-| `#/reports` | Summary blocks (ideas, overlap bands, contradicted claim types, industry mix), sortable and filterable list | public: this browser's reports · pitch: session + demo |
+| `#/reports` | Summary blocks (ideas, overlap bands, contradicted claim types, industry mix), sortable and filterable list; "Sample reports" toggle (Off / 5 / 10 / 15 researched sample ideas, never saved) | public: this browser's reports · pitch: session + demo |
 | `#/how-it-works` | Method, statuses, evidence rule, the score and its formulas, overlap and Big Tech risk, data sources, limitations | both |
 | `#/contact` | Who we are, email, feedback, data requests, source code | both |
 | `#/feedback` | Short feedback form | public |
@@ -44,12 +45,15 @@ Live mode never fabricates: competitor search, Big Tech risk and the TAM need li
 ## Pipeline
 
 ```
-Idea text
+Structured input (title, pitch, problem, solution, moat, industries, role, markets) → idea text
   → Stage 1  Claim extraction     rules type claims; LLM only for claims rules can't type confidently
   → Stage 2  Retrieval + status   TinyFish search/fetch → LLM labels each source's stance (verbatim quote)
                                   → status COMPUTED in code from independent domains
+             Competitors, Big Tech risk, TAM   live only: named on fetched pages with verbatim quotes;
+                                  Big Tech by the same 2-domain rule; TAM only from a confirmed claim's quote
   → Stage 3  Graveyard matching   similarity vs. failed-startup entries (TF-IDF now; MiniLM planned)
   → Stage 4  Objector             stronger model, may only argue against; approvals filtered in code
+  → finalizeReport                overlap band + VistaDex Score computed in code (scoring.js)
   → Report → human reviewer decides
 ```
 
@@ -70,17 +74,18 @@ If a provider errors or rate-limits, the next one is tried; every call, fallback
 
 ## API contract (POST /screen)
 
-```json
-// Request
-{ "idea_text": "..." }
+```jsonc
+// Request: the structured input (or the old { "idea_text": "..." })
+{ "title": "...", "pitch": "...", "problem": "...", "solution": "...", "moat": "...",
+  "industries": ["Fintech"], "role": "founder", "markets": ["EU"] }
 
-// Response
+// Response: the report itself (no envelope)
 {
   "idea_text": "...",
   "claims": [
-    { "claim": "...", "type": "novelty|market_size|defensibility|other",
+    { "claim": "...", "type": "novelty|market_size|defensibility|traction|other",
       "status": "confirmed|contradicted|disputed|unverified",
-      "reasoning": "...", "source_urls": ["..."] }
+      "reasoning": "...", "source_urls": ["..."], "evidence": [{ "url": "...", "stance": "supports", "quote": "..." }] }
   ],
   "graveyard_matches": [
     { "company_name": "...", "what_they_tried": "...",
@@ -88,11 +93,12 @@ If a provider errors or rate-limits, the next one is tried; every call, fallback
   ],
   "objections": [
     { "objection": "...", "severity": "high|medium|low" }
-  ]
+  ],
+  // optional: input, competitors, search, big_tech_risk, market, legal, sample_fields, overlap_band, scores
 }
 ```
 
-The proxy adds `X-VistaDex-Trace-Id` and `X-VistaDex-Mode` (`live` | `mock`) response headers; the body is exactly the contract.
+The proxy adds `X-VistaDex-Trace-Id` and `X-VistaDex-Mode` (`live` | `mock`) response headers; the body is exactly the contract (`prototype/core/contract.js`). Every endpoint, header, status code and optional field is in [`docs/BACKEND-HANDOFF.md`](docs/BACKEND-HANDOFF.md).
 
 ---
 
@@ -115,11 +121,12 @@ prototype/                  shared, framework-free code (imported by web/ and th
   config.js                 PROXY_URL (public URL only — never keys)
   core/                     pure ES modules shared by browser and Worker
     pipeline.js             runScreen(input | ideaText, deps) → { report, trace }
-    contract.js rules.js evidence.js quotes.js trace.js input.js finalize.js
+    contract.js rules.js evidence.js quotes.js trace.js input.js finalize.js sample-reports.js
     scoring.js scoring-config.js   explainable scores; every weight and threshold (pinned by a test)
     stages/                 extract.js classify.js competitors.js bigtech.js market.js graveyard.js objector.js
     providers/              llm.js (Groq, Mistral, fallback) retrieval.js (TinyFish) embed.js
-  data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea), samples.js (mock-mode placeholders)
+  data/                     graveyard.js (seed set), cohort.js (demo ideas, sample idea), samples.js (mock-mode placeholders),
+                            sample-reports.js (15 researched sample ideas for the Reports toggle)
   ui/                       client.js (proxy vs mock), telemetry.js (event log, export, withdraw),
                             study-config.js (notice + feedback wording, open decisions, STUDY_VERSION)
 worker/                     Cloudflare Worker proxy: /screen /events /session/:id /export
@@ -128,6 +135,7 @@ scripts/                    dev-proxy.js (Worker handler in Node)
 tests/                      node:test suites; fixtures/event-contract.json (telemetry contract)
 docs/STUDY-NOTES.md         instrumentation changes to report in the study write-up
 docs/DEPLOY.md              deployment + data export
+docs/BACKEND-HANDOFF.md     endpoints, contract, mock vs live, telemetry, secrets, tests (generated from the code)
 .env.example                key names (copy to .env locally; never commit .env)
 ```
 
@@ -140,7 +148,7 @@ docs/DEPLOY.md              deployment + data export
 - Batched uploads to `/events` (at most one request per 10 s, 200 events each). Visitors can delete their session (local + server, including linked traces). Feedback is sent under a separate random id.
 - The pitch edition sends **zero** events (`telemetry.js` is disabled at startup); tests and `npm run parity` check this.
 - Links carry a shared access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen` — see `docs/DEPLOY.md` §3b.
-- Every event carries `study_version` (`2026-10-public-1`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
+- Every event carries `study_version` (`2026-10-public-3`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
 
 ---
 

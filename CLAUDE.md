@@ -11,8 +11,9 @@ One app, one build, **two editions** (`web/src/edition.ts` is the only place tha
 | Walkthrough · Feedback | Yes | No |
 | Telemetry | Yes, after the Welcome notice | **None**: telemetry.js is disabled, nothing is logged or uploaded |
 | Reports page | Reports this browser ran (localStorage, clearable) | Session runs (memory) + the demo cohort |
+| Sample reports toggle | Off / 5 / 10 / 15 researched samples (memory only, never saved) | Same |
 
-The pitch edition is opened with `#edition=pitch&code=…` (client-side only; TODO(team): enforce a separate pitch code in the Worker). A "Pitch edition" badge is always shown in it.
+The pitch edition is opened with `#edition=pitch` (the `code=…` usually next to it is only the study access code for the proxy). It is **not protected**: the switch is client-side and no code is checked, so never describe it as locked. TODO(team): a separate `PITCH_CODES` secret verified by the Worker (docs/BACKEND-HANDOFF.md §7). A "Pitch edition" badge is always shown in it.
 
 ## Git
 - Work on `feat/ui-revamp` (branched from `feat/weekend-prototype`). Never commit to `master`, `main` or `feat/weekend-prototype`; never merge into, rebase or force-push them. Check the branch before every commit.

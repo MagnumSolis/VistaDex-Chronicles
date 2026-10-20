@@ -73,7 +73,7 @@ Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
    `https://magnumsolis.github.io/VistaDex-Chronicles/#code=K7Q2-MX9P`
    The fragment is never sent to GitHub Pages. The app keeps the code in `sessionStorage` for that tab, removes it from the address bar, and sends it to the proxy (header `X-VistaDex-Access` on `/screen`, field `access_code` in `/events` uploads). It is never stored with events, traces or logs.
 4. Withdrawal (`DELETE /session/:id`) does not need the code, so participants can always withdraw.
-4b. **Pitch edition link** (team only): `https://magnumsolis.github.io/VistaDex-Chronicles/#edition=pitch&code=K7Q2-MX9P`. It opens on Reports (session runs + the demo cohort), shows a "Pitch edition" badge and sends no telemetry. Both fragment parts are scrubbed from the address bar; the edition is kept for that tab only. **TODO(team):** this is client-side only — anyone who learns the fragment gets the pitch edition (which only turns telemetry off and shows the demo cohort). A separate pitch code enforced by the Worker is not built.
+4b. **Pitch edition link:** `https://magnumsolis.github.io/VistaDex-Chronicles/#edition=pitch&code=<study code>`. It opens on Reports (session runs + the demo cohort), shows a "Pitch edition" badge and sends no telemetry. Both fragment parts are scrubbed from the address bar; the edition is kept for that tab only. **The pitch edition is not protected:** `#edition=pitch` alone switches it on in the browser and no code is checked (`web/src/edition.ts`). The `code=` part is only the same study access code the public link uses, checked by the Worker on `/screen` and `/events`. **TODO(team):** a separate `PITCH_CODES` secret verified by the Worker — see `docs/BACKEND-HANDOFF.md` §7.
 5. Without the code a visitor sees "This link is missing its access code" on Screen an idea (`run_failed` records it with `code: "access"`).
 
 **Per-IP rate limits** — `/screen` 30 requests / 60 s, `/events` 60 / 60 s, using the Workers Rate Limiting API bindings `SCREEN_LIMITER` and `EVENTS_LIMITER` in `wrangler.toml`. Needs Wrangler 4.36 or later (pinned in `worker/package.json`). Limits are counted per Cloudflare location, not globally. The client IP is read only as the limiter key and is never stored or logged. Refused requests get **429** with `Retry-After: 60` and the participant sees "Too many requests right now. Please wait a minute and try again."
@@ -108,7 +108,7 @@ In `prototype/config.js` (it is bundled into the web build):
 export const CONFIG = { PROXY_URL: "https://vistadex-proxy.<subdomain>.workers.dev" };
 ```
 
-Rebuild the site after changing it. The mode pill in the top bar then reads "Live providers", and study events are sent to `/events`.
+Rebuild the site after changing it. The footer then reads "Live providers" instead of "Mock mode: no live evidence", and usage events (public edition, after the Welcome notice) are sent to `/events`.
 
 ## 6. GitHub Pages
 
@@ -135,7 +135,7 @@ jobs:
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: npm ci
         working-directory: web
-      - run: npm test && npm run build      # contrast tests, then vite build -> web/dist
+      - run: npm test && npm run build      # web tests, then vite build -> web/dist
         working-directory: web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
@@ -144,7 +144,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-The site is then at `https://magnumsolis.github.io/VistaDex-Chronicles/`. Vite builds with `base: "./"` (relative asset paths) and the app has no client-side routes, so the sub-path works without a 404 fallback. Fonts (IBM Plex) are bundled into the build; nothing is loaded from a font CDN.
+The site is then at `https://magnumsolis.github.io/VistaDex-Chronicles/`. Vite builds with `base: "./"` (relative asset paths) and every route is a hash fragment (`#/reports`, `#/report/<id>`, …), so the sub-path works without a 404 fallback. Fonts (Fraunces, Instrument Sans, JetBrains Mono) are bundled into the build; nothing is loaded from a font CDN.
 
 To check a production build locally: `npm run build` then `npm --prefix web run preview` (http://localhost:4173).
 
@@ -160,7 +160,7 @@ curl -H "Authorization: Bearer $EXPORT_TOKEN" "https://vistadex-proxy.<subdomain
 curl -H "Authorization: Bearer $EXPORT_TOKEN" "https://vistadex-proxy.<subdomain>.workers.dev/export?table=traces" -o traces.json
 ```
 
-Participants can also download their own data from the study bar, and withdraw. Withdrawing deletes their events and linked traces in D1 and blocks later uploads for that session.
+Visitors can delete their session from the Welcome page ("Delete my session"); there is no download button in the current UI. Deleting removes their events and linked traces in D1 and blocks later uploads for that session.
 
 ## 8. Running locally
 
@@ -169,7 +169,7 @@ npm --prefix web install          # once: frontend dependencies
 npm run serve                     # web/ dev server on http://localhost:5173 (key-free mock path)
 npm run dev-proxy                 # the Worker handler in Node on :8787, data in memory, keys from ./.env
 npm test                          # pipeline, proxy and telemetry tests (no network or keys)
-npm run test:web                  # web/ tests (WCAG contrast of the design tokens)
+npm run test:web                  # web/ tests (flows, editions, telemetry contract, contrast, colour vision)
 npm run parity                    # replays the participant flow in Chrome and checks telemetry against tests/fixtures/event-contract.json
 npm run a11y                      # axe-core + keyboard-only flow + small-width checks in Chrome
 ```
@@ -178,8 +178,10 @@ npm run a11y                      # axe-core + keyboard-only flow + small-width 
 
 ## Known gaps before the study
 
-- **Run `npm run prelaunch` before sharing the participant link.** It fails while any team decision is still open: `TODO(team)` retention period and withdrawal contact (shown to participants as bracketed placeholders), survey items not signed off (`SURVEY.signedOff`), or no `PROXY_URL`.
+- **Run `npm run prelaunch` before sharing the participant link.** It fails while any team decision is still open: a `TODO` retention period or withdrawal contact (shown to visitors as bracketed placeholders), feedback wording not approved (`FEEDBACK.signedOff`), no `PROXY_URL`, or a `STUDY_VERSION` that differs from the event contract. It also lists the non-blocking `TODO(team)` defaults.
 
 - **The access code is not authentication.** It keeps crawlers and casual visitors out; anyone with the participant link can still run screens and spend the provider free tiers. The per-IP rate limits and the daily cap bound the damage. Check the rate-limit binding works on your plan (section 3b).
+- **The pitch edition is not protected** (see 4b): anyone who knows `#edition=pitch` gets it. It only turns telemetry off and shows the demo cohort.
+- **Traces store claim text.** Each `/screen` trace logs the extracted and dropped claims, i.e. sentences from the idea (`prototype/core/stages/extract.js`). TODO(team): remove the text or say so in the Welcome notice.
 - **No automatic retention or deletion schedule.** Decide how long study data is kept and delete it at the end of the course.
 - **Graveyard matching is lexical (TF-IDF).** MiniLM embeddings are planned, and the threshold must be re-calibrated when switching.

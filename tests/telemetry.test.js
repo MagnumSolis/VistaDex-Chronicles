@@ -31,7 +31,10 @@ test("after consent, events carry an anonymous session id and no identity fields
 test("withdraw wipes local data and stops logging", async () => {
   const tm = await import("../prototype/ui/telemetry.js");
   const res = await tm.withdraw();
-  assert.equal(res.server, "not-configured");
+  // With PROXY_URL configured the server is called (and a live proxy deletes the
+  // session); with it empty the client reports "not-configured". Either way the
+  // local store must be wiped and logging must stop.
+  assert.ok(res.server === "not-configured" || res.server === "deleted", `unexpected server state: ${res.server}`);
   assert.equal(tm.events().length, 0);
   assert.equal(tm.log("run_started", {}), null);
 });

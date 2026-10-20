@@ -48,7 +48,9 @@ function openAICompatible({ name, url, apiKey, model, fetchImpl }) {
   };
 }
 
-export function groqBackend({ apiKey, model = "llama-3.3-70b-versatile", fetchImpl } = {}) {
+// Default model: openai/gpt-oss-120b — verified available on the team's Groq key
+// (llama-3.3-70b-versatile is NOT on that account; override with GROQ_MODEL var).
+export function groqBackend({ apiKey, model = "openai/gpt-oss-120b", fetchImpl } = {}) {
   return openAICompatible({ name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", apiKey, model, fetchImpl });
 }
 

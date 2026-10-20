@@ -4,5 +4,5 @@
 // Leave empty to run the key-free, in-browser mock pipeline.
 
 export const CONFIG = {
-  PROXY_URL: "",
+  PROXY_URL: "https://vistadex-proxy.vistadex-team.workers.dev",
 };

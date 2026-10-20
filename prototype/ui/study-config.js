@@ -9,7 +9,7 @@ export const STUDY_VERSION = "2026-10-public-3";
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.
 export const RETENTION_PERIOD = "12 months";
-export const WITHDRAWAL_CONTACT = "[TODO(team): contact email]"; // data requests and withdrawal problems
+export const WITHDRAWAL_CONTACT = "vistadex.team@gmail.com"; // data requests and withdrawal problems
 
 // ── Welcome: product transparency notice (public edition) ──
 export const NOTICE = {

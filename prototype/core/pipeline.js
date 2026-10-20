@@ -45,8 +45,11 @@ export async function runScreen(ideaOrInput, deps = {}) {
   const claims = classified.map(({ _pages, ...c }) => c);
   // Competitors (dedicated search on title + pitch, plus the novelty claims' pages) and Big Tech risk.
   // Both are null when no search could run; the report then says "Not available in this version yet".
-  const competitors = await findCompetitors({ ideaText, input, novelPages }, { llm, retrieval, trace });
-  const bigTech = await assessBigTech({ ideaText, input }, { llm, retrieval, trace });
+  // Competitors and Big Tech risk are independent of each other — run in parallel.
+  const [competitors, bigTech] = await Promise.all([
+    findCompetitors({ ideaText, input, novelPages }, { llm, retrieval, trace }),
+    assessBigTech({ ideaText, input }, { llm, retrieval, trace }),
+  ]);
   const market = tamFromEvidence(claims, trace);
   await onStage(2, "done", `${claims.length} claims classified`);
 

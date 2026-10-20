@@ -7,7 +7,7 @@ compatibility_date = "2026-10-01"
 
 [vars]
 # Comma-separated browser origins allowed to call the proxy.
-ALLOWED_ORIGINS = "https://magnumsolis.github.io,http://localhost:5173,http://127.0.0.1:5173"
+ALLOWED_ORIGINS = "https://vistadex-app.pages.dev,https://magnumsolis.github.io,http://localhost:5173,http://127.0.0.1:5173"
 # /screen and /events need the study access code (secret ACCESS_CODES). With this set and no
 # codes configured the Worker answers 503 — it fails closed.
 ACCESS_REQUIRED = "true"
@@ -29,4 +29,4 @@ simple = { limit = 60, period = 60 }
 [[d1_databases]]
 binding = "DB"
 database_name = "vistadex"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "cfe9a534-d571-4c05-b1e0-ee655550fb81"

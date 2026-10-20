@@ -23,13 +23,13 @@ function fakeUpstream({ groqStatus = 200 } = {}) {
     const u = String(url);
     const body = init.body ? JSON.parse(init.body) : null;
     calls.push({ url: u, model: body?.model, auth: init.headers?.Authorization || init.headers?.["X-API-Key"] });
-    if (u.startsWith("https://api.search.tinyfish.ai")) {
+    if (u.startsWith("https://agent.tinyfish.ai/v1/search")) {
       return new Response(JSON.stringify({ results: [
         { url: "https://www.harvey.ai/product", title: "Harvey", snippet: "" },
         { url: "https://robin.ai/review", title: "Robin", snippet: "" },
       ] }));
     }
-    if (u === "https://api.fetch.tinyfish.ai") {
+    if (u === "https://agent.tinyfish.ai/v1/fetch") {
       return new Response(JSON.stringify({ results: [
         { url: "https://www.harvey.ai/product", text: "Harvey provides AI contract review with lawyer oversight for legal teams." },
         { url: "https://robin.ai/review", text: "Robin AI pairs AI contract review with human lawyers at a fixed monthly price." },

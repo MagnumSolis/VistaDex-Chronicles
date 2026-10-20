@@ -12,7 +12,7 @@ export function tinyfishRetrieval({ apiKey, fetchImpl } = {}) {
   return {
     name: "tinyfish",
     async search(query, { limit = 5 } = {}) {
-      const url = `https://api.search.tinyfish.ai?query=${encodeURIComponent(query)}`;
+      const url = `https://agent.tinyfish.ai/v1/search?query=${encodeURIComponent(query)}&num_results=${limit}`;
       const res = await f(url, { headers: { "X-API-Key": apiKey } }).catch(err => {
         throw new ProviderError("tinyfish-search", 0, err.message);
       });
@@ -22,7 +22,7 @@ export function tinyfishRetrieval({ apiKey, fetchImpl } = {}) {
     },
     async fetchPages(urls) {
       if (!urls.length) return [];
-      const res = await f("https://api.fetch.tinyfish.ai", {
+      const res = await f("https://agent.tinyfish.ai/v1/fetch", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
         body: JSON.stringify({ urls: urls.slice(0, 10), format: "markdown" }),

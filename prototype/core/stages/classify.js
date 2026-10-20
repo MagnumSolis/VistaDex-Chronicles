@@ -21,8 +21,9 @@ Do not use outside knowledge. Do not judge the claim overall.
 Return a JSON object: {"judgments": [{"source": 1, "stance": "supports|contradicts|irrelevant", "quote": "..."}]}. Never return a bare array.`;
 
 export async function classifyClaims(claims, { llm, retrieval, trace }) {
-  const out = [];
-  for (let i = 0; i < claims.length; i++) out.push(await classifyOne(claims[i], i, { llm, retrieval, trace }));
+  // Claims verify in parallel; each one isolates its own failures downstream,
+  // and the output order always matches the input order (indexed map).
+  const out = await Promise.all(claims.map((c, i) => classifyOne(c, i, { llm, retrieval, trace })));
   return out;
 }
 

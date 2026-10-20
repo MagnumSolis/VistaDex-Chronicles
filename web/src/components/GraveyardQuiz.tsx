@@ -63,9 +63,9 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
     return null;
   }
 
-  const q = QUESTIONS[order[step]];
-  if (!q) return null;
-  const opts = q.options;
+  const playing = step >= 0;
+  const q = playing ? QUESTIONS[order[step]] : null;
+  const opts = q ? q.options : [];
 
   return (
     <div className="mt-4 rounded-inner border-2 border-foreground/10 bg-card p-4">
@@ -77,7 +77,7 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
           </p>
           <Button size="sm" className="mt-3" data-control="quiz_start" onClick={() => setStep(0)}>Play (30s)</Button>
         </>
-      ) : (
+      ) : q ? (
         <>
           <p className="mt-2 text-xs font-medium text-muted-foreground">Question {step + 1} of {QUESTIONS.length}</p>
           <p className="mt-1 text-[0.9375rem] leading-relaxed">{q.idea}</p>
@@ -108,7 +108,7 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
           {picked !== null && (
             <div className="mt-3">
               <p className="text-xs text-muted-foreground">
-                {q.options[q.answer]} — shut down {q.year}. {q.cause}.
+                {q ? `${q.options[q.answer]} — shut down ${q.year}. ${q.cause}.` : ""}
               </p>
               <Button
                 size="sm"
@@ -121,7 +121,7 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
             </div>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 }

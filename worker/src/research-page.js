@@ -141,6 +141,23 @@ export const RESEARCH_PAGE = `<!doctype html>
 
   .err-box { background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.25); border-radius: var(--radius); padding: 16px; color: var(--bad); font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; }
 
+  /* feedback analytics */
+  .fb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin: 16px 0; }
+  .fb-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 18px; }
+  .fb-card h3 { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+  .fb-card h3 .n { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-left: 8px; font-weight: 400; }
+  .fb-opt { display: grid; grid-template-columns: 130px 1fr 40px; gap: 10px; align-items: center; margin: 7px 0; font-size: 12.5px; }
+  .fb-opt .lbl { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fb-bar { height: 18px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), rgba(124,156,255,.5)); min-width: 2px; position: relative; }
+  .fb-bar span { position: absolute; left: 6px; top: 2px; font-size: 10px; font-weight: 600; color: #0B0C0E; }
+  .fb-likert { display: flex; gap: 4px; align-items: flex-end; height: 90px; margin-top: 6px; }
+  .fb-likert .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fb-likert .col .v { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+  .fb-likert .col .b { width: 100%; border-radius: 4px 4px 0 0; background: var(--accent-dim); border-top: 2px solid var(--accent); min-height: 2px; }
+  .fb-likert .col .c { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); }
+  .fb-avg { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 8px; }
+  .fb-quote { background: var(--panel); border: 1px solid var(--border-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin: 8px 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
+  .fb-quote .who { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 6px; }
   details.raw { margin-top: 14px; }
   details.raw summary { cursor: pointer; color: var(--ink-3); font-size: 12px; padding: 4px 0; }
   details.raw summary:hover { color: var(--ink-2); }
@@ -160,6 +177,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <button class="nav" data-view="funnel"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-6 9v7l-6-2v-5z"/></svg>Funnel</button>
     <div class="nav-l">Data</div>
     <button class="nav" data-view="events"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Events <span class="cnt" id="cnt-e">–</span></button>
+    <button class="nav" data-view="feedback"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Feedback <span class="cnt" id="cnt-f">–</span></button>
     <button class="nav" data-view="sessions"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>Sessions <span class="cnt" id="cnt-s">–</span></button>
     <button class="nav" data-view="export"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export</button>
     <div class="foot">
@@ -202,6 +220,11 @@ export const RESEARCH_PAGE = `<!doctype html>
       <div class="tbl-wrap"><table id="types"></table></div>
       <h1 style="font-size:14px; margin:26px 0 10px;">Live feed <span class="sub" style="font-size:12px;color:var(--ink-3)">latest 50</span></h1>
       <div class="tbl-wrap"><div class="feed" id="feed">loading…</div></div>
+    </section>
+
+    <section class="view" id="v-feedback">
+      <div class="phead"><h1>Feedback</h1><span class="sub">what visitors told you — form answers, ratings and confidence, summarised</span></div>
+      <div id="feedback-content"><div class="tbl-wrap" style="padding:28px;text-align:center;color:var(--ink-3);font-style:italic">No feedback yet.</div></div>
     </section>
 
     <section class="view" id="v-sessions">
@@ -355,6 +378,100 @@ export const RESEARCH_PAGE = `<!doctype html>
     return rows.join(String.fromCharCode(10));
   }
 
+  function optCard(title, counts) {
+    var entries = Object.keys(counts).map(function (k) { return [k, counts[k]]; })
+      .filter(function (x) { return x[1] > 0; })
+      .sort(function (a, b) { return b[1] - a[1]; });
+    var total = entries.reduce(function (a, x) { return a + x[1]; }, 0);
+    if (!total) return "";
+    var max = entries[0][1];
+    return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + total + ' answers</span></h3>' +
+      entries.map(function (x) {
+        return '<div class="fb-opt"><span class="lbl">' + esc(x[0]) + '</span>' +
+          '<div class="fb-bar" style="width:' + Math.max(3, 100 * x[1] / max) + '%"><span>' + x[1] + '</span></div>' +
+          '<span class="num" style="color:var(--ink-3)">' + Math.round(100 * x[1] / total) + '%</span></div>';
+      }).join("") + "</div>";
+  }
+  function likertCard(title, values, min, max, unit) {
+    var vals = values.filter(function (v) { return typeof v === "number" && !isNaN(v); });
+    if (!vals.length) return "";
+    var avg = vals.reduce(function (a, v) { return a + v; }, 0) / vals.length;
+    var hist = {};
+    vals.forEach(function (v) { hist[v] = (hist[v] || 0) + 1; });
+    var maxCount = Math.max.apply(null, Object.keys(hist).map(function (k) { return hist[k]; }));
+    var cols = "";
+    for (var i = min; i <= max; i++) {
+      var c = hist[i] || 0;
+      cols += '<div class="col"><span class="v">' + (c || "") + '</span>' +
+        '<div class="b" style="height:' + Math.max(2, 70 * c / maxCount) + 'px"></div>' +
+        '<span class="c">' + i + (unit || "") + "</span></div>";
+    }
+    return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + vals.length + ' ratings</span></h3>' +
+      '<div class="fb-likert">' + cols + "</div>" +
+      '<div class="fb-avg">mean ' + (Math.round(avg * 10) / 10) + (unit || "") + "</div></div>";
+  }
+
+  function renderFeedback(ev) {
+    var box = $("feedback-content");
+    var fbForms = ev.filter(function (e) { return e.type === "feedback_submitted"; });
+    var surveys = ev.filter(function (e) { return e.type === "condition_survey"; });
+    var confPre = ev.filter(function (e) { return e.type === "confidence_pre"; });
+    var confPost = ev.filter(function (e) { return e.type === "confidence_post"; });
+    $("cnt-f").textContent = fbForms.length + surveys.length;
+    if (!fbForms.length && !surveys.length) {
+      box.innerHTML = '<div class="tbl-wrap" style="padding:28px;text-align:center;color:var(--ink-3);font-style:italic">No feedback yet — the feedback form (Feedback in the site header) and the per-report study panel (confidence, ratings) show up here.</div>';
+      return;
+    }
+
+    var html = "";
+
+    // Confidence sliders (H1) — pre vs post side by side
+    if (confPre.length || confPost.length) {
+      html += '<h2 style="font-size:15px;margin:20px 0 4px">Confidence in the idea <span class="sub" style="font-size:12px;color:var(--ink-3)">(sliders, 0-100% — the calibration measure)</span></h2>';
+      html += '<div class="fb-grid">';
+      html += likertCard("Before the report (confidence_pre)", confPre.map(function (e) { return e.payload && e.payload.value; }), 0, 100);
+      html += likertCard("After the report (confidence_post)", confPost.map(function (e) { return e.payload && e.payload.value; }), 0, 100);
+      html += "</div>";
+    }
+
+    // Study-panel likerts
+    if (surveys.length) {
+      html += '<h2 style="font-size:15px;margin:20px 0 4px">Report ratings <span class="sub" style="font-size:12px;color:var(--ink-3)">(1-7 likerts from the study panel under each report)</span></h2>';
+      html += '<div class="fb-grid">';
+      html += likertCard("I trust this report\u2019s assessment", surveys.map(function (e) { return e.payload && e.payload.trust; }), 1, 7);
+      html += likertCard("The report was useful for judging the idea", surveys.map(function (e) { return e.payload && e.payload.usefulness; }), 1, 7);
+      html += likertCard("Helped me see what to verify next", surveys.map(function (e) { return e.payload && e.payload.helpfulness; }), 1, 7);
+      html += likertCard("Getting a good read took effort", surveys.map(function (e) { return e.payload && e.payload.effort; }), 1, 7);
+      html += "</div>";
+    }
+
+    // Feedback form answers
+    if (fbForms.length) {
+      html += '<h2 style="font-size:15px;margin:20px 0 4px">Feedback form <span class="sub" style="font-size:12px;color:var(--ink-3)">(sent unlinked — not tied to a usage session)</span></h2>';
+      var defs = [["role", "What best describes you?"], ["useful", "Was the report useful?"], ["section", "Which section mattered most?"], ["would_use", "Would you use this?"]];
+      html += '<div class="fb-grid">';
+      for (var i = 0; i < defs.length; i++) {
+        var counts = {};
+        fbForms.forEach(function (e) {
+          var v = e.payload && e.payload[defs[i][0]];
+          if (v) counts[v] = (counts[v] || 0) + 1;
+        });
+        html += optCard(defs[i][1], counts);
+      }
+      html += "</div>";
+      // open text
+      var quotes = fbForms.filter(function (e) { return e.payload && e.payload.wrong && String(e.payload.wrong).trim().length > 0; });
+      if (quotes.length) {
+        html += '<h2 style="font-size:15px;margin:20px 0 4px">What was wrong or missing? <span class="sub" style="font-size:12px;color:var(--ink-3)">(open answers)</span></h2>';
+        html += quotes.map(function (e) {
+          return '<div class="fb-quote">\u201c' + esc(String(e.payload.wrong).slice(0, 600)) + '\u201d<div class="who">feedback form · ' + esc(String(e.ts).slice(0, 10)) + "</div></div>";
+        }).join("");
+      }
+    }
+
+    box.innerHTML = html;
+  }
+
   function render(d) {
     var ev = d.all_events || [];
     var people = computePeople(ev);
@@ -415,6 +532,9 @@ export const RESEARCH_PAGE = `<!doctype html>
         "<td style='min-width:120px'><span class='bar' style='width:" + Math.max(2, 110 * n / maxT) + "px'></span></td>" +
         "<td style='color:var(--ink-2)'>" + esc(MEANINGS[t] || "auto-collected") + "</td></tr>";
     }).join("");
+
+    // feedback view
+    renderFeedback(ev);
 
     // feed
     $("feed").innerHTML = d.latest_events.map(function (e) {

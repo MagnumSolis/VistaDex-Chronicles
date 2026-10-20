@@ -51,6 +51,16 @@ Derived from the reference screenshots as principles, not layouts:
 - **Accessibility.** WCAG 2.2 AA: contrast for every token pair, fully keyboard navigable, visible focus (ink ring on light surfaces, lime ring on the page), focus never hidden under the sticky header or tab bar.
 - **Responsive.** Mobile-first; every screen works at 360px (and 320px) with no horizontal scroll. Each screen has empty, loading, error (pipeline failed, rate limit, daily cap) and phone states.
 
+## Contrast rule (binding for every new UI surface)
+
+Check the background before choosing a text token. The muted tokens are tuned
+for ONE background each: `--on-page-muted` (`#B5CCBC`) only on the dark page
+frame (`--page`); on cream/white surfaces (`--background`, `--card`, `--lime`,
+`--charcoal`) use `text-foreground/70`–`/80` (dark ink) — pale green on white
+fails WCAG AA. New components on light panels must never use `text-on-page-muted`
+/ `text-on-charcoal-muted`. `web/src/test/contrast.test.ts` guards the core
+tokens; if a new surface adds text, add it there too.
+
 ## Colour tokens (web/src/index.css — source of truth)
 AA verified in `web/src/test/contrast.test.ts`; status hues verified distinguishable under protanopia, deuteranopia and tritanopia (CIEDE2000 ≥ 10 strong, ≥ 5 tints) and kept in one lightness band in `web/src/test/colour-vision.test.ts`.
 

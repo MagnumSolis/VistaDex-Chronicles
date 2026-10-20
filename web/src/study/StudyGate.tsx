@@ -32,7 +32,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
     <div className="mx-auto max-w-2xl space-y-4 md:space-y-5">
       <Panel tab="Join the study" as="section">
         <h1 className="font-display text-3xl md:text-4xl">Before you start</h1>
-        <p className="mt-3 text-on-page-muted">
+        <p className="mt-3 text-foreground/75">
           This is also a research study on how people judge startup ideas with AI tools.
           You pick how you take part:
         </p>
@@ -40,7 +40,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">A. Compare two tools (~20 min)</h2>
-              <p className="mt-2 text-sm text-on-page-muted">
+              <p className="mt-2 text-sm text-foreground/75">
                 You'll screen the same idea twice — once with an AI chatbot of your choice
                 (ChatGPT, Claude, Gemini…) and once with VistaDex — and rate both.
                 For recruited participants (you may have a participant code).
@@ -49,7 +49,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
             </div>
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">B. Just try the demo</h2>
-              <p className="mt-2 text-sm text-on-page-muted">
+              <p className="mt-2 text-sm text-foreground/75">
                 Screen your own idea with VistaDex and rate the report. ~10 minutes.
                 No code needed.
               </p>

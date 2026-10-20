@@ -4,6 +4,8 @@
 // answers once, so the tracker says that instead of animating stages it cannot see.
 import { Check, LoaderCircle, Minus, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RunProgress } from "@/components/RunProgress";
+import { GraveyardQuiz } from "@/components/GraveyardQuiz";
 import { EmptyState, PageTitle, Panel } from "@/components/ui-vd";
 import { cn } from "@/lib/utils";
 import { navigate, PATHS } from "@/router";
@@ -46,6 +48,7 @@ export function Running() {
               The server runs these steps together and answers once, so they finish together. This can take up to a minute.
             </p>
           )}
+          <RunProgress running={run.status === "running"} doneCount={done} total={STAGES.length} server={run.server} />
           <ol className="space-y-1.5">
             {STAGES.map((s, i) => {
               const st = run.stages[s.key];
@@ -77,6 +80,7 @@ export function Running() {
             A claim only gets a status when at least two independent websites back it up or contradict it. Otherwise it is <span className="font-semibold">unverified</span>, which is a normal result.
           </p>
           <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">Cancelling keeps your idea text so you can edit and run again.</p>
+          <GraveyardQuiz running={run.status === "running"} />
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" variant="outline" onClick={cancelRun} data-control="run_cancel">Cancel</Button>
             <Button size="lg" variant="ghost" onClick={() => navigate(PATHS.screen)} data-control="running_back_to_edit">Back to the idea</Button>

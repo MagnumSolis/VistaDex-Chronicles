@@ -156,6 +156,10 @@
       "condition",
       "run_id",
       "verified_sources"
+    ],
+    "quiz_started": [],
+    "quiz_finished": [
+      "score"
     ]
   },
   "optional_keys": {
@@ -484,7 +488,11 @@
     "study_claim_agree",
     "study_claim_disagree",
     "study_objection_agree",
-    "study_objection_disagree"
+    "study_objection_disagree",
+    "quiz_start",
+    "quiz_answer",
+    "quiz_next",
+    "quiz_finish"
   ],
   "panel_viewed_rule": {
     "2026-10-pilot-1": "IntersectionObserver threshold 0.5 of the panel's own height. A panel taller than twice the viewport never reported (measurement bug).",

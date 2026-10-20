@@ -7,6 +7,9 @@ import { lastNavigation, navigate, PATHS, useRoute, type Route, type RouteName }
 import { Shell } from "@/shell/Shell";
 import * as telemetry from "@/telemetry";
 import { Welcome } from "@/screens/Welcome";
+import { StudyGate } from "@/study/StudyGate";
+import { BaselineSession } from "@/study/BaselineSession";
+import { currentParticipant, nextCondition, conditionDone, markConditionDone } from "@/study/participant";
 import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Running } from "@/screens/Running";
 import { ReportScreen } from "@/screens/ReportScreen";
@@ -26,7 +29,7 @@ function available(name: RouteName) {
 }
 // Before the Welcome notice is answered (public, first visit), only pages that record nothing can be
 // read: Home, Welcome, How it works and Contact us.
-const beforeNotice = (name: RouteName) => !["home", "welcome", "how", "contact"].includes(name);
+const beforeNotice = (name: RouteName) => !["home", "welcome", "study", "how", "contact"].includes(name);
 // A fresh load of the pitch edition opens on Reports; after that, Home is the landing page.
 let firstRoute = true;
 
@@ -82,6 +85,12 @@ function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home": return <Home />;
     case "welcome": return <Welcome onStartWalkthrough={() => startWalkthrough("welcome")} />;
+    case "study": return <StudyGate onDone={() => navigate("/welcome")} />;
+    case "baseline": {
+      const p = currentParticipant();
+      if (!p || p.track !== "study") { navigate("/study"); return null; }
+      return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); navigate("/screen"); }} />;
+    }
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;

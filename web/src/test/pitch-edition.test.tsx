@@ -12,8 +12,8 @@ describe("pitch edition", () => {
   it("opens on the Dashboard with the badge, has no Welcome, and sends zero events", async () => {
     // A previous public visit in this browser (same study version) left consent and unsent events behind.
     localStorage.setItem("vistadex.study.v1", JSON.stringify({
-      session_id: "11111111-1111-4111-8111-111111111111", consent: "given", consent_at: "t", consent_version: "2026-10-public-3",
-      seq: 1, sent: 0, events: [{ session_id: "11111111-1111-4111-8111-111111111111", seq: 1, ts: "t", type: "consent_given", study_version: "2026-10-public-3", payload: {} }],
+      session_id: "11111111-1111-4111-8111-111111111111", consent: "given", consent_at: "t", consent_version: "2026-10-study-1",
+      seq: 1, sent: 0, events: [{ session_id: "11111111-1111-4111-8111-111111111111", seq: 1, ts: "t", type: "consent_given", study_version: "2026-10-study-1", payload: {} }],
     }));
     const calls = stubFetch(url => (url.endsWith("/screen") ? json(PROXY_REPORT, 200, { "X-VistaDex-Mode": "live" }) : json({ stored: 1 })));
     const { tm } = await loadApp({ edition: "pitch", proxy: true });

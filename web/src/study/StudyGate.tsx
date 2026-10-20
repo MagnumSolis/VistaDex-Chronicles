@@ -45,7 +45,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                 (ChatGPT, Claude, Gemini…) and once with VistaDex — and rate both.
                 For recruited participants (you may have a participant code).
               </p>
-              <Button className="mt-4" onClick={() => setMode("study")}>I have a participant code</Button>
+              <Button className="mt-4" data-control="study_track_study" onClick={() => setMode("study")}>I have a participant code</Button>
             </div>
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">B. Just try the demo</h2>
@@ -53,7 +53,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                 Screen your own idea with VistaDex and rate the report. ~10 minutes.
                 No code needed.
               </p>
-              <Button className="mt-4" variant="outline" onClick={() => setMode("field")}>Continue without a code</Button>
+              <Button className="mt-4" variant="outline" data-control="study_track_field" onClick={() => setMode("field")}>Continue without a code</Button>
             </div>
           </div>
         )}
@@ -65,6 +65,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
               <input
                 className="mt-1 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
                 value={code}
+                data-control="study_code_field"
                 onChange={e => { setCode(e.target.value); setErr(""); }}
                 placeholder="e.g. P07"
                 maxLength={12}
@@ -77,6 +78,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                   <button
                     key={r}
                     type="button"
+                    data-control="study_role_chip" data-control-value={r}
                     onClick={() => setRole(role === r ? null : r)}
                     className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-on-foreground" : "border-foreground/15 bg-card"}`}
                   >
@@ -92,6 +94,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                   <button
                     key={k}
                     type="button"
+                    data-control="study_idea_pick" data-control-value={k}
                     onClick={() => setIdeaKey(k)}
                     className={`rounded-control border-2 p-3 text-left text-xs leading-relaxed ${ideaKey === k ? "border-foreground bg-foreground/5" : "border-foreground/10 bg-card"}`}
                   >
@@ -101,7 +104,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
               </div>
             </div>
             {err && <p className="text-sm text-red-600">{err}</p>}
-            <Button onClick={startStudy}>Start part 1 →</Button>
+            <Button data-control="study_start" onClick={startStudy}>Start part 1 →</Button>
           </div>
         )}
 
@@ -122,7 +125,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                 ))}
               </div>
             </div>
-            <Button onClick={startField}>Continue →</Button>
+            <Button data-control="study_continue_field" onClick={startField}>Continue →</Button>
           </div>
         )}
       </Panel>

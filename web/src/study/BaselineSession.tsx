@@ -21,6 +21,7 @@ function Likert({ label, value, onChange, low, high }: { label: string; value: n
       </div>
       <input
         type="range" min={1} max={7} step={1} value={value}
+        data-control="baseline_likert"
         onChange={e => onChange(Number(e.target.value))}
         className="mt-1 w-full accent-foreground"
       />
@@ -62,18 +63,19 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
               <span className="text-sm font-medium">Before you start: how confident are you that this idea is novel and viable?</span>
               <span className="font-mono text-sm text-on-page-muted">{confPre}%</span>
             </div>
-            <Slider value={[confPre]} min={0} max={100} step={5} onValueChange={v => setConfPre(v[0])} className="mt-1" />
+            <Slider value={[confPre]} min={0} max={100} step={5} onValueChange={v => setConfPre(v[0])} data-control="baseline_conf_pre" className="mt-1" />
           </div>
           <label className="mt-4 block">
             <span className="text-sm font-medium">Which tool did you use?</span>
             <input
               className="mt-1 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
-              value={tool} onChange={e => setTool(e.target.value)}
+              value={tool} onChange={e => setTool(e.target.value)} data-control="baseline_tool_field"
               placeholder="e.g. ChatGPT"
             />
           </label>
           <Button
             className="mt-5"
+            data-control="baseline_continue"
             onClick={() => { setStep("post"); logConfidencePre("baseline", confPre, "baseline-" + Date.now()); }}
           >
             I've read the AI's answer — continue →
@@ -92,7 +94,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
             <span className="text-sm font-medium">Now: how confident are you that this idea is novel and viable?</span>
             <span className="font-mono text-sm text-on-page-muted">{confPost}%</span>
           </div>
-          <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} className="mt-1" />
+          <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} data-control="baseline_conf_post" className="mt-1" />
         </div>
         <div className="mt-6 space-y-5">
           <Likert label="I trust the AI's assessment of this idea" value={trust} onChange={setTrust} low="1 — not at all" high="7 — completely" />
@@ -104,7 +106,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <span className="text-sm font-medium">About how long did you spend with the AI? (minutes)</span>
           <input
             className="mt-1 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
-            value={minutes} onChange={e => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))}
+            value={minutes} onChange={e => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))} data-control="baseline_minutes_field"
             placeholder="e.g. 5"
           />
         </label>
@@ -112,7 +114,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <span className="text-sm font-medium">In your words: what did the AI's answer make you think or feel about this idea? (optional)</span>
           <textarea
             className="mt-1 min-h-24 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
-            value={open} onChange={e => setOpen(e.target.value)} maxLength={2000}
+            value={open} onChange={e => setOpen(e.target.value)} maxLength={2000} data-control="baseline_open_field"
           />
         </label>
         <Button
@@ -123,6 +125,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
             logConditionEnded("baseline", "baseline-" + Date.now(), 0);
             onDone();
           }}
+        data-control="baseline_submit"
         >
           Submit and continue to VistaDex →
         </Button>

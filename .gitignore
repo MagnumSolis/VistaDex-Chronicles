@@ -26,3 +26,9 @@ secrets.json
 .wrangler/
 worker/node_modules/
 .claude/
+# Wrangler.wrangler/.dev.vars
+
+# Wrangler
+.wrangler/
+.dev.vars
+TINYFISH_API_KEY

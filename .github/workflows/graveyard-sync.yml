@@ -1,0 +1,85 @@
+# .github/workflows/graveyard-sync.yml — automated graveyard growth.
+# On schedule (and on demand), runs the TinyFish death-watcher against Atlas
+# staging (confirming deaths with >=2 independent sources), exports confirmed
+# entries, and commits+pushes the snapshot — which then triggers deploy.yml.
+
+name: graveyard-sync
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours
+  workflow_dispatch: {} # manual run from the Actions tab
+
+permissions:
+  contents: write # needed to push the snapshot commit
+
+concurrency:
+  group: graveyard-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install
+
+      - name: Death Watcher — confirm staged candidates
+        working-directory: backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+          WATCHER_LIMIT: ${{ vars.WATCHER_LIMIT || '50' }}
+          FLEET_MODE: watcher
+        run: node src/tinyfish-fleet.js
+
+      - name: Export confirmed → snapshot
+        working-directory: backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: npm run db:export
+
+      - name: Stats
+        working-directory: backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: npm run db:stats
+
+      - name: Commit + push snapshot (if changed)
+        id: snapshot
+        run: |
+          git config user.name "vistadex-bot"
+          git config user.email "actions@github.com"
+          git add worker/data/graveyard.json
+          if git diff --cached --quiet; then
+            echo "No new confirmed entries — nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip graveyard-sync]"
+            # Integrate any commits pushed to main while this run was in flight,
+            # then push. Rebase keeps our snapshot commit on top.
+            git pull --rebase --autostash origin main
+            if git push; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Push failed even after rebase — leaving snapshot uncommitted-to-remote; next run will retry." >&2
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      # NOTE: pushes made with GITHUB_TOKEN do NOT trigger other workflows
+      # (GitHub recursion prevention) — so this workflow deploys directly.
+      - name: Deploy Worker with the new snapshot
+        if: steps.snapshot.outputs.changed == 'true'
+        run: npx wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

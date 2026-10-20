@@ -1,0 +1,17 @@
+{
+  "name": "vistadex-graveyard-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ingest:lootdrop": "node src/ingest-lootdrop.js",
+    "agents:run": "node src/tinyfish-fleet.js",
+    "agents:monitor": "node src/tinyfish-fleet.js --monitor",
+    "db:stats": "node src/db.js stats",
+    "db:publish": "node src/db.js publish",
+    "smoke": "node src/smoke.js",
+    "db:export": "node src/export-graveyard.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.12.0"
+  }
+}

@@ -181,10 +181,10 @@ docs/BACKEND-HANDOFF.md     endpoints, contract, mock vs live, telemetry, secret
 
 | Member | Owns |
 |--------|------|
-| **Kushagra Agnihotri** | Claim extraction, live retrieval, matching engine (LLM/RAG) |
-| **Lakshit Tanwar** | Entity resolution, graveyard tagging pipeline, accuracy testing |
-| **Richeek Mishra** | Reviewer dashboard and idea-report interface (UI/UX) |
-| **Aditya Pradhan** | Overall architecture, data ingestion, integration |
+| **Aditya Pradhan** | Lead — architecture, backend & deployment |
+| **Kushagra Agnihotri** | LLM & retrieval (RAG) |
+| **Lakshit Tanwar** | UI/UX |
+| **Richeek Mishra** | Outreach |
 
 Documentation (methodology, architecture, pitch deck) lives on the `main` branch.
 

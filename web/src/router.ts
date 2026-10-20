@@ -7,7 +7,7 @@ export type RouteName = "home" | "welcome" | "study" | "baseline" | "screen" | "
 export interface Route { name: RouteName; param: string | null; path: string }
 
 const TABLE: Record<string, RouteName> = {
-  "": "home", welcome: "welcome", screen: "screen", running: "running", report: "report",
+  "": "home", welcome: "welcome", study: "study", baseline: "baseline", screen: "screen", running: "running", report: "report",
   reports: "reports", dashboard: "reports", "how-it-works": "how", contact: "contact", feedback: "feedback",
 };
 

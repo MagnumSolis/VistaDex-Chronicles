@@ -78,7 +78,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
 
   const submit = () => {
     logConfidencePost(condition, runId, confPost);
-    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openTextLen: open.length });
+    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open });
     setSubmitted(true);
     onDone?.();
   };

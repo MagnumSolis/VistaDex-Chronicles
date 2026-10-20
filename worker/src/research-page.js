@@ -392,6 +392,10 @@ export const RESEARCH_PAGE = `<!doctype html>
           '<span class="num" style="color:var(--ink-3)">' + Math.round(100 * x[1] / total) + '%</span></div>';
       }).join("") + "</div>";
   }
+  function bucketBy10(values) {
+    return values.filter(function (v) { return typeof v === "number" && !isNaN(v); })
+      .map(function (v) { return Math.min(9, Math.floor(v / 10)); });
+  }
   function likertCard(title, values, min, max, unit) {
     var vals = values.filter(function (v) { return typeof v === "number" && !isNaN(v); });
     if (!vals.length) return "";
@@ -429,8 +433,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     if (confPre.length || confPost.length) {
       html += '<h2 style="font-size:15px;margin:20px 0 4px">Confidence in the idea <span class="sub" style="font-size:12px;color:var(--ink-3)">(sliders, 0-100% — the calibration measure)</span></h2>';
       html += '<div class="fb-grid">';
-      html += likertCard("Before the report (confidence_pre)", confPre.map(function (e) { return e.payload && e.payload.value; }), 0, 100);
-      html += likertCard("After the report (confidence_post)", confPost.map(function (e) { return e.payload && e.payload.value; }), 0, 100);
+      html += likertCard("Before the report", bucketBy10(confPre.map(function (e) { return e.payload && e.payload.value; })), 0, 9);
+      html += likertCard("After the report", bucketBy10(confPost.map(function (e) { return e.payload && e.payload.value; })), 0, 9);
       html += "</div>";
     }
 
@@ -459,12 +463,16 @@ export const RESEARCH_PAGE = `<!doctype html>
         html += optCard(defs[i][1], counts);
       }
       html += "</div>";
-      // open text
-      var quotes = fbForms.filter(function (e) { return e.payload && e.payload.wrong && String(e.payload.wrong).trim().length > 0; });
-      if (quotes.length) {
-        html += '<h2 style="font-size:15px;margin:20px 0 4px">What was wrong or missing? <span class="sub" style="font-size:12px;color:var(--ink-3)">(open answers)</span></h2>';
-        html += quotes.map(function (e) {
-          return '<div class="fb-quote">\u201c' + esc(String(e.payload.wrong).slice(0, 600)) + '\u201d<div class="who">feedback form · ' + esc(String(e.ts).slice(0, 10)) + "</div></div>";
+      // open answers - feedback form AND study panel (verbatim)
+      var formQuotes = fbForms.filter(function (e) { return e.payload && e.payload.wrong && String(e.payload.wrong).trim().length > 0; });
+      var panelQuotes = surveys.filter(function (e) { return e.payload && e.payload.open_text && String(e.payload.open_text).trim().length > 0; });
+      var allQuotes = formQuotes.map(function (e) { return { t: e.payload.wrong, w: "feedback form", d: e.ts }; })
+        .concat(panelQuotes.map(function (e) { return { t: e.payload.open_text, w: "report survey (" + (e.payload.condition || "?") + ")", d: e.ts }; }));
+      allQuotes.sort(function (a, b) { return String(b.d).localeCompare(String(a.d)); });
+      if (allQuotes.length) {
+        html += '<div style="margin:20px 0 4px"><p style="font-size:15px;font-weight:700">Open answers</p><p style="font-size:12px;color:var(--ink-3)">verbatim, newest first \u00b7 from the feedback form and the report survey</p></div>';
+        html += allQuotes.map(function (q) {
+          return '<div class="fb-quote">' + esc(String(q.t).slice(0, 800)) + '<div class="who">' + esc(q.w) + " \u00b7 " + esc(String(q.d).slice(0, 16).replace("T", " ")) + "</div></div>";
         }).join("");
       }
     }

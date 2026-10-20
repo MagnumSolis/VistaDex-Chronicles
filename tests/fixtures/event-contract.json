@@ -148,7 +148,7 @@
       "condition",
       "effort",
       "helpfulness",
-      "open_text_len",
+      "open_text",
       "trust",
       "usefulness"
     ],

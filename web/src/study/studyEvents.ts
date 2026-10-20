@@ -27,14 +27,16 @@ export function logObjectionVote(runId: string, objectionIndex: number, severity
   track("objection_vote", { objection_index: objectionIndex, run_id: runId, severity, vote });
 }
 
-export function logConditionSurvey(condition: Condition, answers: { trust: number; usefulness: number; helpfulness: number; effort: number; openTextLen: number }) {
+export function logConditionSurvey(condition: Condition, answers: { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string }) {
   track("condition_survey", {
     condition,
     trust: answers.trust,
     usefulness: answers.usefulness,
     helpfulness: answers.helpfulness,
     effort: answers.effort,
-    open_text_len: answers.openTextLen,
+    // The visitor wrote this text to be read (feedback field) — stored verbatim,
+    // unlike usage telemetry which never stores idea or report content.
+    open_text: answers.openText.slice(0, 2000),
   });
 }
 

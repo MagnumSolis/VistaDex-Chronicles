@@ -121,7 +121,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           className="mt-5"
           onClick={() => {
             logConfidencePost("baseline", "baseline-" + Date.now(), confPost);
-            logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openTextLen: open.length });
+            logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open });
             logConditionEnded("baseline", "baseline-" + Date.now(), 0);
             onDone();
           }}

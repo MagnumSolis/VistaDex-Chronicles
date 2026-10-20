@@ -29,3 +29,17 @@ This is also a BITS Pilani F364 research project. The final paper requires **rea
 ## Deployment (Cloudflare)
 
 The production target is Cloudflare: static frontend (Pages) + API proxy, pipeline, and events ingestion (Workers). Wrangler config lives in `wrangler.toml` / `wrangler.jsonc`. Secrets are set with `wrangler secret put`, never written to files that are committed.
+
+## Dev-process rules — Ponytail (lazy senior dev mode) — ACTIVE FOR ALL CODING TASKS
+
+The full ruleset lives in [`skills/ponytail-lazy-dev.md`](skills/ponytail-lazy-dev.md) (source: github.com/DietrichGebert/ponytail, MIT). Skills available: `skills/ponytail/`, `skills/ponytail-audit/`, `skills/ponytail-review/`. Summary: the best code is the code never written — smallest change that fully solves the task, deletion beats addition, no abstraction/config/boilerplate nobody asked for, one small test for every non-trivial branch, end each reply with what you skipped and any risk.
+
+**Reconciliation with the binding rules above (these govern where they conflict):**
+
+1. **The 8 binding rules in §Binding rules always win.** Integrity checks, consent gating, the ≥2-source rule, the abstention rule, the key-free path and invariant validation are NOT "extra code nobody asked for" — they are core product scope. Ponytail's "never cut" clause already covers validation at trust boundaries, error handling, and security; this project treats every rule in §Binding rules as exactly that.
+2. **Verification is never optional scope.** For this project, "the whole task" includes running the smoke tests (`cd backend && npm run smoke`), the regression checks, and a live deploy verification when worker/ or public/ changed. "Lazy about the solution, never about the change itself" applies in full.
+3. **Evidence gathering is core, not flexibility.** Citations, trace records, source_url bookkeeping and the honesty-contract fields may look like "options" to a generic laziness ruleset — here they are the product. Never trim them for diff size.
+4. **Small focused commits (rule 8) align with Ponytail's shortest-working-diff.** No conflict.
+5. **Research instrumentation is first-class.** Telemetry events and consent flows are required features, not speculative additions.
+
+When in doubt: laziest change that keeps every binding rule green and all tests passing.

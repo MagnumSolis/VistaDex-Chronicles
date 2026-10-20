@@ -6,6 +6,7 @@
 // No idea text or report content is logged; runs are described by lengths and counts only.
 
 import * as tm from "@proto/ui/telemetry.js";
+import { currentParticipant, registerFieldParticipant } from "@/study/participant";
 import { features } from "@/edition";
 import type { ClaimStatus, ClaimType, IdeaInput, Report, RunMode } from "@/types";
 import { isControl, type ControlId } from "./controls";
@@ -29,11 +30,16 @@ export const noticeAnswered = () => !features.welcome || tm.consentStatus() !== 
 export const recording = () => features.telemetry && tm.consentStatus() === "given";
 export const sessionCode = (): string | null => (recording() ? tm.sessionCode() : null);
 
-/** The visitor went past the notice: recording starts now (never before). */
+/** The visitor went past the notice: recording starts now (never before).
+ * Every consenting visitor is automatically enrolled in the study (field
+ * track) — there is no separate sign-up step. The Welcome notice is the
+ * consent, exactly like a cookie banner. */
 export function acceptNotice(choice: "walkthrough" | "skip") {
   if (!features.telemetry) return;
   tm.giveConsent();
   track("welcome_choice", { choice });
+  const p = currentParticipant() ?? registerFieldParticipant(null);
+  track("participant_registered", { code: "", role: p.role, track: "field" });
   changed();
 }
 /** "Use without recording": remembered locally, nothing is ever logged or sent. */

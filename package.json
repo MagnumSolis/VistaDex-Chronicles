@@ -1,14 +1,16 @@
 {
-  "name": "vistadex",
+  "name": "vistadex-prototype",
   "private": true,
   "type": "module",
+  "description": "VistaDex idea screener — pipeline core, proxy and tests (no runtime dependencies). Frontend: web/.",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "dry-run": "wrangler deploy --dry-run",
-    "tail": "wrangler tail"
-  },
-  "devDependencies": {
-    "wrangler": "^4.0.0"
+    "serve": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "test": "node --test \"tests/*.test.js\"",
+    "test:web": "npm --prefix web test",
+    "parity": "npm --prefix web run parity",
+    "dev-proxy": "node scripts/dev-proxy.js",
+    "a11y": "npm --prefix web run a11y",
+    "prelaunch": "node scripts/prelaunch.js"
   }
 }

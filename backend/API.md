@@ -1,3 +1,12 @@
+# VistaDex Backend API Contract — HISTORICAL (superseded)
+
+> **Status (Oct 2026):** this document describes the previous `worker/index.js`
+> (`/api/*` endpoints, `{ok, result}` envelope). The live frontend speaks the
+> contract in [`docs/BACKEND-HANDOFF.md`](../docs/BACKEND-HANDOFF.md) instead
+> (`/screen`, `/events`, `/session/:id`, `/export`, plus `/research*`), and the
+> reference implementation is `worker/src/index.js`. Kept for the engineering
+> history of the API design.
+
 # VistaDex Backend API Contract
 
 The backend the new UI (built by Claude Code per the Project Hub) connects to. All endpoints are served by the Cloudflare Worker; the UI never talks to Groq/Tavily/TinyFish/Mongo directly and never holds API keys.

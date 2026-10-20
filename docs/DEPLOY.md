@@ -1,0 +1,187 @@
+# Deploying VistaDex (proxy + static site)
+
+Nothing here has been deployed yet. This is the checklist for whoever does it.
+
+```
+Browser (GitHub Pages, static)            Cloudflare Worker "vistadex-proxy"          Providers
+web/dist   ──POST /screen──────────────►  holds keys as secrets  ───────────────────► Groq, Mistral, TinyFish
+           ──POST /events (consented)──►  D1 database "vistadex" (events, traces)
+           ──DELETE /session/:id──────►   (withdraw)
+researcher ──GET /export (token)───────►  JSON / CSV
+```
+
+**Keys never go in the frontend.** `prototype/config.js` only holds the proxy's public URL. The frontend is the Vite app in `web/`, built to static files in `web/dist`; it imports the pipeline from `prototype/core` unchanged.
+
+## 0. What you need
+
+| Thing | Cost | Used for |
+|---|---|---|
+| Cloudflare account | Free plan | Worker (proxy) + D1 (study data) |
+| Groq API key | Free tier | Default/bulk LLM (`llama-3.3-70b-versatile`) |
+| Mistral API key | Free tier / pay-as-you-go | Extraction/classification (Small) and the Objector (Medium) |
+| TinyFish API key | Search + Fetch are free | Live web retrieval |
+| Node.js 18+ | — | Running `wrangler` |
+
+All keys are optional. If one is missing, that provider is skipped. If all LLM keys are missing, the stages take their deterministic path. Without a TinyFish key, every claim is `unverified`.
+
+Free-tier limits change, so check the current Workers and D1 limits on Cloudflare's pricing pages before the study. A few hundred participants is well within the free plan.
+
+## 1. Create the Worker and database
+
+```bash
+cd worker
+npm install                       # installs wrangler (dev dependency only)
+npx wrangler login
+npx wrangler d1 create vistadex   # prints a database_id
+```
+
+Paste the printed `database_id` into `worker/wrangler.toml`, replacing `REPLACE_WITH_ID_FROM_wrangler_d1_create`. The ID is not a secret, so it is safe to commit. Then create the tables:
+
+```bash
+npm run db:init                   # runs schema.sql against the remote D1 database
+```
+
+## 2. Set secrets
+
+Each command prompts for the value. The value is stored encrypted by Cloudflare and never goes in a file.
+
+```bash
+npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put MISTRAL_API_KEY
+npx wrangler secret put TINYFISH_API_KEY
+npx wrangler secret put EXPORT_TOKEN      # a long random string; only researchers get it
+npx wrangler secret put ACCESS_CODES      # the study access code (see section 3b), e.g. K7Q2-MX9P
+```
+
+Optional model overrides (defaults shown) can be set as secrets or `[vars]`:
+- `GROQ_MODEL=llama-3.3-70b-versatile`
+- `MISTRAL_SMALL_MODEL=mistral-small-latest`
+- `MISTRAL_OBJECTOR_MODEL=mistral-medium-latest`
+
+## 3. Allowed origins
+
+`ALLOWED_ORIGINS` in `wrangler.toml` lists the browser origins that may call the proxy. For GitHub Pages the origin is just the scheme and host, `https://magnumsolis.github.io`, not the repo path. Remove the localhost entries if you don't want local frontends to reach the deployed proxy.
+
+## 3b. Access code, rate limits and daily cap
+
+**What the access code does and does not do.** The access code stops crawlers, bots and casual visitors who stumble on the proxy URL. It does **not** stop anyone who has the participant link: the code is in that link, so whoever receives a forwarded link can use the study. It is a gate against noise, not authentication.
+
+**Set it up**
+1. Pick one shared code (letters and digits, e.g. `K7Q2-MX9P`) and store it: `npx wrangler secret put ACCESS_CODES`. Several codes can be given comma-separated (useful for rotating: add the new one, share the new link, remove the old one later).
+2. `ACCESS_REQUIRED = "true"` is already set in `wrangler.toml`. If the secret is missing the Worker answers **503** to `/screen` and `/events` — it fails closed, never open.
+3. The participant link is the site URL with the code in the fragment:
+   `https://magnumsolis.github.io/VistaDex-Chronicles/#code=K7Q2-MX9P`
+   The fragment is never sent to GitHub Pages. The app keeps the code in `sessionStorage` for that tab, removes it from the address bar, and sends it to the proxy (header `X-VistaDex-Access` on `/screen`, field `access_code` in `/events` uploads). It is never stored with events, traces or logs.
+4. Withdrawal (`DELETE /session/:id`) does not need the code, so participants can always withdraw.
+4b. **Pitch edition link:** `https://magnumsolis.github.io/VistaDex-Chronicles/#edition=pitch&code=<study code>`. It opens on Reports (session runs + the demo cohort), shows a "Pitch edition" badge and sends no telemetry. Both fragment parts are scrubbed from the address bar; the edition is kept for that tab only. **The pitch edition is not protected:** `#edition=pitch` alone switches it on in the browser and no code is checked (`web/src/edition.ts`). The `code=` part is only the same study access code the public link uses, checked by the Worker on `/screen` and `/events`. **TODO(team):** a separate `PITCH_CODES` secret verified by the Worker — see `docs/BACKEND-HANDOFF.md` §7.
+5. Without the code a visitor sees "This link is missing its access code" on Screen an idea (`run_failed` records it with `code: "access"`).
+
+**Per-IP rate limits** — `/screen` 30 requests / 60 s, `/events` 60 / 60 s, using the Workers Rate Limiting API bindings `SCREEN_LIMITER` and `EVENTS_LIMITER` in `wrangler.toml`. Needs Wrangler 4.36 or later (pinned in `worker/package.json`). Limits are counted per Cloudflare location, not globally. The client IP is read only as the limiter key and is never stored or logged. Refused requests get **429** with `Retry-After: 60` and the participant sees "Too many requests right now. Please wait a minute and try again."
+
+> **Check before deploy:** confirm in the Cloudflare docs or dashboard that the Rate Limiting binding is available on your plan (this could not be confirmed while writing this guide). If it is not, delete the two `[[ratelimits]]` blocks from `wrangler.toml` — the Worker skips rate limiting when the bindings are absent — and rely on the access code plus the daily cap. Dashboard WAF rate-limiting rules are an alternative only if the Worker runs on a custom domain; they do not apply to `*.workers.dev`.
+
+**Global daily cap on `/screen`** — `SCREEN_DAILY_CAP` in `wrangler.toml` (default `300` runs per UTC day; `"0"` turns it off). When it is reached, `/screen` answers **429** `{"error":"daily_cap"}` until 00:00 UTC (05:30 IST), and participants see "The study is paused for today. Please try again tomorrow." with `run_failed` recorded. Telemetry uploads and withdrawal are not capped.
+
+Why the counter lives in **D1, not KV**: the cap needs an exact, atomic "add one unless the limit is reached". D1 does that in a single SQL statement (`INSERT … ON CONFLICT DO UPDATE … WHERE screens < cap RETURNING`) on a strongly consistent database the Worker already uses. KV is eventually consistent, has no atomic increment (two concurrent runs could both read 299 and both pass) and limits writes to the same key to about one per second, so it would let the cap be overshot. The counter table is `daily_counters` in `schema.sql` — re-run `npm run db:init` after pulling this change.
+
+## 4. Deploy the Worker
+
+```bash
+npm run deploy                    # = wrangler deploy; prints https://vistadex-proxy.<subdomain>.workers.dev
+```
+
+The Worker imports `../../prototype/core/*`, so deploy from inside a full checkout of this repo.
+
+Smoke test (no browser needed):
+
+```bash
+curl -s -X POST "https://vistadex-proxy.<subdomain>.workers.dev/screen" -H "Content-Type: application/json" -H "X-VistaDex-Access: <your code>" -d '{"idea_text":"The legal-tech market is worth $27B globally."}' -D -
+```
+
+Look for `X-VistaDex-Mode: live` in the response headers. `mock` means no provider keys were picked up. Without the header you should get `401`; if you get `503`, the `ACCESS_CODES` secret is missing.
+
+## 5. Point the frontend at the proxy
+
+In `prototype/config.js` (it is bundled into the web build):
+
+```js
+export const CONFIG = { PROXY_URL: "https://vistadex-proxy.<subdomain>.workers.dev" };
+```
+
+Rebuild the site after changing it. The footer then reads "Live providers" instead of "Mock mode: no live evidence", and usage events (public edition, after the Welcome notice) are sent to `/events`.
+
+## 6. GitHub Pages
+
+Pages can only publish from a branch root, from `/docs`, or through a GitHub Actions workflow. The site is built from `web/` (Vite) into `web/dist`, so use a workflow that builds it:
+
+1. Repo **Settings → Pages → Source: GitHub Actions**.
+2. Add `.github/workflows/pages.yml` on the branch you publish from:
+
+```yaml
+name: Deploy VistaDex to Pages
+on:
+  push:
+    branches: [master]          # or the branch you publish from
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+        working-directory: web
+      - run: npm test && npm run build      # web tests, then vite build -> web/dist
+        working-directory: web
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: web/dist }
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+The site is then at `https://magnumsolis.github.io/VistaDex-Chronicles/`. Vite builds with `base: "./"` (relative asset paths) and every route is a hash fragment (`#/reports`, `#/report/<id>`, …), so the sub-path works without a 404 fallback. Fonts (Fraunces, Instrument Sans, JetBrains Mono) are bundled into the build; nothing is loaded from a font CDN.
+
+To check a production build locally: `npm run build` then `npm --prefix web run preview` (http://localhost:4173).
+
+This workflow is deliberately not committed as an active file: committing it to the publishing branch is what starts a deployment.
+
+## 7. Exporting study data (researchers)
+
+```bash
+# all events (one row per event; payload is JSON)
+curl -H "Authorization: Bearer $EXPORT_TOKEN" "https://vistadex-proxy.<subdomain>.workers.dev/export?format=csv" -o events.csv
+curl -H "Authorization: Bearer $EXPORT_TOKEN" "https://vistadex-proxy.<subdomain>.workers.dev/export" -o events.json
+# per-idea pipeline traces (live runs)
+curl -H "Authorization: Bearer $EXPORT_TOKEN" "https://vistadex-proxy.<subdomain>.workers.dev/export?table=traces" -o traces.json
+```
+
+Visitors can delete their session from the Welcome page ("Delete my session"); there is no download button in the current UI. Deleting removes their events and linked traces in D1 and blocks later uploads for that session.
+
+## 8. Running locally
+
+```bash
+npm --prefix web install          # once: frontend dependencies
+npm run serve                     # web/ dev server on http://localhost:5173 (key-free mock path)
+npm run dev-proxy                 # the Worker handler in Node on :8787, data in memory, keys from ./.env
+npm test                          # pipeline, proxy and telemetry tests (no network or keys)
+npm run test:web                  # web/ tests (flows, editions, telemetry contract, contrast, colour vision)
+npm run parity                    # replays the participant flow in Chrome and checks telemetry against tests/fixtures/event-contract.json
+npm run a11y                      # axe-core + keyboard-only flow + small-width checks in Chrome
+```
+
+`parity` and `a11y` need the dev server running and drive the installed Chrome through `playwright-core` (no browser download). To use the dev proxy, temporarily set `PROXY_URL: "http://localhost:8787"` in `prototype/config.js`, and don't commit that change. `cd worker && npx wrangler dev` runs the real Worker runtime locally against a local D1. Run `npm run db:init:local` first.
+
+## Known gaps before the study
+
+- **Run `npm run prelaunch` before sharing the participant link.** It fails while any team decision is still open: a `TODO` retention period or withdrawal contact (shown to visitors as bracketed placeholders), feedback wording not approved (`FEEDBACK.signedOff`), no `PROXY_URL`, or a `STUDY_VERSION` that differs from the event contract. It also lists the non-blocking `TODO(team)` defaults.
+
+- **The access code is not authentication.** It keeps crawlers and casual visitors out; anyone with the participant link can still run screens and spend the provider free tiers. The per-IP rate limits and the daily cap bound the damage. Check the rate-limit binding works on your plan (section 3b).
+- **The pitch edition is not protected** (see 4b): anyone who knows `#edition=pitch` gets it. It only turns telemetry off and shows the demo cohort.
+- **Traces store claim text.** Each `/screen` trace logs the extracted and dropped claims, i.e. sentences from the idea (`prototype/core/stages/extract.js`). TODO(team): remove the text or say so in the Welcome notice.
+- **No automatic retention or deletion schedule.** Decide how long study data is kept and delete it at the end of the course.
+- **Graveyard matching is lexical (TF-IDF).** MiniLM embeddings are planned, and the threshold must be re-calibrated when switching.

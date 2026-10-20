@@ -1,16 +1,15 @@
-# .github/workflows/deploy.yml — auto-deploy the Worker whenever the app,
-# worker code, or graveyard snapshot changes on main.
-
+# .github/workflows/deploy.yml — deploy the vistadex-proxy Worker whenever its
+# code or the graveyard snapshot changes on main. (The site is deployed
+# separately via `wrangler pages deploy web/dist` from the dev machine; the
+# graveyard-sync workflow deploys the proxy itself after each snapshot push.)
 name: deploy
 
 on:
   push:
     branches: [main]
     paths:
-      - "public/**"
       - "worker/**"
-      - "wrangler.jsonc"
-      - "worker/data/graveyard.json"
+      - "prototype/**"
   workflow_dispatch: {}
 
 concurrency:
@@ -28,8 +27,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Deploy Worker
+      - name: Deploy proxy Worker
         run: npx wrangler@4 deploy
+        working-directory: worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

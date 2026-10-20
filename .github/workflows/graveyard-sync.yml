@@ -80,6 +80,7 @@ jobs:
       - name: Deploy Worker with the new snapshot
         if: steps.snapshot.outputs.changed == 'true'
         run: npx wrangler@4 deploy
+        working-directory: worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

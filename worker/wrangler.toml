@@ -1,0 +1,32 @@
+# Cloudflare Worker config for the VistaDex proxy. See docs/DEPLOY.md.
+# Secrets (GROQ_API_KEY, MISTRAL_API_KEY, TINYFISH_API_KEY, EXPORT_TOKEN, ACCESS_CODES) are
+# set with `npx wrangler secret put <NAME>` — never written in this file.
+name = "vistadex-proxy"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Comma-separated browser origins allowed to call the proxy.
+ALLOWED_ORIGINS = "https://vistadex-app.pages.dev,https://magnumsolis.github.io,http://localhost:5173,http://127.0.0.1:5173"
+# /screen and /events need the study access code (secret ACCESS_CODES). With this set and no
+# codes configured the Worker answers 503 — it fails closed.
+ACCESS_REQUIRED = "true"
+# Global cap on /screen runs per UTC day (counted in D1). "0" disables it.
+SCREEN_DAILY_CAP = "300"
+
+# Per-IP rate limits (Workers Rate Limiting API; Wrangler >= 4.36). period must be 10 or 60.
+# Check before deploy: that the binding is available on your Cloudflare plan (docs/DEPLOY.md).
+[[ratelimits]]
+name = "SCREEN_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "EVENTS_LIMITER"
+namespace_id = "1002"
+simple = { limit = 60, period = 60 }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vistadex"
+database_id = "cfe9a534-d571-4c05-b1e0-ee655550fb81"

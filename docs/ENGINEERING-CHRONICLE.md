@@ -110,3 +110,62 @@
 ## 6. Secrets inventory (all in Worker secrets / GitHub secrets / gitignored .env — never in git)
 
 `GROQ_API_KEY` · `TAVILY_API_KEY` · `MISTRAL_API_KEY` (Worker) · `RESEARCHER_EXPORT_TOKEN` (Worker, admin console) · `TINYFISH_API_KEY`, `MONGODB_URI` (laptop .env + GitHub Actions) · `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (GitHub Actions) · D1 binding `EVENTS`
+
+---
+
+# Audit Report — Full Codebase Review (20 Oct 2026, post-integration)
+
+Scope: every package (prototype/core, prototype/ui, web, worker, backend, tests, CI), live deployment, docs.
+
+## Test & verification results (all run in this audit)
+
+| Suite | Result |
+| --- | --- |
+| Node pipeline/proxy/telemetry tests (`npm test`) | **109/109 pass** |
+| Web tests incl. telemetry contract, editions, contrast, flows (`npm run test:web`) | **124/124 pass** (11 files) |
+| Backend key-free smoke (`npm run smoke`) | **23/23 pass** |
+| TypeScript typecheck | clean |
+| Syntax check, every .js in prototype/, worker/, backend/ | all parse |
+| Live audit (site, proxy, console, export, CORS, access gate, events, withdraw) | **18/18** (one probe was a stale string; verified manually in the deployed bundle) |
+| Deployed bundle vs local build | identical (`index-1_ZvhDZn.js`) |
+
+## Bugs found and fixed in this audit
+
+1. **`.github/workflows/deploy.yml` would fail on every push** — still configured for the deleted repo-root `wrangler.jsonc`/`public/` layout (old worker). Rewritten: deploys the proxy from `worker/` on `worker/**` + `prototype/**` changes; the site is deployed via Pages separately; graveyard-sync handles snapshot deploys.
+2. **`graveyard-sync.yml` deploy step ran at repo root** — would fail the same way. Added `working-directory: worker`.
+3. (Earlier in this session, fixed before the audit) research-console script escaping; same-origin CORS gate; `/export` cookie auth; vote-button visual feedback; likert text contrast; console purge-column header.
+
+## Redundancy trimmed / verified clean
+
+- Old root worker (`wrangler.jsonc`, `public/`, `worker/index.js` old version, `worker/providers/`, `worker/prompts/`) — already removed at integration; `git ls-files` confirms none remain.
+- `prototype/ui/*` and `prototype/core/*` are **live code** (web imports them) — kept.
+- `backend/` is the data-plane CLI (ingest/fleet/export) used by CI — kept; `backend/API.md` documents the *old* worker contract and is now marked historical (below).
+- No secrets in git: `.env`, `.dev.vars` ignored and untracked (verified). `.dev.vars` in the workdir holds only the old researcher token (superseded by the Worker secret — value rotated earlier; safe to delete locally).
+
+## Known open items (carried, not new)
+
+- Rotate all provider keys + access code before public distribution (all appeared in chat).
+- Pitch edition is client-side only (`#edition=pitch` unprotected) — BACKEND-HANDOFF §7 spec awaiting team go-ahead (`PITCH_CODES`).
+- Traces store extracted claim text (privacy TODO from the handoff doc) — either trim or keep the disclosed Welcome wording.
+- `FEEDBACK.signedOff: false` — feedback wording awaiting team sign-off.
+- School-firewall reachability — custom domain recommended before campus recruitment.
+- `backend/API.md` describes the superseded `/api/*` contract — historical reference only; the frontend's real contract is `docs/BACKEND-HANDOFF.md` + `worker/src/index.js`.
+
+## Performance state
+
+- Live pipeline: ~50-90s per screen (evidence-fetched, quote-verified — deliberate depth; parallelized stages 2 within-claims and competitors/bigtech).
+- Mock/deterministic path (no keys or browser mode): instant.
+- Research console: D1 queries over full event set; fine at thousands of events, revisit if >100k.
+
+## Architecture as verified live
+
+```
+https://vistadex-app.pages.dev            (web/dist — Cloudflare Pages)
+   │  #code=B820D93E · #edition=pitch · #/study · #/baseline
+   ▼
+https://vistadex-proxy...workers.dev      (Worker: /screen /events /session/:id /export /research*)
+   ├─ D1 "vistadex": events, traces, sessions, daily_counters, withdrawals
+   ├─ providers: Groq gpt-oss-120b, Mistral small/medium, TinyFish search+fetch
+   └─ graveyard: worker/data/graveyard.json (Atlas-confirmed, auto-synced every 6h via Actions)
+/research  → token-gated researcher console (study metrics, funnel, purge, CSV/JSON)
+```

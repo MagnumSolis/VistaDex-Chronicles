@@ -1,0 +1,676 @@
+{
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-study-1). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-10-study-1",
+  "envelope": [
+    "session_id",
+    "seq",
+    "ts",
+    "type",
+    "study_version",
+    "payload"
+  ],
+  "editions": {
+    "public": "all events below, after the Welcome notice",
+    "pitch": "none: telemetry.js is disabled at startup (no logging, no uploads, not even unsent events from an earlier visit)"
+  },
+  "payload_keys": {
+    "consent_given": [
+      "study_version"
+    ],
+    "welcome_choice": [
+      "choice"
+    ],
+    "view_changed": [
+      "view"
+    ],
+    "screen_time": [
+      "ended_by",
+      "screen",
+      "visible_ms"
+    ],
+    "control_pressed": [
+      "control",
+      "screen"
+    ],
+    "field_edited": [
+      "chars",
+      "control",
+      "screen"
+    ],
+    "run_started": [
+      "field_chars",
+      "idea_chars",
+      "industries",
+      "markets",
+      "mode",
+      "role",
+      "run_id",
+      "sample"
+    ],
+    "run_completed": [
+      "counts",
+      "duration_ms",
+      "mode",
+      "run_id",
+      "trace_id"
+    ],
+    "run_failed": [
+      "code",
+      "error",
+      "run_id"
+    ],
+    "run_cancelled": [
+      "run_id",
+      "stage"
+    ],
+    "claim_expanded": [
+      "claim_index",
+      "expanded",
+      "run_id"
+    ],
+    "source_clicked": [
+      "claim_index",
+      "run_id",
+      "url"
+    ],
+    "graveyard_viewed": [
+      "ms_after_report",
+      "run_id"
+    ],
+    "objections_viewed": [
+      "ms_after_report",
+      "run_id"
+    ],
+    "section_time": [
+      "run_id",
+      "section",
+      "visible_ms"
+    ],
+    "report_time": [
+      "ended_by",
+      "run_id",
+      "visible_ms"
+    ],
+    "walkthrough_started": [
+      "from"
+    ],
+    "walkthrough_step_time": [
+      "ended_by",
+      "step",
+      "visible_ms"
+    ],
+    "walkthrough_ended": [
+      "at_step",
+      "how"
+    ],
+    "feedback_submitted": [
+      "email",
+      "role",
+      "section",
+      "useful",
+      "would_use",
+      "wrong"
+    ],
+    "participant_registered": [
+      "code",
+      "role",
+      "track"
+    ],
+    "condition_started": [
+      "condition",
+      "idea_key",
+      "order_position"
+    ],
+    "confidence_pre": [
+      "condition",
+      "value",
+      "run_id"
+    ],
+    "confidence_post": [
+      "condition",
+      "run_id",
+      "value"
+    ],
+    "claim_vote": [
+      "claim_index",
+      "run_id",
+      "status",
+      "vote"
+    ],
+    "objection_vote": [
+      "objection_index",
+      "run_id",
+      "severity",
+      "vote"
+    ],
+    "condition_survey": [
+      "condition",
+      "effort",
+      "helpfulness",
+      "open_text_len",
+      "trust",
+      "usefulness"
+    ],
+    "condition_ended": [
+      "condition",
+      "run_id",
+      "verified_sources"
+    ]
+  },
+  "optional_keys": {
+    "control_pressed": [
+      "value"
+    ]
+  },
+  "values": {
+    "welcome_choice.choice": [
+      "walkthrough",
+      "skip"
+    ],
+    "view_changed.view": [
+      "home",
+      "welcome",
+      "screen",
+      "running",
+      "report",
+      "how_it_works",
+      "feedback",
+      "notfound",
+      "reports",
+      "contact"
+    ],
+    "screen_time.screen": [
+      "home",
+      "welcome",
+      "screen",
+      "running",
+      "report",
+      "how_it_works",
+      "feedback",
+      "notfound",
+      "reports",
+      "contact"
+    ],
+    "screen_time.ended_by": [
+      "navigate",
+      "page_hidden"
+    ],
+    "run_started.mode": [
+      "mock",
+      "live"
+    ],
+    "run_started.markets": [
+      "EU",
+      "USA",
+      "India"
+    ],
+    "run_started.sample": [
+      "journaling",
+      "legal",
+      "scribe",
+      null
+    ],
+    "run_completed.mode": [
+      "mock",
+      "live",
+      "proxy-mock"
+    ],
+    "run_completed.counts": [
+      "claims",
+      "graveyard_matches",
+      "legal",
+      "market",
+      "objections",
+      "statuses",
+      "types"
+    ],
+    "run_failed.code": [
+      "access",
+      "daily_cap",
+      "rate_limited",
+      "misconfigured",
+      "http",
+      "contract",
+      "network",
+      "pipeline"
+    ],
+    "run_cancelled.stage": [
+      "split",
+      "check",
+      "graveyard",
+      "objections",
+      "server"
+    ],
+    "section_time.section": [
+      "summary",
+      "profile",
+      "claims",
+      "graveyard",
+      "objections",
+      "big_tech",
+      "legal",
+      "market",
+      "score_breakdown"
+    ],
+    "report_time.ended_by": [
+      "new_run",
+      "page_hidden",
+      "withdrawn"
+    ],
+    "walkthrough_started.from": [
+      "welcome",
+      "help",
+      "how_it_works"
+    ],
+    "walkthrough_step_time.ended_by": [
+      "next",
+      "back",
+      "skip",
+      "done",
+      "page_hidden"
+    ],
+    "walkthrough_ended.how": [
+      "skip",
+      "done"
+    ],
+    "walkthrough.step": [
+      "samples",
+      "basics",
+      "details",
+      "context",
+      "run",
+      "score",
+      "profile",
+      "claims",
+      "leads",
+      "objections",
+      "big_tech",
+      "legal",
+      "finish"
+    ],
+    "feedback_submitted.role": [
+      "founder",
+      "investor",
+      "other",
+      null
+    ],
+    "feedback_submitted.useful": [
+      "yes",
+      "partly",
+      "no",
+      "no_report",
+      null
+    ],
+    "feedback_submitted.section": [
+      "claims",
+      "graveyard",
+      "objections",
+      "legal",
+      "market",
+      "none",
+      null
+    ],
+    "feedback_submitted.would_use": [
+      "yes",
+      "maybe",
+      "no",
+      null
+    ],
+    "run_id": "r<n>, counting every run attempt in the page session",
+    "run_started.role": [
+      "founder",
+      "investor",
+      "accelerator",
+      null
+    ],
+    "run_started.industries": [
+      "AI/ML",
+      "SaaS/B2B",
+      "Fintech",
+      "Healthtech",
+      "Edtech",
+      "Consumer",
+      "E-commerce",
+      "Climate/Energy",
+      "Mobility",
+      "Agritech",
+      "Deeptech/Hardware",
+      "Media/Creator",
+      "Other"
+    ],
+    "run_started.field_chars": [
+      "moat",
+      "pitch",
+      "problem",
+      "solution",
+      "title"
+    ],
+    "claim_vote.vote": [
+      "agree",
+      "disagree"
+    ],
+    "objection_vote.vote": [
+      "agree",
+      "disagree"
+    ],
+    "participant_registered.track": [
+      "study",
+      "field"
+    ],
+    "condition_started.condition": [
+      "baseline",
+      "vistadex"
+    ],
+    "condition_survey.condition": [
+      "baseline",
+      "vistadex"
+    ]
+  },
+  "controls": [
+    "skip_to_content",
+    "nav_home",
+    "nav_screen",
+    "nav_how",
+    "tab_home",
+    "tab_screen",
+    "tab_how",
+    "help_replay_walkthrough",
+    "header_feedback",
+    "footer_your_data",
+    "dialog_close",
+    "home_try_demo",
+    "home_how_it_works",
+    "home_start_demo",
+    "home_feedback",
+    "welcome_start_walkthrough",
+    "welcome_skip",
+    "welcome_no_recording",
+    "welcome_continue",
+    "welcome_start_recording",
+    "welcome_delete_session",
+    "welcome_delete_confirm",
+    "welcome_delete_cancel",
+    "welcome_how_it_works",
+    "idea_title",
+    "idea_pitch",
+    "idea_problem",
+    "idea_solution",
+    "idea_moat",
+    "form_error_link",
+    "sample_load",
+    "industry_toggle",
+    "role_select",
+    "market_toggle",
+    "run_screening",
+    "open_last_report",
+    "run_cancel",
+    "running_back_to_edit",
+    "running_go_screen",
+    "report_section_jump",
+    "idea_text_toggle",
+    "score_breakdown_toggle",
+    "competitor_link",
+    "big_tech_source_link",
+    "sources_toggle",
+    "source_link",
+    "lead_source_link",
+    "legal_registry_link",
+    "legal_rule_source_link",
+    "market_citation_link",
+    "report_save_pdf",
+    "report_screen_another",
+    "report_feedback_prompt",
+    "report_how_it_works",
+    "report_empty_screen",
+    "how_replay_walkthrough",
+    "how_registry_link",
+    "how_try_it",
+    "feedback_role",
+    "feedback_useful",
+    "feedback_section",
+    "feedback_wrong",
+    "feedback_would_use",
+    "feedback_email",
+    "feedback_submit",
+    "feedback_screen_another",
+    "reports_sort",
+    "reports_filter_status",
+    "reports_filter_band",
+    "reports_filter_industry",
+    "reports_filter_role",
+    "reports_clear_filters",
+    "reports_open",
+    "reports_empty_screen",
+    "reports_clear",
+    "reports_clear_cancel",
+    "reports_clear_confirm",
+    "reports_samples",
+    "nav_reports",
+    "tab_reports",
+    "walkthrough_next",
+    "walkthrough_back",
+    "walkthrough_skip",
+    "walkthrough_done",
+    "walkthrough_how_it_works",
+    "walkthrough_resume",
+    "notfound_home",
+    "nav_contact",
+    "tab_contact",
+    "contact_feedback",
+    "contact_your_data",
+    "contact_github",
+    "study_track_study",
+    "study_track_field",
+    "study_code_field",
+    "study_role_chip",
+    "study_idea_pick",
+    "study_start",
+    "study_continue_field",
+    "baseline_conf_pre",
+    "baseline_tool_field",
+    "baseline_conf_post",
+    "baseline_continue",
+    "baseline_likert",
+    "baseline_minutes_field",
+    "baseline_open_field",
+    "baseline_submit",
+    "study_conf_post",
+    "study_sources_0",
+    "study_sources_1_2",
+    "study_sources_3p",
+    "study_survey_open",
+    "study_survey_submit",
+    "study_claim_agree",
+    "study_claim_disagree",
+    "study_objection_agree",
+    "study_objection_disagree"
+  ],
+  "panel_viewed_rule": {
+    "2026-10-pilot-1": "IntersectionObserver threshold 0.5 of the panel's own height. A panel taller than twice the viewport never reported (measurement bug).",
+    "2026-10-pilot-2": "A panel counts as viewed when at least 50% of its own height OR at least 50% of the viewport is covered by it (web/src/study/viewRule.ts). Event names and payload fields unchanged. Checked by web/scripts/parity.mjs (tall-panel check at 320x400) and web/src/study/viewRule.test.ts."
+  },
+  "rules": {
+    "section_time": "Time a report section is in view by the panel-viewed rule (\u2265 50% of the section OR \u2265 50% of the viewport), summed per run and section, sent when the report ends (new run, page hidden, withdrawn). Only while the tab is visible and the report screen is shown.",
+    "screen_time": "Visible time on a screen, sent when the visitor leaves it or the page is hidden.",
+    "field_edited": "Sent when a text field loses focus; carries the length only, never the text.",
+    "uploads": "Batched: at most one /events request per 10 s while events arrive, at most 200 events per request, plus a beacon on page hide (Worker limits: 60 requests/min/IP, 200 events/request).",
+    "run_started": "Lengths of the five text fields and the selected industries, role and markets; never the text.",
+    "select": "A <select> logs control_pressed with its new value on change."
+  },
+  "history": {
+    "2026-10-pilot-2": {
+      "note": "BITS F364 study UI (consent dialog, trust sliders, per-claim rating, notes, survey). Retired from the routes in the revamp; code in web/src/retired/study/.",
+      "payload_keys": {
+        "consent_given": [
+          "study_version"
+        ],
+        "trust_pre": [
+          "scale",
+          "value"
+        ],
+        "view_changed": [
+          "view"
+        ],
+        "demo_report_opened": [
+          "idea_id"
+        ],
+        "run_started": [
+          "idea_chars",
+          "mode",
+          "run_id"
+        ],
+        "run_completed": [
+          "duration_ms",
+          "idea_text",
+          "mode",
+          "report",
+          "run_id",
+          "trace",
+          "trace_id"
+        ],
+        "run_failed": [
+          "error",
+          "run_id"
+        ],
+        "claim_expanded": [
+          "claim_index",
+          "expanded",
+          "run_id"
+        ],
+        "claim_rating": [
+          "claim_index",
+          "claim_type",
+          "rating",
+          "run_id",
+          "status"
+        ],
+        "source_clicked": [
+          "claim_index",
+          "run_id",
+          "url"
+        ],
+        "graveyard_viewed": [
+          "ms_after_report",
+          "run_id"
+        ],
+        "objections_viewed": [
+          "ms_after_report",
+          "run_id"
+        ],
+        "notes_edited": [
+          "chars",
+          "run_id"
+        ],
+        "trust_post": [
+          "run_id",
+          "scale",
+          "value"
+        ],
+        "survey_submitted": [
+          "answers",
+          "comments",
+          "run_id"
+        ],
+        "report_time": [
+          "ended_by",
+          "run_id",
+          "visible_ms"
+        ]
+      },
+      "values": {
+        "scale": [
+          1,
+          7
+        ],
+        "view_changed.view": [
+          "dashboard",
+          "screen",
+          "graveyard"
+        ],
+        "run_started.mode": [
+          "mock",
+          "live"
+        ],
+        "run_completed.mode": [
+          "mock",
+          "live",
+          "proxy-mock"
+        ],
+        "claim_rating.rating": [
+          "agree",
+          "disagree",
+          "unsure"
+        ],
+        "report_time.ended_by": [
+          "new_run",
+          "page_hidden",
+          "withdrawn",
+          "survey_submitted"
+        ],
+        "survey_submitted.answers": [
+          "useful",
+          "understandable",
+          "evidence_clear",
+          "in_control",
+          "use_again"
+        ],
+        "run_completed.report": [
+          "claims",
+          "graveyard_matches",
+          "idea_text",
+          "objections"
+        ],
+        "run_id": "r<n>, counting every run attempt in the page session (including runs made before consent)"
+      },
+      "flow": [
+        "Fresh state. Open Screen an Idea \u2192 consent dialog \u2192 decline. Run the legal idea \u2192 expect 0 events.",
+        "Read the study information \u2192 agree. Set the pre-use trust slider to 3.",
+        "Go to Cohort Dashboard, open demo report idea-01, close it, go back to Screen an Idea.",
+        "Run the legal idea (run 1 after consent). Open then close claim 0's evidence. Rate claim 0 disagree, claim 1 agree.",
+        "Click a source link on claim 0 (mock runs have no sources: inject one link to exercise the handler).",
+        "Bring the graveyard panel, then the objector panel, into view. Edit reviewer notes and leave the box.",
+        "Post-use trust 5, answer all 5 Likert items, comment, submit.",
+        "Run again twice (the second run ends the first with new_run). Fire pagehide. Point PROXY_URL at a dead port and run once (fails)."
+      ],
+      "sequence": [
+        "consent_given",
+        "trust_pre",
+        "view_changed:dashboard",
+        "demo_report_opened",
+        "view_changed:screen",
+        "run_started",
+        "run_completed",
+        "claim_expanded",
+        "claim_expanded",
+        "claim_rating",
+        "claim_rating",
+        "source_clicked",
+        "graveyard_viewed",
+        "objections_viewed",
+        "notes_edited",
+        "trust_post",
+        "survey_submitted",
+        "report_time:survey_submitted",
+        "run_started",
+        "run_completed",
+        "graveyard_viewed",
+        "objections_viewed",
+        "report_time:new_run",
+        "run_started",
+        "run_completed",
+        "graveyard_viewed",
+        "objections_viewed",
+        "report_time:page_hidden",
+        "run_started",
+        "run_failed"
+      ],
+      "captured": {
+        "commit": "e0b1099",
+        "date": "2026-10-18",
+        "viewport": "1280x900",
+        "events_after_decline": 0,
+        "study_version": "2026-10-pilot-1"
+      }
+    }
+  }
+}

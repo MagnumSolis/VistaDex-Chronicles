@@ -21,6 +21,11 @@ node_modules/
 *.key
 secrets.json
 
+# Cloudflare Worker local state and secrets
+.dev.vars
+.wrangler/
+worker/node_modules/
+.claude/
 # Wrangler.wrangler/.dev.vars
 
 # Wrangler

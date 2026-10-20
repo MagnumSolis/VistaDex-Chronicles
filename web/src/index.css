@@ -1,0 +1,230 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* One fixed theme for everyone: shadcn's dark: classes never follow the OS setting. */
+@custom-variant dark (&:is(.dark *));
+
+/* ── VistaDex design tokens ─────────────────────────────────────────
+   One fixed theme for everyone (not OS-dependent). Deep-green page, flat
+   colour-blocked surfaces (no shadows, no borders for depth), cream and paper
+   reading surfaces with dark-green ink, lime for brand blocks and the primary
+   action. Status hues are used ONLY for status and are never green, so the
+   brand never reads as "confirmed". Every text/background pair meets WCAG AA
+   (src/test/contrast.test.ts); the four status hues stay distinguishable under
+   protanopia, deuteranopia and tritanopia (src/test/colour-vision.test.ts).
+   CLAUDE.md describes how the tokens are used. */
+
+:root {
+  /* page (the deep-green frame around every screen) */
+  --page: #0b3b2c;
+  --on-page: #eef2e2;              /* text on the page */
+  --on-page-muted: #b5ccbc;        /* helper text on the page */
+  --page-raised: #144a38;          /* flat blocks on the page (tab bar, inactive chips) */
+
+  /* brand blocks */
+  --lime: #cbef6a;
+  --on-lime: #0b2e22;
+  --charcoal: #232623;             /* "product window" surfaces */
+  --on-charcoal: #eef2e2;
+  --on-charcoal-muted: #b9bfb8;
+  --charcoal-raised: #2e322e;      /* the running row / notes inside a product window */
+
+  /* reading surfaces */
+  --background: #eef2e2;           /* cream: panels, forms, the report */
+  --foreground: #0b2e22;           /* ink: all body, claim and objection text */
+  --card: #f9fbf4;                 /* paper: cards inside cream panels */
+  --card-foreground: #0b2e22;
+  --popover: #f9fbf4;
+  --popover-foreground: #0b2e22;
+  --muted: #e3ead3;                /* nested surfaces */
+  --muted-foreground: #45584c;     /* helper text */
+  --secondary: #e3ead3;
+  --secondary-foreground: #0b2e22;
+  --border: #d3dcc2;               /* decorative dividers only */
+  --border-strong: #b9c5a6;
+  --input: #6e7f6f;                /* field outline: ≥ 3:1 on paper and cream (WCAG 1.4.11) */
+
+  /* actions */
+  --primary: #0b3b2c;              /* solid primary button on light surfaces */
+  --primary-foreground: #cbef6a;
+  --accent: #dde8c2;               /* hover tint on light surfaces */
+  --accent-foreground: #0b2e22;
+  --link: #1f5a36;                 /* inline links on light surfaces */
+  --ring: #0b3b2c;                 /* focus ring on light surfaces (redefined on the page) */
+  --destructive: #661812;
+
+  /* claim statuses: strong colour (icon / text) + tint (tag / tile). Status only. */
+  --st-contradicted: #661812;
+  --st-contradicted-bg: #eecbc7;
+  --st-disputed: #705713;
+  --st-disputed-bg: #fbe2a3;
+  --st-confirmed: #084bc9;
+  --st-confirmed-bg: #cad6f7;
+  --st-unverified: #661a58;
+  --st-unverified-bg: #f6daef;
+
+  /* categories in charts (industry mix): a lightness ramp of brand greens — never a status hue */
+  --cat-1: #0b3b2c;
+  --cat-2: #2e6b4d;
+  --cat-3: #5e9474;
+  --cat-4: #9dbf7a;
+  --cat-5: #cbef6a;
+  --cat-6: #f9fbf4;
+
+  --radius: 0.375rem;
+
+  /* unused shadcn slots kept neutral */
+  --chart-1: #0b3b2c; --chart-2: #45584c; --chart-3: #6e7f6f; --chart-4: #b9c5a6; --chart-5: #0b2e22;
+  --sidebar: #f9fbf4; --sidebar-foreground: #0b2e22; --sidebar-primary: #0b3b2c; --sidebar-primary-foreground: #cbef6a;
+  --sidebar-accent: #dde8c2; --sidebar-accent-foreground: #0b2e22; --sidebar-border: #d3dcc2; --sidebar-ring: #0b3b2c;
+}
+
+@theme inline {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-heading: var(--font-display);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-page: var(--page);
+  --color-on-page: var(--on-page);
+  --color-on-page-muted: var(--on-page-muted);
+  --color-page-raised: var(--page-raised);
+  --color-lime: var(--lime);
+  --color-on-lime: var(--on-lime);
+  --color-charcoal: var(--charcoal);
+  --color-on-charcoal: var(--on-charcoal);
+  --color-on-charcoal-muted: var(--on-charcoal-muted);
+  --color-charcoal-raised: var(--charcoal-raised);
+  --color-link: var(--link);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-st-confirmed: var(--st-confirmed);
+  --color-st-confirmed-bg: var(--st-confirmed-bg);
+  --color-st-contradicted: var(--st-contradicted);
+  --color-st-contradicted-bg: var(--st-contradicted-bg);
+  --color-st-disputed: var(--st-disputed);
+  --color-st-disputed-bg: var(--st-disputed-bg);
+  --color-st-unverified: var(--st-unverified);
+  --color-st-unverified-bg: var(--st-unverified-bg);
+
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary); --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Shape ladder: panels > cards/tiles > nested surfaces > controls. */
+  --radius-panel: 1.75rem;   /* 28px — cream panels on the page */
+  --radius-card: 1.25rem;    /* 20px — claim / objection / lead cards, tiles */
+  --radius-inner: 0.875rem;  /* 14px — nested surfaces */
+  --radius-control: 0.375rem;/* 6px — buttons, fields, chips */
+  /* Flat by design: depth comes from colour blocks, never from shadows. */
+  --shadow-card: none;
+  --shadow-panel: none;
+  --radius-sm: 0.25rem;
+  --radius-md: var(--radius);
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
+  --radius-4xl: 1.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    /* Keep focused and scrolled-to elements clear of the sticky header / jump nav and, on phones,
+       the bottom tab bar (WCAG 2.4.11 focus not obscured). */
+    scroll-padding-top: 4.5rem;
+    scroll-padding-bottom: 6rem;
+  }
+  @media (min-width: 768px) {
+    html { scroll-padding-top: 8rem; scroll-padding-bottom: 1.5rem; }
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1; /* aligned figures for counts */
+  }
+  /* Soft serif, regular weight, tight leading (design brief: headlines). */
+  .font-display {
+    font-variation-settings: "SOFT" 100, "WONK" 0;
+    letter-spacing: -0.015em;
+  }
+  /* Visible, consistent keyboard focus everywhere; lime on the dark page, ink on light surfaces. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .on-page { --ring: var(--lime); }
+  .on-light { --ring: #0b3b2c; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ── Save as PDF (print) ──
+   Ink on white, no page frame, no navigation or buttons, every claim's sources expanded,
+   sections kept whole where they fit. */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #fff !important; color: var(--foreground) !important; }
+  .bg-page, .bg-background, .bg-card, .bg-muted, .bg-charcoal { background: #fff !important; }
+  .on-page, .text-on-page, .text-on-page-muted, .text-lime { color: var(--foreground) !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  [data-print-expand][hidden] { display: block !important; }
+  section, article, li { break-inside: avoid-page; }
+  .rounded-card, .rounded-inner { border: 1px solid var(--border-strong); }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75rem; word-break: break-all; color: var(--muted-foreground); }
+  .tab-notch::after { display: none; }
+  [class*="st-"] { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+@layer components {
+  /* Folder-tab title (design brief P4): the tab joins the panel with an inward-curved corner. */
+  .tab-notch::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    bottom: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: radial-gradient(circle at 100% 0, transparent 1.24rem, var(--notch) 1.25rem);
+  }
+  /* Small uppercase, letter-spaced label above headings and in legends. */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+}

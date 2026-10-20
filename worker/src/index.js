@@ -24,6 +24,7 @@ import { GRAVEYARD_DB } from "../../prototype/data/graveyard.js";
 // Falls back to the seed set when the snapshot is absent or empty.
 import graveyardSnapshot from "../data/graveyard.json" with { type: "json" };
 import { withIds } from "./graveyard-live.js";
+import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
 
@@ -286,53 +287,3 @@ async function researchPurge(request, env, { store }) {
   for (const id of ids) out.push(await store.deleteSession(id, new Date().toISOString()));
   return json({ ok: true, purged: ids.length, deleted: out });
 }
-
-const RESEARCH_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>VistaDex · Research Console</title><meta name="robots" content="noindex"><style>body{font-family:ui-monospace,monospace;background:#0A2622;color:#F5F1E8;margin:0;padding:40px;font-size:13px}h1{font-size:18px}h2{font-size:14px;color:#FF9E4A;margin:30px 0 8px}table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid rgba(234,226,210,.13);padding:7px 12px;text-align:left;font-size:12px}th{color:#A9B5AC}.cards{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}.card{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:12px;padding:16px 20px}.card b{font-size:24px;display:block}.card span{color:#A9B5AC;font-size:10px;letter-spacing:.08em}a{color:#FF9E4A}button{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid rgba(234,226,210,.2);background:#143A33;color:#F5F1E8;cursor:pointer}pre{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:10px;padding:12px;overflow:auto;max-height:300px;font-size:11px}.muted{color:#A9B5AC}.warn{color:#FFB000}</style></head><body>
-<h1>VistaDex Research Console</h1>
-<div class="cards" id="cards"></div>
-<h2>Events by type</h2><table id="types"><tr><th>Type</th><th>Count</th></tr></table>
-<h2>Sessions <span class="muted">(select + purge removes test/junk sessions: events + linked traces)</span></h2>
-<table id="sessions"><tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr></table>
-<p><button id="purgeBtn" class="warn">Purge selected sessions</button> <span id="purgeMsg" class="muted"></span></p>
-<h2>Latest 50 events</h2><pre id="latest">loading…</pre>
-<h2>Download</h2>
-<p><a href="/export?table=events&format=csv">⬇ events.csv</a> · <a href="/export?table=events">events.json</a> · <a href="/export?table=traces&format=csv">⬇ traces.csv</a> · <a href="/export?table=traces">traces.json</a><br><span class="muted">Tip: for the downloads use curl with the Bearer token — the browser cannot send the Authorization header on a normal navigation.</span></p>
-<p><button id="refreshBtn">Refresh</button> <span class="muted">auto-refreshes every 30s</span></p>
-<script>
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function load() {
-  let r;
-  try {
-    r = await fetch("/research/data", { cache: "no-store" });
-  } catch (e) {
-    document.getElementById("latest").textContent = "Network error: " + e.message;
-    return;
-  }
-  if (r.status !== 200) {
-    const body = await r.text();
-    document.getElementById("latest").textContent = "Data fetch failed: HTTP " + r.status + " \n" + body.slice(0, 200) + "\nIf this says 401, log in again via /research?t=TOKEN";
-    return;
-  }
-  const d = await r.json();
-  document.getElementById("cards").innerHTML =
-    \`<div class="card"><b>\${d.totals.sessions}</b><span>SESSIONS</span></div>\` +
-    \`<div class="card"><b>\${d.totals.events}</b><span>EVENTS</span></div>\` +
-    \`<div class="card"><b>\${d.totals.traces}</b><span>TRACES</span></div>\`;
-  document.getElementById("types").innerHTML = "<tr><th>Type</th><th>Count</th></tr>" +
-    Object.entries(d.events_by_type).sort((a,b) => b[1]-a[1]).map(([t,n]) => \`<tr><td>\${esc(t)}</td><td>\${n}</td></tr>\`).join("");
-  document.getElementById("sessions").innerHTML = "<tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr>" +
-    d.sessions.map(s => \`<tr><td><input type="checkbox" class="sel" value="\${esc(s.session_id)}"></td><td>\${esc(s.session_id.slice(0,13))}…</td><td>\${s.events}</td><td>\${esc(s.first.slice(0,19))}</td><td>\${esc(s.last.slice(0,19))}</td><td>\${esc(Object.entries(s.types).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>t+":"+n).join(" "))}</td></tr>\`).join("");
-  document.getElementById("latest").textContent = d.latest_events.map(e => e.ts.slice(11,19) + " " + e.type + " " + JSON.stringify(e.payload).slice(0,80)).join("\n") || "(no events yet)";
-}
-document.getElementById("purgeBtn").onclick = async () => {
-  const ids = [...document.querySelectorAll(".sel:checked")].map(c => c.value);
-  if (!ids.length) { document.getElementById("purgeMsg").textContent = "select sessions first"; return; }
-  if (!confirm("Delete " + ids.length + " session(s) and their traces? This cannot be undone.")) return;
-  const r = await fetch("/research/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_ids: ids }) });
-  const d = await r.json();
-  document.getElementById("purgeMsg").textContent = d.ok ? "purged " + d.purged : "failed: " + JSON.stringify(d);
-  load();
-};
-document.getElementById("refreshBtn").onclick = load;
-load(); setInterval(load, 30000);
-</script></body></html>`;

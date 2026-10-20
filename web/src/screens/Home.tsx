@@ -140,7 +140,7 @@ export function Home() {
       <Band n="06" label="The team" title="Built by students at BITS Pilani." lead="An early-stage team working across research, retrieval, data, product, and design.">
         <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["AP", "Aditya Pradhan", "Lead, architecture & integration"],
+            ["AP", "Aditya Pradhan", "Lead — architecture, backend & deployment"],
             ["KA", "Kushagra Agnihotri", "LLM & retrieval (RAG)"],
             ["LT", "Lakshit Tanwar", "UI/UX"],
             ["RM", "Richeek Mishra", "Outreach"],

@@ -43,3 +43,18 @@ The full ruleset lives in [`skills/ponytail-lazy-dev.md`](skills/ponytail-lazy-d
 5. **Research instrumentation is first-class.** Telemetry events and consent flows are required features, not speculative additions.
 
 When in doubt: laziest change that keeps every binding rule green and all tests passing.
+
+## Definition of Done — print and tick before claiming ANY task complete
+
+An agent (or human) may only call work "done" when every applicable box is checked. If a box cannot be checked, say so explicitly instead of silently omitting it.
+
+- [ ] **Implementation** — smallest complete change; every caller/endpoint the change touches still works
+- [ ] **Binding rules** — all 8 rules in §Binding rules still hold (grep for violations: `Math.random` outside demo paths, keys in frontend, telemetry before consent, hardcoded stats)
+- [ ] **Tests** — `cd backend && npm run smoke` passes (23/23); new non-trivial logic added a check to it
+- [ ] **Live regression** — if `worker/` or `public/` changed: `wrangler deploy` succeeded AND the changed endpoint was verified live (curl/fetch with expected response shape)
+- [ ] **Data integrity** — if the pipeline/graveyard logic changed: known-outcome check still holds (e.g. LegalAI still surfaces Atrium; confirmed deaths still have ≥2 independent source domains)
+- [ ] **Secrets** — nothing secret in the diff; `.env`/`.dev.vars` not committed (verify: `git status` clean of ignored-secret files)
+- [ ] **Committed & pushed** — small focused commit; BOTH `master` and `main` in sync
+- [ ] **Disclosed** — reply ends with what was skipped, what was not checked, and any risk the user must know
+
+**Never-done list (these block "done" even if everything else passes):** unverified live deploy after worker changes · tests failing or skipped silently · a binding rule violated for convenience · telemetry or evidence fields removed.

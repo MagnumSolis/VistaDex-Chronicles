@@ -64,8 +64,15 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip graveyard-sync]"
-            git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            # Integrate any commits pushed to main while this run was in flight,
+            # then push. Rebase keeps our snapshot commit on top.
+            git pull --rebase --autostash origin main
+            if git push; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Push failed even after rebase — leaving snapshot uncommitted-to-remote; next run will retry." >&2
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       # NOTE: pushes made with GITHUB_TOKEN do NOT trigger other workflows

@@ -287,7 +287,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       var ran = evs.some(function (e) { return e.type === "run_started"; });
       if (!reg && !ran) return;
       var pl = (reg && reg.payload) || {};
-      var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"),
+      var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"), source: pl.source || null,
         confPre: null, confPost: null, survey: null, votes: 0, agrees: 0, clicks: 0,
         runs: 0, n: evs.length, last: evs[evs.length - 1].ts, industries: null, markets: null };
       evs.forEach(function (e) {
@@ -325,21 +325,22 @@ export const RESEARCH_PAGE = `<!doctype html>
     var ag = p.votes ? '<span class="bar" style="width:' + Math.max(2, 30 * p.agrees / p.votes) + 'px"></span>' + Math.round(100 * p.agrees / p.votes) + "% <span style='color:var(--ink-3)'>of " + p.votes + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var sv = p.survey ? '<span class="num">T' + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var from = p.roleFrom ? '<span style="color:var(--ink-3);font-size:11px">' + esc(p.roleFrom) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
-    return "<tr><td>" + track + "</td><td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td>" +
+    var src = p.source ? '<span class="num" style="color:var(--accent)">' + esc(p.source) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    return "<tr><td>" + track + "</td><td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td><td>" + src + "</td>" +
       "<td>" + conf + "</td><td>" + ag + "</td><td>" + (p.clicks || '<span style="color:var(--ink-3)">—</span>') + "</td>" +
       "<td>" + sv + "</td><td class='num' style='color:var(--ink-3)'>" + esc(p.industries || "—") + "</td>" +
       "<td class='num'>" + p.runs + "</td><td class='num'>" + p.n + "</td>" +
       "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
   }
-  var HEAD = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Where from</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
+  var HEAD = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
   function metricsCSV(people) {
-    var cols = ["session_id","track","code","role","role_source","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","effort","runs","events"];
+    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","effort","runs","events"];
     var rows = [cols.join(",")];
     people.forEach(function (p) {
       var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
       rows.push([
         p.sid, p.track, p.code || "", p.role === "—" ? "" : p.role, p.roleFrom || "",
-        p.industries || "", p.markets || "",
+        p.source || "", p.industries || "", p.markets || "",
         p.confPre == null ? "" : p.confPre, p.confPost == null ? "" : p.confPost, delta,
         p.votes, p.votes ? Math.round(100 * p.agrees / p.votes) : "",
         p.clicks,

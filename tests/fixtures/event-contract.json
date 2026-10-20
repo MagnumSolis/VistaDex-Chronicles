@@ -114,6 +114,7 @@
     "participant_registered": [
       "code",
       "role",
+      "source",
       "track"
     ],
     "condition_started": [

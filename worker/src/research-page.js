@@ -1,126 +1,227 @@
-// research-page.js — the Research Console (token-gated). Kept as its own module
-// so the embedded <script> does not fight template-literal escaping.
-// UI: study-first layout — summary cards, per-participant table with computed
-// measures, event coverage with meanings, funnel, live feed, purge, exports.
-// All numbers are computed from /research/data?full=1 (payloads pre-parsed).
+// research-page.js — the Research Console (token-gated).
+// Design language: Linear/PostHog-style dark analytics — near-black neutral
+// surfaces, one restrained accent, sidebar navigation, KPI cards, dense but
+// legible tables, skeleton loading states. Data from /research/data?full=1.
 export const RESEARCH_PAGE = `<!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>VistaDex · Research Console</title>
+<title>VistaDex · Research</title>
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #FBFAF7; --surface-3: #EFEDE7;
-    --line: #E3E0D8; --line-soft: #ECEAE3;
-    --ink: #1A231E; --muted: #5A6B60; --faint: #8A968D;
-    --accent: #0B6E4F; --accent-soft: #E3F2EC;
-    --amber: #B26A00; --amber-soft: #FBF0DC; --red: #C0392B; --red-soft: #FBE9E7;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bg: #0B0C0E;           /* app background — near-black, neutral */
+    --panel: #131417;        /* raised panel */
+    --panel-2: #17181C;      /* hover panel */
+    --panel-3: #1D1E23;      /* table headers, chips */
+    --border: #26272E;       /* hairline borders */
+    --border-soft: #1E1F25;
+    --ink: #EDEDEF;         /* primary text */
+    --ink-2: #9E9FA8;        /* secondary text */
+    --ink-3: #63656E;        /* tertiary/faint */
+    --accent: #7C9CFF;       /* single accent — periwinkle blue */
+    --accent-dim: rgba(124,156,255,.14);
+    --good: #4ADE80;         /* positive delta */
+    --bad: #F87171;          /* negative delta */
+    --warn: #FBBF24;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+    --radius: 10px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--sans); background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.5; padding: 0 0 60px; }
-  .top { position: sticky; top: 0; z-index: 10; background: rgba(246,245,241,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-  .top-inner { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
-  .logo { font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
-  .logo i { font-style: normal; color: var(--accent); }
-  .top-note { color: var(--faint); font-size: 12px; margin-left: auto; font-family: var(--mono); }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px; }
-  h2 { font-size: 16px; font-weight: 700; margin: 34px 0 4px; display: flex; align-items: baseline; gap: 10px; }
-  h2:first-of-type { margin-top: 0; }
-  h2 .sub { font-size: 12px; font-weight: 400; color: var(--muted); }
-  h2 .num { font-family: var(--mono); font-size: 11px; color: var(--lime); }
+  html { color-scheme: dark; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--ink); font-size: 13.5px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
-  .card b { font-size: 26px; font-weight: 800; display: block; letter-spacing: -.02em; }
-  .card span { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-family: var(--mono); }
-  .card small { display: block; color: var(--faint); font-size: 11px; margin-top: 2px; }
+  /* ── layout: sidebar + main ── */
+  .app { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+  .side { border-right: 1px solid var(--border-soft); padding: 20px 12px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
+  .side .brand { display: flex; align-items: center; gap: 8px; padding: 4px 10px 18px; }
+  .side .brand .mark { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #B4C7FF); display: grid; place-items: center; color: #0B0C0E; font-weight: 800; font-size: 11px; }
+  .side .brand b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+  .side .brand span { color: var(--ink-3); font-size: 11px; margin-left: auto; font-family: var(--mono); }
+  .nav-l { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); padding: 14px 10px 6px; }
+  .nav { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; color: var(--ink-2); font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--sans); transition: all .12s; }
+  .nav:hover { color: var(--ink); background: var(--panel); }
+  .nav.on { color: var(--ink); background: var(--panel-3); }
+  .nav .ico { width: 15px; height: 15px; opacity: .8; }
+  .nav .cnt { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); background: var(--panel-3); padding: 1px 7px; border-radius: 99px; }
+  .nav.on .cnt { background: var(--accent-dim); color: var(--accent); }
+  .side .foot { margin-top: auto; padding: 10px; color: var(--ink-3); font-size: 11px; line-height: 1.6; }
+  .side .foot a { color: var(--ink-3); text-decoration: none; } .side .foot a:hover { color: var(--accent); }
 
-  table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 12px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--mono); padding: 10px 14px; background: var(--surface-3); border-bottom: 1px solid var(--line); }
-  td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  .main { padding: 28px 32px 60px; max-width: 1180px; }
+  .view { display: none; } .view.on { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  /* ── page header ── */
+  .phead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+  .phead h1 { font-size: 19px; font-weight: 700; letter-spacing: -.015em; }
+  .phead .sub { color: var(--ink-3); font-size: 12.5px; }
+  .phead .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .sync { font-family: var(--mono); font-size: 11px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+  .sync .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+  .sync.pulse .dot { animation: pulse 1.2s ease infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  /* ── KPI cards ── */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi:hover { border-color: var(--border); }
+  .kpi .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+  .kpi .val { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kpi .note { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .kpi.hl .val { color: var(--accent); }
+
+  /* ── tables ── */
+  .tbl-wrap { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); overflow-x: auto; }
+  .tbl-wrap:hover { border-color: var(--border); }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); padding: 10px 14px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  td { padding: 11px 14px; font-size: 12.5px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--accent-soft); }
-  td.mono, .mono { font-family: var(--mono); font-size: 12px; }
-  td.empty { color: var(--faint); text-align: center; padding: 24px; font-style: italic; }
+  tbody tr { transition: background .1s; }
+  tbody tr:hover { background: var(--panel-2); }
+  .num { font-family: var(--mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .empty { padding: 28px !important; text-align: center; color: var(--ink-3); font-style: italic; }
 
-  .pill { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-family: var(--mono); border: 1px solid; }
-  .pill.study { color: var(--accent); border-color: rgba(11,110,79,.35); background: var(--accent-soft); }
-  .pill.field { color: #4A6B5A; border-color: rgba(74,107,90,.3); background: #EEF3EF; }
-  .good { color: var(--accent); } .bad { color: var(--red); } .warn { color: var(--amber); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; padding: 2px 9px; font-size: 10.5px; font-family: var(--mono); font-weight: 500; }
+  .pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; }
+  .pill.study { color: var(--accent); background: var(--accent-dim); } .pill.study::before { background: var(--accent); }
+  .pill.field { color: var(--good); background: rgba(74,222,128,.1); } .pill.field::before { background: var(--good); }
 
-  .delta { font-family: var(--mono); font-size: 12px; }
-  .delta.up { color: var(--accent); } .delta.down { color: var(--red); }
+  .delta { font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
+  .delta.up { color: var(--good); background: rgba(74,222,128,.1); }
+  .delta.down { color: var(--bad); background: rgba(248,113,113,.1); }
+  .delta.zero { color: var(--ink-3); background: var(--panel-3); }
 
-  pre.feed { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; max-height: 320px; overflow: auto; font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--muted); white-space: pre-wrap; }
-  pre.feed .t { color: var(--faint); } pre.feed .k { color: var(--accent); }
+  .bar { display: inline-block; height: 4px; border-radius: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
+  .bar.g { background: var(--good); }
 
-  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
-  button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: all .15s; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
-  button:hover { border-color: var(--muted); }
-  button.danger { color: var(--red); border-color: rgba(192,57,43,.35); }
-  button.danger:hover { background: var(--red-soft); }
-  button.primary { background: var(--accent); color: #fff; border: none; }
-  .msg { font-size: 12px; color: var(--muted); font-family: var(--mono); }
-  .msg.ok { color: var(--accent); } .msg.err { color: var(--red); }
+  /* funnel */
+  .funnel { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .fstep { display: grid; grid-template-columns: 200px 1fr auto; gap: 14px; align-items: center; }
+  .fstep .fl { font-size: 12.5px; color: var(--ink-2); }
+  .fstep .fb { height: 22px; border-radius: 5px; background: linear-gradient(90deg, var(--accent), rgba(124,156,255,.4)); position: relative; min-width: 2px; transition: width .4s ease; }
+  .fstep .fb span { position: absolute; left: 8px; top: 3px; font-size: 10.5px; font-weight: 600; color: #0B0C0E; }
+  .fstep .fv { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
 
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .dl-row { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0; font-size: 13px; }
-  .dl-row a { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); padding: 8px 14px; border-radius: 9px; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
-  .dl-row a:hover { border-color: var(--muted); text-decoration: none; }
-  details { margin: 8px 0; }
-  summary { cursor: pointer; color: var(--muted); font-size: 12px; }
-  details[open] summary { color: var(--ink); margin-bottom: 8px; }
+  /* feed */
+  .feed { font-family: var(--mono); font-size: 11.5px; line-height: 2; max-height: 420px; overflow: auto; padding: 4px 0; }
+  .feed .fr { display: flex; gap: 14px; padding: 2px 16px; }
+  .feed .fr:hover { background: var(--panel-2); }
+  .feed .t { color: var(--ink-3); }
+  .feed .k { color: var(--accent); min-width: 150px; }
+  .feed .p { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
-  .err-box { background: var(--red-soft); border: 1px solid rgba(192,57,43,.3); border-radius: 12px; padding: 14px 16px; color: var(--red); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; gap: 7px; font-family: var(--sans); font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel); color: var(--ink); cursor: pointer; transition: all .12s; }
+  .btn:hover { background: var(--panel-3); border-color: var(--ink-3); }
+  .btn.acc { background: var(--accent); border-color: var(--accent); color: #0B0C0E; }
+  .btn.acc:hover { filter: brightness(1.1); }
+  .btn.danger { color: var(--bad); border-color: rgba(248,113,113,.3); }
+  .btn.danger:hover { background: rgba(248,113,113,.08); }
+  .msg { font-family: var(--mono); font-size: 11px; }
+  .msg.ok { color: var(--good); } .msg.err { color: var(--bad); }
+
+  /* export cards */
+  .exports { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .exp { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--radius); text-decoration: none; color: var(--ink); transition: all .12s; }
+  .exp:hover { border-color: var(--accent); background: var(--panel-2); }
+  .exp .ic { width: 34px; height: 34px; border-radius: 8px; background: var(--accent-dim); display: grid; place-items: center; color: var(--accent); font-size: 15px; flex-shrink: 0; }
+  .exp b { font-size: 12.5px; display: block; }
+  .exp span { font-size: 11px; color: var(--ink-3); }
+
+  /* skeleton loading */
+  .skel { position: relative; overflow: hidden; background: var(--panel); border-radius: var(--radius); }
+  .skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.04), transparent); animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+  .err-box { background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.25); border-radius: var(--radius); padding: 16px; color: var(--bad); font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; }
+
+  details.raw { margin-top: 14px; }
+  details.raw summary { cursor: pointer; color: var(--ink-3); font-size: 12px; padding: 4px 0; }
+  details.raw summary:hover { color: var(--ink-2); }
+
+  input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+  @media (max-width: 800px) { .app { grid-template-columns: 1fr; } .side { display: none; } }
 </style>
 </head>
 <body>
-<div class="top"><div class="top-inner">
-  <span class="logo">Vista<i>Dex</i> · Research Console</span>
-  <span class="top-note" id="meta"></span>
-</div></div>
-<div class="wrap">
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="mark">V</span><b>Research</b><span>console</span></div>
+    <div class="nav-l">Study</div>
+    <button class="nav on" data-view="overview"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
+    <button class="nav" data-view="participants"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><circle cx="17" cy="9" r="3"/><path d="M22 21v-1a6 6 0 0 0-6-6"/></svg>Participants <span class="cnt" id="cnt-p">–</span></button>
+    <button class="nav" data-view="funnel"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-6 9v7l-6-2v-5z"/></svg>Funnel</button>
+    <div class="nav-l">Data</div>
+    <button class="nav" data-view="events"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Events <span class="cnt" id="cnt-e">–</span></button>
+    <button class="nav" data-view="sessions"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>Sessions <span class="cnt" id="cnt-s">–</span></button>
+    <button class="nav" data-view="export"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export</button>
+    <div class="foot">
+      <div id="last-sync">—</div>
+      <div style="margin-top:6px">Auto-refresh 30s · <a href="/research" onclick="location.reload()">re-login</a></div>
+    </div>
+  </aside>
 
-  <div class="cards" id="cards"></div>
+  <main class="main">
 
-  <h2><span class="num">01</span> Participants <span class="sub">per person: condition order, confidence shift, votes, verification, survey — joined from their events</span></h2>
-  <table id="participants"></table>
+    <section class="view on" id="v-overview">
+      <div class="phead"><h1>Overview</h1><span class="sub">the study at a glance</span>
+        <div class="right"><span class="sync pulse" id="sync-1"><span class="dot"></span>live</span><button class="btn" id="refreshBtn">↻ Refresh</button></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="tbl-wrap"><table id="recent-participants"></table></div>
+    </section>
 
-  <h2><span class="num">02</span> Study funnel <span class="sub">study-track progress</span></h2>
-  <table id="funnel"></table>
+    <section class="view" id="v-participants">
+      <div class="phead"><h1>Participants</h1><span class="sub">every consented visitor, joined with their measures</span>
+        <div class="right">
+          <select id="roleFilter" class="btn" style="padding:6px 10px"><option value="">all roles</option></select>
+          <select id="trackFilter" class="btn" style="padding:6px 10px"><option value="">all tracks</option><option value="study">study</option><option value="field">field</option></select>
+          <button class="btn acc" id="csvBtn">↓ metrics.csv</button>
+        </div></div>
+      <div class="tbl-wrap"><table id="participants"></table></div>
+      <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+        <button class="btn danger" id="purgeBtn">Delete ticked sessions</button>
+        <span class="msg" id="purgeMsg"></span>
+      </div>
+    </section>
 
-  <h2><span class="num">03</span> Event coverage <span class="sub">every metric collected so far, and what it measures</span></h2>
-  <table id="types"></table>
+    <section class="view" id="v-funnel">
+      <div class="phead"><h1>Study funnel</h1><span class="sub">recruited-track progress toward a complete paired dataset</span></div>
+      <div class="panel" style="background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:20px;"><div class="funnel" id="funnel"></div></div>
+    </section>
 
-  <h2><span class="num">04</span> Live feed <span class="sub">latest 50 events · auto-refresh 30s</span></h2>
-  <pre class="feed" id="feed">loading…</pre>
+    <section class="view" id="v-events">
+      <div class="phead"><h1>Events</h1><span class="sub">every metric collected, and what it measures for the paper</span></div>
+      <div class="tbl-wrap"><table id="types"></table></div>
+      <h1 style="font-size:14px; margin:26px 0 10px;">Live feed <span class="sub" style="font-size:12px;color:var(--ink-3)">latest 50</span></h1>
+      <div class="tbl-wrap"><div class="feed" id="feed">loading…</div></div>
+    </section>
 
-  <h2><span class="num">05</span> Data management</h2>
-  <div class="actions">
-    <button id="refreshBtn">↻ Refresh now</button>
-    <button class="danger" id="purgeBtn">🗑 Purge ticked sessions</button>
-    <span class="msg" id="purgeMsg"></span>
-  </div>
-  <p class="msg" style="margin-bottom:10px">Tick sessions in the Participants table (or below) to remove test/junk data — deletes their events and linked traces.</p>
-  <details>
-    <summary>All sessions (including pre-study test sessions without registration)</summary>
-    <table id="sessions"></table>
-  </details>
+    <section class="view" id="v-sessions">
+      <div class="phead"><h1>Sessions</h1><span class="sub">all recorded sessions, including pre-study test data</span></div>
+      <div class="tbl-wrap"><table id="sessions"></table></div>
+      <details class="raw"><summary>Debug: raw JSON of the latest 50 events</summary><pre class="feed" id="raw" style="max-height:260px"></pre></details>
+    </section>
 
-  <h2><span class="num">06</span> Export <span class="sub">for Excel / R / Python — use the CSV links; JSON for scripts</span></h2>
-  <div class="dl-row">
-    <a href="/export?table=events&format=csv" download>⬇ events.csv</a>
-    <a href="/export?table=events">events.json</a>
-    <a href="/export?table=traces&format=csv" download>⬇ traces.csv</a>
-    <a href="/export?table=traces">traces.json</a>
-  </div>
-  <p class="msg">One row per event (session_id, seq, ts, type, study_version, payload, received_at). The same data powers this page; curl users: add "Authorization: Bearer &lt;token&gt;".</p>
+    <section class="view" id="v-export">
+      <div class="phead"><h1>Export</h1><span class="sub">for Excel / R / Python — CSV; JSON for scripts</span></div>
+      <div class="exports">
+        <a class="exp" href="/export?table=events&format=csv"><span class="ic">↓</span><div><b>events.csv</b><span>one row per telemetry event</span></div></a>
+        <a class="exp" href="/export?table=traces&format=csv"><span class="ic">↓</span><div><b>traces.csv</b><span>one row per pipeline run (full trace)</span></div></a>
+        <a class="exp" href="/export?table=events"><span class="ic">{ }</span><div><b>events.json</b><span>parsed payloads, for scripts</span></div></a>
+        <a class="exp" href="/export?table=traces"><span class="ic">{ }</span><div><b>traces.json</b><span>full pipeline detail per run</span></div></a>
+      </div>
+      <p style="margin-top:18px; color:var(--ink-3); font-size:12px;">curl users: add <span class="num" style="color:var(--accent)">Authorization: Bearer &lt;EXPORT_TOKEN&gt;</span>.</p>
+    </section>
 
+  </main>
 </div>
 <script>
 (function () {
@@ -131,12 +232,8 @@ export const RESEARCH_PAGE = `<!doctype html>
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function showError(msg) {
-    $("cards").innerHTML = '<div class="err-box" style="grid-column:1/-1">' + esc(msg) + "</div>";
-  }
-
   var MEANINGS = {
-    participant_registered: "identity: code, role, track",
+    participant_registered: "identity — code, role, track",
     welcome_choice: "walkthrough vs skip",
     view_changed: "navigation",
     screen_time: "engagement per screen",
@@ -166,138 +263,217 @@ export const RESEARCH_PAGE = `<!doctype html>
     consent_given: "consent"
   };
 
-  function fmtTs(t) { return String(t || "").slice(11, 19); }
+  // nav switching
+  document.querySelectorAll(".nav[data-view]").forEach(function (n) {
+    n.onclick = function () {
+      document.querySelectorAll(".nav").forEach(function (m) { m.classList.remove("on"); });
+      document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("on"); });
+      n.classList.add("on");
+      $("v-" + n.dataset.view).classList.add("on");
+    };
+  });
 
-  function participantRows(events) {
-    var sessions = {};
+  function computePeople(events) {
+    var by = {};
     events.forEach(function (e) {
-      var s = sessions[e.session_id] = sessions[e.session_id] || { ev: [] };
-      s.ev.push(e);
+      (by[e.session_id] = by[e.session_id] || []).push(e);
     });
     var people = [];
-    Object.keys(sessions).forEach(function (sid) {
-      var s = sessions[sid];
-      var reg = s.ev.find(function (e) { return e.type === "participant_registered"; });
-      if (!reg) return;
-      var pl = reg.payload || {};
-      var p = {
-        code: pl.code || "", role: pl.role || "—", track: pl.track || "field", sid: sid,
-        confPre: null, confPost: null, survey: null,
-        claimVotes: [], objVotes: [], sourceClicks: 0,
-        firstTs: s.ev[0].ts, lastTs: s.ev[s.ev.length - 1].ts, n: s.ev.length
-      };
-      s.ev.forEach(function (e) {
+    Object.keys(by).forEach(function (sid) {
+      var evs = by[sid];
+      var reg = evs.find(function (e) { return e.type === "participant_registered"; });
+      // Sessions without an explicit registration still count if they ran a
+      // screening (pre-fix field visits): derive identity from run_started.
+      var ran = evs.some(function (e) { return e.type === "run_started"; });
+      if (!reg && !ran) return;
+      var pl = (reg && reg.payload) || {};
+      var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"),
+        confPre: null, confPost: null, survey: null, votes: 0, agrees: 0, clicks: 0,
+        runs: 0, n: evs.length, last: evs[evs.length - 1].ts, industries: null, markets: null };
+      evs.forEach(function (e) {
         var q = e.payload || {};
         if (e.type === "confidence_pre") p.confPre = q.value;
         else if (e.type === "confidence_post") p.confPost = q.value;
         else if (e.type === "condition_survey") p.survey = q;
-        else if (e.type === "claim_vote") p.claimVotes.push(q);
-        else if (e.type === "objection_vote") p.objVotes.push(q);
-        else if (e.type === "source_clicked") p.sourceClicks++;
+        else if (e.type === "claim_vote" || e.type === "objection_vote") { p.votes++; if (q.vote === "agree") p.agrees++; }
+        else if (e.type === "source_clicked") p.clicks++;
+        else if (e.type === "run_started") {
+          p.runs++;
+          // role from the screening form ("I am a…" chip) — a field visitor's
+          // founder/investor/accelerator identity
+          if (q.role && !p.role) { p.role = q.role; p.roleFrom = "screening form"; }
+          if (q.industries && q.industries.length) p.industries = q.industries.join(", ");
+          if (q.markets && q.markets.length) p.markets = q.markets.join(", ");
+        }
       });
+      if (!p.role) p.role = "—";
       people.push(p);
     });
+    people.sort(function (a, b) { return b.last.localeCompare(a.last); });
     return people;
+  }
+
+  function personRow(p) {
+    var track = '<span class="pill ' + esc(p.track) + '">' + esc(p.track) + "</span>";
+    var conf = p.confPre == null ? '<span style="color:var(--ink-3)">—</span>'
+      : p.confPre + " → " + (p.confPost == null ? "?" : p.confPost);
+    var cal = null;
+    if (p.confPre != null && p.confPost != null) {
+      cal = p.confPost - p.confPre;
+      conf += ' <span class="delta ' + (cal > 0 ? "up" : cal < 0 ? "down" : "zero") + '">' + (cal > 0 ? "+" : "") + cal + "</span>";
+    }
+    var ag = p.votes ? '<span class="bar" style="width:' + Math.max(2, 30 * p.agrees / p.votes) + 'px"></span>' + Math.round(100 * p.agrees / p.votes) + "% <span style='color:var(--ink-3)'>of " + p.votes + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    var sv = p.survey ? '<span class="num">T' + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    var from = p.roleFrom ? '<span style="color:var(--ink-3);font-size:11px">' + esc(p.roleFrom) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    return "<tr><td>" + track + "</td><td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td>" +
+      "<td>" + conf + "</td><td>" + ag + "</td><td>" + (p.clicks || '<span style="color:var(--ink-3)">—</span>') + "</td>" +
+      "<td>" + sv + "</td><td class='num' style='color:var(--ink-3)'>" + esc(p.industries || "—") + "</td>" +
+      "<td class='num'>" + p.runs + "</td><td class='num'>" + p.n + "</td>" +
+      "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
+  }
+  var HEAD = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Where from</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
+  function metricsCSV(people) {
+    var cols = ["session_id","track","code","role","role_source","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","effort","runs","events"];
+    var rows = [cols.join(",")];
+    people.forEach(function (p) {
+      var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
+      rows.push([
+        p.sid, p.track, p.code || "", p.role === "—" ? "" : p.role, p.roleFrom || "",
+        p.industries || "", p.markets || "",
+        p.confPre == null ? "" : p.confPre, p.confPost == null ? "" : p.confPost, delta,
+        p.votes, p.votes ? Math.round(100 * p.agrees / p.votes) : "",
+        p.clicks,
+        p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.effort : "",
+        p.runs, p.n
+      ].map(function (v) {
+        v = String(v);
+        var needsQuote = v.indexOf(',') >= 0 || v.indexOf('"') >= 0 || v.indexOf(String.fromCharCode(10)) >= 0;
+        return needsQuote ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(","));
+    });
+    return rows.join(String.fromCharCode(10));
   }
 
   function render(d) {
     var ev = d.all_events || [];
-    $("meta").textContent = d.totals.sessions + " sessions · " + d.totals.events + " events · " + d.totals.traces + " traces · updated " + new Date().toLocaleTimeString();
-    $("cards").innerHTML =
-      '<div class="card"><b>' + d.totals.sessions + '</b><span>sessions</span></div>' +
-      '<div class="card"><b>' + d.totals.events + '</b><span>events</span></div>' +
-      '<div class="card"><b>' + d.totals.traces + '</b><span>pipeline traces</span></div>' +
-      '<div class="card"><b>' + (d.totals.events - d.latest_events.length > 0 ? "live" : "…") + '</b><span>console</span></div>';
+    var people = computePeople(ev);
+    $("cnt-p").textContent = people.length;
+    $("cnt-e").textContent = d.totals.events;
+    $("cnt-s").textContent = d.totals.sessions;
+    $("last-sync").textContent = "updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-    var people = participantRows(ev);
-    var rows = people.map(function (p) {
-      var track = '<span class="pill ' + esc(p.track) + '">' + esc(p.track) + "</span>";
-      var conf = p.confPre == null ? "—" : (p.confPre + " → " + (p.confPost == null ? "?" : p.confPost) + "%");
-      var cal = p.confPre != null && p.confPost != null ? (p.confPost - p.confPre) : null;
-      var delta = cal != null
-        ? ' <span class="delta ' + (cal > 0 ? "up" : cal < 0 ? "down" : "") + '">(' + (cal > 0 ? "+" : "") + cal + ")</span>"
-        : "";
-      var votes = p.claimVotes.length + p.objVotes.length;
-      var agrees = p.claimVotes.filter(function (v) { return v.vote === "agree"; }).length
-                 + p.objVotes.filter(function (v) { return v.vote === "agree"; }).length;
-      var agreeRate = votes ? Math.round(100 * agrees / votes) + "%" : "—";
-      var survey = p.survey
-        ? "<span class='mono'>T" + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>"
-        : "—";
-      return "<tr><td>" + track + "</td><td class='mono'>" + esc(p.code || "(none)") + "</td><td>" + esc(p.role) + "</td>" +
-        "<td>" + conf + delta + "</td>" +
-        "<td>" + (votes ? votes + " votes · " + agreeRate + " agree" : "—") + "</td>" +
-        "<td>" + (p.sourceClicks || "—") + (p.sourceClicks ? " links" : "") + "</td>" +
-        "<td>" + survey + "</td>" +
-        "<td class='mono'>" + p.n + "</td>" +
-        "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "' aria-label='tick to purge'></td></tr>";
+    var study = people.filter(function (p) { return p.track === "study"; });
+    var complete = study.filter(function (p) { return p.survey && p.confPost != null && p.confPre != null; });
+    var voted = people.filter(function (p) { return p.votes > 0; });
+    var avgTrust = people.filter(function (p) { return p.survey }).reduce(function (a, p, i, arr) { return a + p.survey.trust / arr.length; }, 0);
+
+    $("kpis").innerHTML =
+      '<div class="kpi"><div class="label">Sessions</div><div class="val">' + d.totals.sessions + '</div><div class="note">consented visitors</div></div>' +
+      '<div class="kpi"><div class="label">Events</div><div class="val">' + d.totals.events + '</div><div class="note">telemetry records</div></div>' +
+      '<div class="kpi"><div class="label">Pipeline traces</div><div class="val">' + d.totals.traces + '</div><div class="note">screens run (any mode)</div></div>' +
+      '<div class="kpi hl"><div class="label">Participants</div><div class="val">' + people.length + '</div><div class="note">' + study.length + " study · " + (people.length - study.length) + " field</div></div>" +
+      '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>study track, both surveys in</div></div>" +
+      '<div class="kpi"><div class="label">Votes cast</div><div class="val">' + people.reduce(function (a, p) { return a + p.votes; }, 0) + '</div><div class="note">' + voted.length + " participants voted</div></div>";
+
+    $("recent-participants").innerHTML = HEAD + (people.length
+      ? people.slice(0, 6).map(personRow).join("")
+      : '<tr><td colspan="12" class="empty">No participants yet — they appear when someone accepts the Welcome notice.</td></tr>');
+
+    var roles = []; people.forEach(function (p) { if (p.role && p.role !== "—" && roles.indexOf(p.role) < 0) roles.push(p.role); });
+    var curRole = $("roleFilter").value;
+    $("roleFilter").innerHTML = '<option value="">all roles</option>' + roles.map(function (r) { return "<option" + (r === curRole ? " selected" : "") + ">" + esc(r) + "</option>"; }).join("");
+    var curTrack = $("trackFilter").value;
+    var shown = people.filter(function (p) {
+      return (!curRole || p.role === curRole) && (!curTrack || p.track === curTrack);
     });
-    $("participants").innerHTML =
-      "<tr><th>Track</th><th>Code</th><th>Role</th><th>Confidence pre → post</th><th>Agreeableness</th><th>Verification</th><th>Survey</th><th>Events</th><th>Purge</th></tr>" +
-      (rows.length ? rows.join("") : "<tr><td colspan='9' class='empty'>No participants yet — they appear here when someone accepts the Welcome notice (or registers via #/study).</td></tr>");
+    $("participants").innerHTML = HEAD + (shown.length
+      ? shown.map(personRow).join("")
+      : '<tr><td colspan="12" class="empty">No participants match the filters.</td></tr>');
+    window.__people = people; // for CSV export
 
     // funnel
-    var study = people.filter(function (p) { return p.track === "study"; });
-    var studyComplete = study.filter(function (p) { return p.survey && p.confPost != null && p.confPre != null; });
-    $("funnel").innerHTML = "<tr><th>Stage</th><th>People</th><th>Of study track</th></tr>" +
-      "<tr><td>Registered (study track)</td><td class='mono'>" + study.length + "</td><td class='mono'>100%</td></tr>" +
-      "<tr><td>Completed both condition surveys</td><td class='mono'>" + studyComplete.length + "</td><td class='mono'>" + (study.length ? Math.round(100 * studyComplete.length / study.length) : 0) + "%</td></tr>" +
-      "<tr><td>Field-track participants (public link)</td><td class='mono'>" + people.filter(function (p) { return p.track !== "study"; }).length + "</td><td class='mono'>—</td></tr>";
+    var f = [
+      ["Registered (study track)", study.length],
+      ["Baseline condition surveyed", study.filter(function (p) { return p.survey || p.confPost != null; }).length],
+      ["Both conditions complete (paired)", complete.length],
+      ["Field-track participants", people.length - study.length],
+    ];
+    var max = Math.max(1, f[0][1]);
+    $("funnel").innerHTML = f.map(function (s) {
+      return '<div class="fstep"><span class="fl">' + esc(s[0]) + '</span>' +
+        '<div class="fb" style="width:' + Math.max(2, 100 * s[1] / max) + '%"><span>' + s[1] + "</span></div>" +
+        '<span class="fv">' + s[1] + "</span></div>";
+    }).join("");
 
-    // types
+    // event types
     var types = Object.keys(d.events_by_type).sort(function (a, b) { return d.events_by_type[b] - d.events_by_type[a]; });
-    $("types").innerHTML = "<tr><th>Event type</th><th>Count</th><th>What it measures</th></tr>" +
-      types.map(function (t) {
-        return "<tr><td class='mono'>" + esc(t) + "</td><td class='mono'>" + d.events_by_type[t] + "</td><td>" + esc(MEANINGS[t] || "auto-collected") + "</td></tr>";
-      }).join("");
+    var maxT = Math.max(1, d.events_by_type[types[0]] || 1);
+    $("types").innerHTML = "<tr><th>Event type</th><th>Count</th><th></th><th>What it measures</th></tr>" + types.map(function (t) {
+      var n = d.events_by_type[t];
+      return "<tr><td class='num' style='color:var(--ink)'>" + esc(t) + "</td><td class='num'>" + n + "</td>" +
+        "<td style='min-width:120px'><span class='bar' style='width:" + Math.max(2, 110 * n / maxT) + "px'></span></td>" +
+        "<td style='color:var(--ink-2)'>" + esc(MEANINGS[t] || "auto-collected") + "</td></tr>";
+    }).join("");
 
     // feed
     $("feed").innerHTML = d.latest_events.map(function (e) {
-      var q = e.payload || {};
-      return '<span class="t">' + fmtTs(e.ts) + "</span>  <span class='k'>" + esc(e.type) + "</span>  " + esc(JSON.stringify(q).slice(0, 90));
-    }).join("\\n") || "(no events yet)";
+      return '<div class="fr"><span class="t">' + esc(String(e.ts).slice(11, 19)) + '</span><span class="k">' + esc(e.type) + "</span><span class='p'>" + esc(JSON.stringify(e.payload || {}).slice(0, 100)) + "</span></div>";
+    }).join("") || '<div class="fr"><span class="p">no events yet</span></div>';
+    $("raw").textContent = JSON.stringify(d.latest_events, null, 1);
 
-    // all sessions
+    // sessions
     $("sessions").innerHTML = "<tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr>" +
       d.sessions.map(function (s) {
         var top = Object.keys(s.types).sort(function (a, b) { return s.types[b] - s.types[a]; }).slice(0, 3)
-          .map(function (t) { return t + ":" + s.types[t]; }).join(", ");
+          .map(function (t) { return t + "·" + s.types[t]; }).join("  ");
         return "<tr><td><input type='checkbox' class='sel' value='" + esc(s.session_id) + "'></td>" +
-          "<td class='mono'>" + esc(s.session_id.slice(0, 8)) + "…</td>" +
-          "<td class='mono'>" + s.events + "</td>" +
-          "<td class='mono'>" + esc(String(s.first).slice(0, 16).replace("T", " ")) + "</td>" +
-          "<td class='mono'>" + esc(String(s.last).slice(0, 16).replace("T", " ")) + "</td>" +
-          "<td class='mono'>" + esc(top) + "</td></tr>";
+          "<td class='num'>" + esc(s.session_id.slice(0, 8)) + "…</td><td class='num'>" + s.events + "</td>" +
+          "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.first).slice(0, 16).replace("T", " ")) + "</td>" +
+          "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.last).slice(0, 16).replace("T", " ")) + "</td>" +
+          "<td class='num' style='color:var(--ink-3)'>" + esc(top) + "</td></tr>";
       }).join("");
   }
 
   function load() {
     fetch("/research/data?full=1", { cache: "no-store" }).then(function (r) {
-      if (r.status === 401) { showError("Not logged in. Open /research?t=YOUR_TOKEN to log in."); return null; }
+      if (r.status === 401) { $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Session expired — <a href="/research?t=YOUR_TOKEN" style="color:var(--accent)">log in again</a>.</div>'; return null; }
       if (r.status !== 200) {
-        return r.text().then(function (body) { showError("Data fetch failed: HTTP " + r.status + "\\n" + body.slice(0, 250)); return null; });
+        return r.text().then(function (b) {
+          $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Data fetch failed: HTTP ' + r.status + " — " + esc(b.slice(0, 250)) + "</div>";
+          return null;
+        });
       }
       return r.json();
     }).then(function (d) { if (d) render(d); })
-      .catch(function (e) { showError("Network error: " + e.message); });
+      .catch(function (e) { $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Network error: ' + esc(e.message) + "</div>"; });
   }
 
+  $("refreshBtn").onclick = load;
+  $("roleFilter").onchange = $("trackFilter").onchange = function () { load(); };
+  $("csvBtn").onclick = function () {
+    var people = window.__people || [];
+    var curRole = $("roleFilter").value, curTrack = $("trackFilter").value;
+    var filtered = people.filter(function (p) { return (!curRole || p.role === curRole) && (!curTrack || p.track === curTrack); });
+    var blob = new Blob([metricsCSV(filtered)], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "vistadex-participant-metrics.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
   $("purgeBtn").onclick = function () {
     var ids = Array.prototype.slice.call(document.querySelectorAll(".sel:checked")).map(function (c) { return c.value; });
     if (!ids.length) { $("purgeMsg").textContent = "tick sessions first"; $("purgeMsg").className = "msg"; return; }
-    if (!window.confirm("Permanently delete " + ids.length + " session(s) and their traces?")) return;
-    $("purgeMsg").textContent = "purging…"; $("purgeMsg").className = "msg";
-    fetch("/research/purge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_ids: ids })
-    }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d.ok) { $("purgeMsg").textContent = "✓ purged " + d.purged + " session(s)"; $("purgeMsg").className = "msg ok"; }
-      else { $("purgeMsg").textContent = "failed: " + JSON.stringify(d); $("purgeMsg").className = "msg err"; }
-      load();
-    }).catch(function (e) { $("purgeMsg").textContent = "network error: " + e.message; $("purgeMsg").className = "msg err"; });
+    if (!window.confirm("Permanently delete " + ids.length + " session(s) and their linked traces?")) return;
+    $("purgeMsg").textContent = "deleting…"; $("purgeMsg").className = "msg";
+    fetch("/research/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_ids: ids }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) { $("purgeMsg").textContent = "✓ deleted " + d.purged + " session(s)"; $("purgeMsg").className = "msg ok"; }
+        else { $("purgeMsg").textContent = "failed: " + JSON.stringify(d); $("purgeMsg").className = "msg err"; }
+        load();
+      });
   };
-  $("refreshBtn").onclick = load;
   load();
   window.setInterval(load, 30000);
 })();

@@ -17,7 +17,7 @@ function Likert({ label, value, onChange, low, high }: { label: string; value: n
     <div>
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <span className="font-mono text-sm text-on-page-muted">{value}/7</span>
+        <span className="font-mono text-sm text-foreground/70">{value}/7</span>
       </div>
       <input
         type="range" min={1} max={7} step={1} value={value}
@@ -25,7 +25,7 @@ function Likert({ label, value, onChange, low, high }: { label: string; value: n
         onChange={e => onChange(Number(e.target.value))}
         className="mt-1 w-full accent-foreground"
       />
-      <div className="flex justify-between text-[10px] text-on-page-muted"><span>{low}</span><span>{high}</span></div>
+      <div className="flex justify-between text-[11px] font-medium text-foreground/75"><span>{low}</span><span>{high}</span></div>
     </div>
   );
 }
@@ -61,7 +61,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <div className="mt-5">
             <div className="flex items-baseline justify-between">
               <span className="text-sm font-medium">Before you start: how confident are you that this idea is novel and viable?</span>
-              <span className="font-mono text-sm text-on-page-muted">{confPre}%</span>
+              <span className="font-mono text-sm text-foreground/70">{confPre}%</span>
             </div>
             <Slider value={[confPre]} min={0} max={100} step={5} onValueChange={v => setConfPre(v[0])} data-control="baseline_conf_pre" className="mt-1" />
           </div>
@@ -92,7 +92,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
         <div className="mt-5">
           <div className="flex items-baseline justify-between">
             <span className="text-sm font-medium">Now: how confident are you that this idea is novel and viable?</span>
-            <span className="font-mono text-sm text-on-page-muted">{confPost}%</span>
+            <span className="font-mono text-sm text-foreground/70">{confPost}%</span>
           </div>
           <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} data-control="baseline_conf_post" className="mt-1" />
         </div>

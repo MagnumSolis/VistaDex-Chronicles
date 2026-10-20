@@ -175,7 +175,7 @@ export const RESEARCH_PAGE = `<!doctype html>
         "<td>" + p.n + " ev</td>" +
         "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
     });
-    $("participants").innerHTML = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Confidence pre &rarr; post</th><th>Agreeableness</th><th>Verification</th><th>Survey</th><th>Events</th><th></th></tr>" +
+    $("participants").innerHTML = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Confidence pre &rarr; post</th><th>Agreeableness</th><th>Verification</th><th>Survey</th><th>Events</th><th title='tick to include when purging'>Purge</th></tr>" +
       (rows.length ? rows.join("") : "<tr><td colspan='9' class='muted'>No participants registered yet (participant_registered events appear here).</td></tr>");
 
     // condition funnel (study track)

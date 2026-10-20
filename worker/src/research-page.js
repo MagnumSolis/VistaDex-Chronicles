@@ -179,7 +179,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-participants">
-      <div class="phead"><h1>Participants</h1><span class="sub">every consented visitor, joined with their measures</span>
+      <div class="phead"><h1>Participants</h1><span class="sub">one row per visitor (browser session); multiple runs land in the same row — see Runs</span>
         <div class="right">
           <select id="roleFilter" class="btn" style="padding:6px 10px"><option value="">all roles</option></select>
           <select id="trackFilter" class="btn" style="padding:6px 10px"><option value="">all tracks</option><option value="study">study</option><option value="field">field</option></select>

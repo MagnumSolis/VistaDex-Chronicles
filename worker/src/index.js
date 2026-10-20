@@ -269,12 +269,16 @@ async function researchData(request, url, env, { store }) {
     s.events++; if (e.ts < s.first) s.first = e.ts; if (e.ts > s.last) s.last = e.ts;
     s.types[e.type] = (s.types[e.type] || 0) + 1;
   }
+  const full = url.searchParams.get("full") === "1";
   return json({
     ok: true,
     totals: { events: events.length, traces: traces.length, sessions: Object.keys(sessions).length },
     events_by_type: byType,
     sessions: Object.values(sessions).sort((a, b) => b.last.localeCompare(a.last)),
     latest_events: events.slice(-50).reverse(),
+    // full event set for the study-metrics joins (participant tables); only
+    // served on ?full=1 to keep the default payload small.
+    ...(full ? { all_events: events } : {}),
   });
 }
 

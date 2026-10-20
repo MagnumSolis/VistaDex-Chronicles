@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-public-3). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-10-public-3",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-study-1). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-10-study-1",
   "envelope": [
     "session_id",
     "seq",
@@ -110,6 +110,51 @@
       "useful",
       "would_use",
       "wrong"
+    ],
+    "participant_registered": [
+      "code",
+      "role",
+      "track"
+    ],
+    "condition_started": [
+      "condition",
+      "idea_key",
+      "order_position"
+    ],
+    "confidence_pre": [
+      "condition",
+      "value",
+      "run_id"
+    ],
+    "confidence_post": [
+      "condition",
+      "run_id",
+      "value"
+    ],
+    "claim_vote": [
+      "claim_index",
+      "run_id",
+      "status",
+      "vote"
+    ],
+    "objection_vote": [
+      "objection_index",
+      "run_id",
+      "severity",
+      "vote"
+    ],
+    "condition_survey": [
+      "condition",
+      "effort",
+      "helpfulness",
+      "open_text_len",
+      "trust",
+      "usefulness"
+    ],
+    "condition_ended": [
+      "condition",
+      "run_id",
+      "verified_sources"
     ]
   },
   "optional_keys": {
@@ -299,6 +344,26 @@
       "problem",
       "solution",
       "title"
+    ],
+    "claim_vote.vote": [
+      "agree",
+      "disagree"
+    ],
+    "objection_vote.vote": [
+      "agree",
+      "disagree"
+    ],
+    "participant_registered.track": [
+      "study",
+      "field"
+    ],
+    "condition_started.condition": [
+      "baseline",
+      "vistadex"
+    ],
+    "condition_survey.condition": [
+      "baseline",
+      "vistadex"
     ]
   },
   "controls": [
@@ -400,7 +465,7 @@
     "2026-10-pilot-2": "A panel counts as viewed when at least 50% of its own height OR at least 50% of the viewport is covered by it (web/src/study/viewRule.ts). Event names and payload fields unchanged. Checked by web/scripts/parity.mjs (tall-panel check at 320x400) and web/src/study/viewRule.test.ts."
   },
   "rules": {
-    "section_time": "Time a report section is in view by the panel-viewed rule (≥ 50% of the section OR ≥ 50% of the viewport), summed per run and section, sent when the report ends (new run, page hidden, withdrawn). Only while the tab is visible and the report screen is shown.",
+    "section_time": "Time a report section is in view by the panel-viewed rule (\u2265 50% of the section OR \u2265 50% of the viewport), summed per run and section, sent when the report ends (new run, page hidden, withdrawn). Only while the tab is visible and the report screen is shown.",
     "screen_time": "Visible time on a screen, sent when the visitor leaves it or the page is hidden.",
     "field_edited": "Sent when a text field loses focus; carries the length only, never the text.",
     "uploads": "Batched: at most one /events request per 10 s while events arrive, at most 200 events per request, plus a beacon on page hide (Worker limits: 60 requests/min/IP, 200 events/request).",
@@ -533,8 +598,8 @@
         "run_id": "r<n>, counting every run attempt in the page session (including runs made before consent)"
       },
       "flow": [
-        "Fresh state. Open Screen an Idea → consent dialog → decline. Run the legal idea → expect 0 events.",
-        "Read the study information → agree. Set the pre-use trust slider to 3.",
+        "Fresh state. Open Screen an Idea \u2192 consent dialog \u2192 decline. Run the legal idea \u2192 expect 0 events.",
+        "Read the study information \u2192 agree. Set the pre-use trust slider to 3.",
         "Go to Cohort Dashboard, open demo report idea-01, close it, go back to Screen an Idea.",
         "Run the legal idea (run 1 after consent). Open then close claim 0's evidence. Rate claim 0 disagree, claim 1 agree.",
         "Click a source link on claim 0 (mock runs have no sources: inject one link to exercise the handler).",

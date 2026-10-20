@@ -39,7 +39,7 @@ export function acceptNotice(choice: "walkthrough" | "skip") {
   tm.giveConsent();
   track("welcome_choice", { choice });
   const p = currentParticipant() ?? registerFieldParticipant(null);
-  track("participant_registered", { code: "", role: p.role, track: "field" });
+  track("participant_registered", { code: p.code, role: p.role, track: p.track });
   changed();
 }
 /** "Use without recording": remembered locally, nothing is ever logged or sent. */

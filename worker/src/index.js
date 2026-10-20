@@ -259,7 +259,8 @@ async function researchConsole(request, url, env, { store }) {
 
 async function researchData(request, url, env, { store }) {
   if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
-  const events = await store.exportEvents();
+  // Parse payloads (stored as JSON strings) so the console reads real objects.
+  const events = (await store.exportEvents()).map(r => ({ ...r, payload: parse(r.payload) }));
   const traces = await store.exportTraces();
   const byType = {};
   for (const e of events) byType[e.type] = (byType[e.type] || 0) + 1;

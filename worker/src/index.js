@@ -144,7 +144,10 @@ async function withdraw(id, { store, now, cors }) {
 
 async function exportData(request, url, env, { store }) {
   const auth = request.headers.get("Authorization") || "";
-  if (!env.EXPORT_TOKEN || !timingSafeEqual(auth, `Bearer ${env.EXPORT_TOKEN}`)) return json({ error: "unauthorized" }, 401);
+  // Two auth paths: the researcher's Bearer header (curl/scripts), or the
+  // research console's session cookie (browser download links on /research).
+  const cookieOk = researchAuthed(request, url, env);
+  if (!env.EXPORT_TOKEN || (!cookieOk && !timingSafeEqual(auth, `Bearer ${env.EXPORT_TOKEN}`))) return json({ error: "unauthorized" }, 401);
   const table = url.searchParams.get("table") === "traces" ? "traces" : "events";
   const rows = table === "traces" ? await store.exportTraces() : await store.exportEvents();
   if (url.searchParams.get("format") === "csv") {
@@ -245,10 +248,11 @@ async function researchConsole(request, url, env, { store }) {
   if (!authed) {
     return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>VistaDex · Research Console</title><meta name="robots" content="noindex"><style>body{font-family:ui-monospace,monospace;background:#0A2622;color:#F5F1E8;display:grid;place-items:center;min-height:100vh;margin:0}.box{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:14px;padding:34px;width:min(380px,90vw)}h1{font-size:15px;margin:0 0 6px}p{color:#A9B5AC;font-size:12.5px;margin:0 0 18px}input{width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid rgba(234,226,210,.2);background:#06201B;color:#F5F1E8;font-family:inherit;margin-bottom:14px}button{width:100%;padding:11px;border:none;border-radius:9px;background:linear-gradient(135deg,#FF6B1A,#FF9E4A);color:#1D0A00;font-weight:700;cursor:pointer}</style></head>
 <body><form class="box" method="GET" action="/research"><h1>VistaDex Research Console</h1><p>Team access only. Enter the research token.</p><input type="password" name="t" placeholder="Research token" autofocus><button type="submit">Enter</button></form></body></html>`,
-      { status: 200, headers: { "Content-Type": "text/html" } });
+      { status: 200, headers: { "Content-Type": "text/html", "Cache-Control": "no-store, max-age=0" } });
   }
   const headers = { "Content-Type": "text/html" };
   if (authed === "query") headers["Set-Cookie"] = `vdx_research=${env.EXPORT_TOKEN}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`;
+  headers["Cache-Control"] = "no-store, max-age=0";
   return new Response(RESEARCH_PAGE, { status: 200, headers });
 }
 
@@ -297,8 +301,18 @@ const RESEARCH_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>V
 <script>
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function load() {
-  const r = await fetch("/research/data");
-  if (r.status === 401) { location.href = "/research"; return; }
+  let r;
+  try {
+    r = await fetch("/research/data", { cache: "no-store" });
+  } catch (e) {
+    document.getElementById("latest").textContent = "Network error: " + e.message;
+    return;
+  }
+  if (r.status !== 200) {
+    const body = await r.text();
+    document.getElementById("latest").textContent = "Data fetch failed: HTTP " + r.status + " \n" + body.slice(0, 200) + "\nIf this says 401, log in again via /research?t=TOKEN";
+    return;
+  }
   const d = await r.json();
   document.getElementById("cards").innerHTML =
     \`<div class="card"><b>\${d.totals.sessions}</b><span>SESSIONS</span></div>\` +

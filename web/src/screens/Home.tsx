@@ -38,6 +38,7 @@ export function Home() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" variant="lime" onClick={() => navigate(PATHS.screen)} data-control="home_try_demo">Try the demo <ArrowRight aria-hidden /></Button>
             <Button size="lg" variant="outline-page" onClick={() => navigate(PATHS.how)} data-control="home_how_it_works">See how it works</Button>
+            <Button size="lg" variant="outline-page" onClick={() => navigate(PATHS.study)} data-control="home_join_study">Join the study</Button>
           </div>
         </div>
         <HeroCard />

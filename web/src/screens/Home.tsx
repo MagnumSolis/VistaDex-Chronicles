@@ -142,8 +142,8 @@ export function Home() {
           {[
             ["AP", "Aditya Pradhan", "Lead, architecture & integration"],
             ["KA", "Kushagra Agnihotri", "LLM & retrieval (RAG)"],
-            ["LT", "Lakshit Tanwar", "Entity resolution & data"],
-            ["RM", "Richeek Mishra", "UI/UX & SEO"],
+            ["LT", "Lakshit Tanwar", "UI/UX"],
+            ["RM", "Richeek Mishra", "Outreach"],
           ].map(([ini, name, role], i) => (
             <li key={name} className="rounded-card bg-card p-3">
               <div aria-hidden className="relative flex aspect-[5/4] items-center rounded-inner bg-lime px-5 text-on-lime">

@@ -7,7 +7,7 @@ import { features } from "@/edition";
 import { navigate, PATHS } from "@/router";
 import { STATUS, STATUS_ORDER } from "@/components/status";
 import { clearDraft } from "@/screens/ScreenIdea";
-import type { ReportEntry } from "@/lib/reports";
+import { checkedLabel, type ReportEntry } from "@/lib/reports";
 import type { RunMode } from "@/types";
 import { ClaimCard, sourceCount } from "./ClaimCard";
 import { GraveyardLeads } from "./GraveyardLeads";
@@ -16,11 +16,12 @@ import { LegalSection, MarketSection } from "./LegalMarket";
 import { ReportSection, SECTIONS, type SectionId } from "./ReportSection";
 import { BigTech, Competitors, Profile, ScoreSummary } from "./ScoreParts";
 
-const MODE_LABEL: Record<RunMode | "demo", string> = {
+const MODE_LABEL: Record<RunMode | "demo" | "sample", string> = {
   live: "Live run",
   mock: "Mock run: no live evidence",
   "proxy-mock": "Mock run on the server: no live evidence",
   demo: "Demo data, statuses not re-checked",
+  sample: "Sample report: sources checked by hand, statuses and scores computed by the same code",
 };
 const dateLabel = (d: Date | null) => (d ? d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "No date (demo data)");
 
@@ -67,7 +68,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
         <ReportSection id="summary" title="Summary" runId={runId}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 max-w-[70ch]">
-              <p className="eyebrow text-muted-foreground">{entry.kind === "demo" ? "Demo idea" : "Your idea"}</p>
+              <p className="eyebrow text-muted-foreground">{entry.kind === "demo" ? "Demo idea" : entry.kind === "sample" ? "Sample idea" : "Your idea"}</p>
               {input ? (
                 <div id="report-idea" className="mt-2">
                   <p className="font-display text-[1.5rem] leading-tight">{input.title}</p>
@@ -90,7 +91,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
               )}
             </div>
             <dl className="grid shrink-0 gap-x-4 gap-y-1 text-sm lg:text-right">
-              <div><dt className="sr-only">Date</dt><dd>{dateLabel(entry.createdAt)}</dd></div>
+              <div><dt className="sr-only">Date</dt><dd>{entry.checkedOn ? `Sources checked ${checkedLabel(entry.checkedOn)}` : dateLabel(entry.createdAt)}</dd></div>
               <div><dt className="sr-only">Mode</dt><dd className="text-muted-foreground">{MODE_LABEL[entry.mode]}</dd></div>
               {entry.markets.length > 0 && <div><dt className="sr-only">Target markets</dt><dd className="text-muted-foreground">Markets: {entry.markets.join(", ")}</dd></div>}
             </dl>
@@ -142,7 +143,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
           intro="Products already doing something similar, and startups that shut down after trying it. A resemblance is a lead to verify, not a verdict.">
           <Competitors report={report} />
           <h3 className="mb-3 font-display text-[1.375rem] leading-tight">Startups that shut down</h3>
-          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} />
+          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} checks={entry.leadChecks} />
         </ReportSection>
 
         <ReportSection id="objections" title="Objections" count={report.objections.length} runId={runId}
@@ -166,7 +167,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
 
         <div className="on-light rounded-panel bg-background p-5 text-foreground md:p-8 print:hidden">
           <p className="font-display text-2xl">Done reviewing?</p>
-          <p className="mt-2 text-[0.9375rem] text-muted-foreground">{features.reportStore === "browser" ? "This report is saved in this browser only; find it again on the Reports page, or save it as a PDF." : "Reports run here are kept until this tab is closed. Save this one as a PDF to keep it."}</p>
+          <p className="mt-2 text-[0.9375rem] text-muted-foreground">{entry.kind === "sample" ? "Sample reports are built in your browser from fixed research and never saved. Save this one as a PDF to keep it." : features.reportStore === "browser" ? "This report is saved in this browser only; find it again on the Reports page, or save it as a PDF." : "Reports run here are kept until this tab is closed. Save this one as a PDF to keep it."}</p>
           <Actions onAnother={another} />
         </div>
 

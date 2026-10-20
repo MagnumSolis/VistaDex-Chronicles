@@ -2,6 +2,7 @@ import { CircleCheck, CircleDashed, ExternalLink } from "lucide-react";
 import { CardLabel } from "./ReportSection";
 import { GRAVEYARD_DB, registrableDomain } from "@/proto";
 import { matchStrength, sharedWords } from "@/lib/overlap";
+import { checkedLabel, type LeadCheck } from "@/lib/reports";
 import type { GraveyardMatch } from "@/types";
 
 interface SeedEntry { company_name: string; sources?: string[]; source_verified?: boolean }
@@ -9,7 +10,8 @@ const SEED = GRAVEYARD_DB as SeedEntry[];
 
 // "Leads to check": startups that shut down after trying something similar. Flat dashed cards — leads,
 // not evidence. The overlap is shown as words in common and a plain strength, never as a verdict.
-export function GraveyardLeads({ matches, ideaText }: { matches: GraveyardMatch[]; ideaText: string }) {
+// checks (sample reports): the page each lead's closure was checked on; its quote is the cause shown.
+export function GraveyardLeads({ matches, ideaText, checks }: { matches: GraveyardMatch[]; ideaText: string; checks?: Record<string, LeadCheck> }) {
   if (matches.length === 0) {
     return (
       <p className="rounded-card border-2 border-dashed border-border-strong p-5 text-[0.9375rem] leading-relaxed">
@@ -22,6 +24,8 @@ export function GraveyardLeads({ matches, ideaText }: { matches: GraveyardMatch[
       {matches.map(m => {
         const seed = SEED.find(e => e.company_name === m.company_name);
         const words = sharedWords(ideaText, m.what_they_tried);
+        const check = checks?.[m.company_name];
+        const sources = check ? [check.url] : seed?.sources ?? [];
         return (
           <li key={m.company_name} className="rounded-card border-2 border-dashed border-border-strong bg-card p-5 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -41,7 +45,7 @@ export function GraveyardLeads({ matches, ideaText }: { matches: GraveyardMatch[
               </div>
               <div className="rounded-inner bg-muted p-4">
                 <dt className="eyebrow text-muted-foreground">Cause of death</dt>
-                <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">{m.cause_of_death}</dd>
+                <dd className="mt-1.5 text-[0.9375rem] leading-relaxed">{check ? <>&ldquo;{m.cause_of_death}&rdquo; <span className="text-muted-foreground">(quoted from {registrableDomain(check.url) || check.url})</span></> : m.cause_of_death}</dd>
               </div>
               <div className="rounded-inner bg-muted p-4 md:col-span-2">
                 <dt className="eyebrow text-muted-foreground">How it overlaps</dt>
@@ -54,10 +58,12 @@ export function GraveyardLeads({ matches, ideaText }: { matches: GraveyardMatch[
               </div>
             </dl>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              {seed?.source_verified
+              {check
+                ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Closure checked for this sample on {checkedLabel(check.checked)}</span>
+                : seed?.source_verified
                 ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Closure source checked by the team</span>
                 : <span className="inline-flex items-center gap-1.5 font-medium"><CircleDashed aria-hidden className="size-4" /> Closure source not yet checked by the team</span>}
-              {(seed?.sources ?? []).map(url => (
+              {sources.map(url => (
                 <a key={url} href={url} target="_blank" rel="noopener noreferrer" data-control="lead_source_link"
                   className="inline-flex items-center gap-1 text-link underline underline-offset-4">
                   {registrableDomain(url) || url} <ExternalLink aria-hidden className="size-3.5" /><span className="sr-only">(opens in a new tab)</span>

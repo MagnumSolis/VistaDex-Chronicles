@@ -31,7 +31,7 @@ export const CONTROLS = [
   "feedback_role", "feedback_useful", "feedback_section", "feedback_wrong", "feedback_would_use", "feedback_email", "feedback_submit", "feedback_screen_another",
   // reports
   "reports_sort", "reports_filter_status", "reports_filter_band", "reports_filter_industry", "reports_filter_role",
-  "reports_clear_filters", "reports_open", "reports_empty_screen", "reports_clear", "reports_clear_cancel", "reports_clear_confirm",
+  "reports_clear_filters", "reports_open", "reports_empty_screen", "reports_clear", "reports_clear_cancel", "reports_clear_confirm", "reports_samples",
   // shell: "tab_reports" / "nav_reports"
   "nav_reports", "tab_reports",
   // walkthrough

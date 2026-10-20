@@ -114,7 +114,7 @@ function abstain(claim, index, trace, router, reasoning, consulted = []) {
   return { ...claim, status: "unverified", reasoning, source_urls: [] };
 }
 
-function explain(result, kept) {
+export function explain(result, kept) {
   const s = result.supporting.length, c = result.contradicting.length;
   const head = `${s} independent source${s === 1 ? "" : "s"} support this claim; ${c} contradict${c === 1 ? "s" : ""} it.`;
   const rule = result.status === "unverified" ? ` At least 2 independent sources on one side are needed for a status, so this stays unverified.` : "";

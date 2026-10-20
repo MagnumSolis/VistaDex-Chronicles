@@ -1,6 +1,6 @@
 // ── Reports — every report this browser has run (public) / session runs + demo cohort (pitch) ──
 import { useMemo, useState, type ReactNode } from "react";
-import { Building2, FileSearch, Search, Trash2 } from "lucide-react";
+import { Building2, FileSearch, FlaskConical, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, PageTitle } from "@/components/ui-vd";
@@ -11,7 +11,10 @@ import { OverlapBadge } from "@/components/report/ScoreParts";
 import { cn } from "@/lib/utils";
 import { features } from "@/edition";
 import { INDUSTRIES } from "@proto/core/input.js";
-import { allEntries, clearStoredReports, useSessionReports, type ReportEntry } from "@/lib/reports";
+import {
+  checkedLabel, clearStoredReports, listedEntries, SAMPLE_COUNTS, setSampleCount, useSampleCount, useSessionReports, type ReportEntry, type SampleCount,
+} from "@/lib/reports";
+import { SAMPLE_CHECKED } from "@proto/data/sample-reports.js";
 import { reportPath } from "@/lib/run";
 import {
   filterEntries, industriesOf, MIN_REPORTS_FOR_READING, NO_FILTERS, sortEntries, SORTS, summarize, topSlices, TYPE_LABEL, TYPE_ORDER,
@@ -26,7 +29,8 @@ const ROLE_LABEL = { founder: "Founder", investor: "Investor", accelerator: "Acc
 /** `preview`: render with these entries instead (the Home page's product screens). */
 export function Reports({ preview }: { preview?: ReportEntry[] } = {}) {
   const session = useSessionReports();
-  const entries = useMemo(() => preview ?? allEntries(), [session, preview]);
+  const sampleCount = useSampleCount();
+  const entries = useMemo(() => preview ?? listedEntries(), [session, sampleCount, preview]);
   const [sort, setSort] = useState<SortKey>("newest");
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -38,13 +42,15 @@ export function Reports({ preview }: { preview?: ReportEntry[] } = {}) {
   const title = browser ? "Your reports" : "Screened ideas";
   const lead = browser
     ? "Every report this browser has run. They are saved here only, never uploaded; clear them whenever you like."
-    : preview ? "Sample data: demo ideas run through the same scoring." : `${session.length} from this session and ${entries.length - session.length} demo ideas (hand-written examples run through the same scoring, with sample data where demo data has none). Session reports are kept until this tab is closed.`;
+    : preview ? "Sample data: demo ideas run through the same scoring." : `${session.length} from this session and ${entries.filter(e => e.kind === "demo").length} demo ideas (hand-written examples run through the same scoring, with sample data where demo data has none). Session reports are kept until this tab is closed.`;
+  const samplesControl = preview ? null : <SampleToggle value={sampleCount} />;
 
   if (!entries.length) {
     return (
       <div>
         <PageTitle eyebrow="Reports" title={title}>{lead}</PageTitle>
-        <div className="on-light max-w-xl text-foreground">
+        {samplesControl}
+        <div className="on-light mt-5 max-w-xl text-foreground">
           <EmptyState icon={FileSearch} title="No reports yet"
             action={<Button size="lg" onClick={() => navigate(PATHS.screen)} data-control="reports_empty_screen">Screen an idea</Button>}>
             Screen an idea and its report will be listed here, in this browser only.
@@ -60,8 +66,9 @@ export function Reports({ preview }: { preview?: ReportEntry[] } = {}) {
         aside={browser ? <Button variant="outline-page" onClick={() => setConfirmClear(true)} data-control="reports_clear"><Trash2 aria-hidden /> Clear my reports</Button> : undefined}>
         {lead}
       </PageTitle>
+      {samplesControl}
 
-      <section aria-label="Summary" className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Summary" className={cn("grid gap-3 md:grid-cols-2 xl:grid-cols-4", samplesControl && "mt-5")}>
         <Block title="Ideas analysed">
           <p className="font-display text-[3.5rem] leading-none">{summary.count}</p>
         </Block>
@@ -126,6 +133,21 @@ export function Reports({ preview }: { preview?: ReportEntry[] } = {}) {
   );
 }
 
+// Adds the fixed sample reports to the summary and the list. Memory only: Off on every page load, never saved.
+function SampleToggle({ value }: { value: SampleCount }) {
+  return (
+    <div className="on-light flex flex-col gap-3 rounded-card bg-background p-4 text-foreground sm:flex-row sm:items-end md:p-5">
+      <div className="w-full sm:w-44 sm:shrink-0">
+        <Select id="reports-samples" label="Sample reports" control="reports_samples" value={String(value)} onChange={v => setSampleCount(Number(v) as SampleCount)}
+          options={SAMPLE_COUNTS.map(n => ({ value: String(n), label: n ? `Show ${n}` : "Off" }))} />
+      </div>
+      <p className="max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
+        Fixed sample ideas, each labelled &ldquo;Sample report&rdquo;. Their sources were checked by hand on {checkedLabel(SAMPLE_CHECKED)}; statuses, scores and overlap bands come from the same code as every report. Never saved.
+      </p>
+    </div>
+  );
+}
+
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="on-light rounded-card bg-background p-4 text-foreground md:p-5">
@@ -156,7 +178,8 @@ function ReportCard({ e }: { e: ReportEntry }) {
   return (
     <li className="on-light flex flex-col rounded-card bg-background p-5 text-foreground">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-muted-foreground">{e.createdAt ? e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Demo data, no date"}</span>
+        {e.kind === "sample" && <span className="inline-flex items-center gap-1 rounded-control bg-foreground px-2 py-0.5 font-semibold text-background"><FlaskConical aria-hidden className="size-3.5" /> Sample report</span>}
+        <span className="text-muted-foreground">{e.checkedOn ? `Sources checked ${checkedLabel(e.checkedOn)}` : e.createdAt ? e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Demo data, no date"}</span>
         {industriesOf(e).map(i => <span key={i} className="rounded-control bg-muted px-2 py-0.5 font-medium">{i}</span>)}
       </div>
       <h2 className="mt-3 font-display text-[1.5rem] leading-tight">{e.title}</h2>

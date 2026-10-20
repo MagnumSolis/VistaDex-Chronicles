@@ -85,6 +85,8 @@ const browser = await launch();
   // 5. Reports, Contact, the walkthrough, Feedback
   await page.locator("[data-control=nav_reports]").click();
   await page.getByText("Ideas analysed").waitFor();
+  await page.locator("[data-control=reports_samples]").selectOption("5");
+  await page.getByText("Sample report", { exact: true }).first().waitFor();
   await page.locator("[data-control=reports_sort]").selectOption("score");
   await page.locator("[data-control=reports_filter_band]").selectOption("caution");
   await page.locator("[data-control=reports_clear_filters]").or(page.locator("[data-control=reports_open]").first()).first().click();
@@ -131,6 +133,7 @@ const browser = await launch();
   const fb = seen.eventBodies.map(b => JSON.parse(b)).find(b => b.events.some(e => e.type === "feedback_submitted"));
   check(fb && fb.session_id !== ev[0].session_id, "feedback was not sent under its own id");
   check(seen.eventBodies.every(b => JSON.parse(b).events.length <= 200), "an upload had more than 200 events");
+  check(ev.some(e => e.type === "control_pressed" && e.payload.control === "reports_samples" && e.payload.value === "5"), "reports_samples not logged with its value");
   console.log(`public flow: ${ev.length} events, ${new Set(types).size} types, ${new Set(ev.filter(e => e.type === "control_pressed").map(e => e.payload.control)).size} distinct controls`);
   await ctx.close();
 }
@@ -144,6 +147,11 @@ const browser = await launch();
   check(!(await page.evaluate(() => location.href)).includes("edition="), "edition= was not scrubbed from the address bar");
   check(await page.getByTestId("edition-badge").first().isVisible(), "Pitch edition badge not visible");
   await setProxy(page, STUB);
+  await page.locator("[data-control=reports_samples]").selectOption("15");
+  await page.getByText("Sample report", { exact: true }).first().waitFor();
+  await page.getByRole("button", { name: "Open report: MinuteMate" }).click();
+  await page.getByText(/^Sample report ·/).waitFor();
+  await page.locator("[data-control=nav_reports]").first().click();
   await page.locator("[data-control=reports_open]").first().click();
   await page.locator("[data-control=score_breakdown_toggle]").click();
   await page.locator("[data-control=nav_screen]").click();

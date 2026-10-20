@@ -2,24 +2,30 @@
 // Public edition: the reports THIS browser has run, saved in localStorage (every access in try/catch;
 // blocked storage falls back to memory for the tab). "Clear my reports" deletes them. Never uploaded.
 // Pitch edition: this session's runs (memory only) + the demo cohort.
+// Both: the "Sample reports" toggle adds up to 15 fixed, researched sample reports (prototype/data/sample-reports.js),
+// built in the browser and never saved; the toggle is memory only, so it is Off on every page load.
 // The Worker does not store reports. TODO(team): persistent server storage.
 import { useSyncExternalStore } from "react";
 import { features } from "@/edition";
 import { demoReport, cohort } from "@/lib/cohort";
+import { sampleReports } from "@proto/core/sample-reports.js";
 import type { Jurisdiction, Report, RunMode } from "@/types";
 
 export interface ReportEntry {
   id: string;             // stable id ("k1x2…-r3") or cohort id ("idea-01")
   runId: string | null;   // telemetry run id while this page session follows the run; null otherwise
   title: string;
-  kind: "session" | "demo";
-  createdAt: Date | null; // demo data has no date
+  kind: "session" | "demo" | "sample";
+  createdAt: Date | null; // demo and sample data have no run date
   report: Report;
-  mode: RunMode | "demo";
+  mode: RunMode | "demo" | "sample";
   markets: Jurisdiction[];
   category: string | null;
   traceId: string | null;
+  checkedOn?: string;     // sample reports: the date their sources were checked (YYYY-MM-DD)
+  leadChecks?: Record<string, LeadCheck>; // sample reports: the page each graveyard lead's closure was checked on
 }
+export interface LeadCheck { url: string; quote: string; checked: string }
 
 const KEY = "vistadex.reports.v1";
 export const MAX_STORED = 50;
@@ -75,13 +81,32 @@ export const makeDemoEntries = (): ReportEntry[] =>
   cohort.map(i => ({ id: i.id, runId: null, title: i.name, kind: "demo", createdAt: null, report: demoReport(i), mode: "demo", markets: [], category: i.category, traceId: null }));
 export const demoEntries: ReportEntry[] = features.reportStore === "session-and-demo" ? makeDemoEntries() : [];
 
+export const checkedLabel = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+export const SAMPLE_COUNTS = [0, 5, 10, 15] as const;
+export type SampleCount = (typeof SAMPLE_COUNTS)[number];
+let samples: ReportEntry[] | null = null;
+/** The 15 sample reports, built on first use with the pipeline's own code. */
+export function sampleEntries(): ReportEntry[] {
+  samples ??= (sampleReports() as { id: string; checked: string; report: Report; leadChecks: Record<string, LeadCheck> }[]).map(s => ({
+    id: `sample-${s.id}`, runId: null, title: s.report.input?.title ?? s.id, kind: "sample", createdAt: null, report: s.report, mode: "sample",
+    markets: s.report.input?.markets ?? [], category: null, traceId: null, checkedOn: s.checked, leadChecks: s.leadChecks,
+  }));
+  return samples;
+}
+let sampleCount: SampleCount = 0;
+export const getSampleCount = () => sampleCount;
+export function setSampleCount(n: SampleCount) { sampleCount = n; emit(); }
+export const useSampleCount = () => useSyncExternalStore(subscribe, getSampleCount);
+
 export const latestSessionReport = () => session[0] ?? null;
 export const allEntries = () => [...session, ...demoEntries];
-export const findEntry = (id: string) => allEntries().find(e => e.id === id) ?? null;
+/** What the Reports page lists: the stored/demo entries plus the samples the toggle asks for. */
+export const listedEntries = () => [...allEntries(), ...(sampleCount ? sampleEntries().slice(0, sampleCount) : [])];
+export const findEntry = (id: string) => allEntries().find(e => e.id === id) ?? (id.startsWith("sample-") ? sampleEntries().find(e => e.id === id) : undefined) ?? null;
 
 export function useSessionReports() {
   return useSyncExternalStore(subscribe, () => session);
 }
 
 /** Test helper. */
-export function _resetSessionReports() { session = []; emit(); }
+export function _resetSessionReports() { session = []; sampleCount = 0; emit(); }

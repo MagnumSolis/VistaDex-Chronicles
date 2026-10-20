@@ -71,6 +71,15 @@ for (const [name, viewport, isMobile] of VIEWPORTS) {
   await page.locator("[data-control=reports_clear_confirm]").click();
   await page.getByText("No reports yet").waitFor();
   await both(page, `${name} reports empty`);
+  await page.locator("[data-control=reports_samples]").selectOption("15");
+  await page.getByText("Sample report", { exact: true }).first().waitFor();
+  await both(page, `${name} reports with 15 samples`);
+  await page.getByRole("button", { name: "Open report: TidyNow" }).click();
+  await page.getByText(/^Sample report ·/).waitFor();
+  await page.getByRole("button", { name: /Show sources/ }).first().focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: /Hide sources/ }).first().waitFor();
+  await both(page, `${name} sample report`);
   await go(page, "#/how-it-works");
   await page.getByRole("heading", { name: "Evidence first. You decide." }).waitFor();
   await both(page, `${name} how it works`);
@@ -103,6 +112,10 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
   await page.getByRole("button", { name: /Show sources/ }).first().click();
   await page.locator("[data-control=score_breakdown_toggle]").click();
   await both(page, `${name} pitch demo report`);
+  await go(page, "#/reports");
+  await page.locator("[data-control=reports_samples]").selectOption("5");
+  await page.getByText("Sample report", { exact: true }).first().waitFor();
+  await both(page, `${name} pitch reports with samples`);
   await go(page, "#/");
   await page.getByRole("heading", { name: /already died once/ }).waitFor();
   await both(page, `${name} pitch home`);

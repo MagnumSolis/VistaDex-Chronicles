@@ -2,6 +2,10 @@
 
 Changes to what an event *measures*. Event names and payload fields are unchanged across versions; see `tests/fixtures/event-contract.json`. No participant data was collected under 2026-10-pilot-1.
 
+## study_version 2026-10-public-3 (Sample reports toggle)
+
+- **New control:** `reports_samples` (Reports page select: Off / 5 / 10 / 15), logged as `control_pressed` with its value. Sample reports are fixed, researched examples built in the browser; never stored, never sent.
+
 ## study_version 2026-10-public-2 (round 2: scores, structured input, Reports, landing page)
 
 - **Scores (decided by the team, 2026-10-20).** The "no score" rule is lifted; every score is explainable and computed in code (`prototype/core/scoring.js`, weights and thresholds in `scoring-config.js`). Big Tech safety is shown but not counted (TODO(team): define "low").

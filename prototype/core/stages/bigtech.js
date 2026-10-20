@@ -65,8 +65,7 @@ export async function assessBigTech({ ideaText, input }, { llm, retrieval, trace
   }
   if (!labels) { trace.log("big_tech", { router: "llm", error: "malformed output" }); return null; }
 
-  // company → domain → { relation, url, quote, reason }
-  const found = new Map();
+  const kept = [];
   for (const l of labels) {
     const page = pages[Number(l?.source) - 1];
     const company = BIG_TECH_COMPANIES.find(c => c === l?.company || aliasesOf(c).includes(l?.company));
@@ -74,12 +73,23 @@ export async function assessBigTech({ ideaText, input }, { llm, retrieval, trace
     const quote = String(l?.quote ?? "").trim();
     const ok = page && company && relation && isVerbatim(page.text, quote) && aliasesOf(company).some(a => namedIn(quote, a));
     trace.log("big_tech_label", { source: page?.url ?? null, company: company ?? null, relation, kept: Boolean(ok) });
-    if (!ok) continue;
-    const domain = registrableDomain(page.url);
+    if (ok) kept.push({ company, relation, url: page.url, quote, reason: l?.reason });
+  }
+  const result = bigTechFromLabels(kept, base);
+  trace.log("big_tech", { router: "llm", sources: pages.length, level: result.level, counted: result.companies.map(c => c.name), unconfirmed: result.unconfirmed.map(c => c.name) });
+  return result;
+}
+
+// Verified labels [{ company, relation, url, quote, reason }] → the Big Tech risk (level by the 2-domain rule).
+// base: { companies_checked, queries, sources_checked }.
+export function bigTechFromLabels(labels, base) {
+  const found = new Map(); // company → domain → { relation, url, quote, reason }
+  for (const l of labels) {
+    const domain = registrableDomain(l.url);
     if (!domain) continue;
-    if (!found.has(company)) found.set(company, new Map());
-    const byDomain = found.get(company);
-    if (!byDomain.has(domain) || relation === "direct") byDomain.set(domain, { relation, url: page.url, quote: quote.slice(0, 400), reason: String(l?.reason ?? "").trim().slice(0, 240) });
+    if (!found.has(l.company)) found.set(l.company, new Map());
+    const byDomain = found.get(l.company);
+    if (!byDomain.has(domain) || l.relation === "direct") byDomain.set(domain, { relation: l.relation, url: l.url, quote: String(l.quote).slice(0, 400), reason: String(l.reason ?? "").trim().slice(0, 240) });
   }
 
   const companies = [], unconfirmed = [];
@@ -95,8 +105,7 @@ export async function assessBigTech({ ideaText, input }, { llm, retrieval, trace
     high: `${companies.filter(c => c.relation === "direct").map(c => c.name).join(", ")} ${companies.filter(c => c.relation === "direct").length === 1 ? "offers" : "offer"} a directly competing product, according to at least ${MIN_INDEPENDENT} independent sources.`,
     medium: `${companies.map(c => c.name).join(", ")} ${companies.length === 1 ? "has" : "have"} related products or announcements, according to at least ${MIN_INDEPENDENT} independent sources.`,
     unverified: `${unconfirmed.map(c => c.name).join(", ")} ${unconfirmed.length === 1 ? "is" : "are"} mentioned, but by fewer than ${MIN_INDEPENDENT} independent sources, so the risk is unverified.`,
-    none_found: `None of the ${BIG_TECH_COMPANIES.length} companies was mentioned on the ${pages.length} pages read. That is not proof they are not working on it.`,
+    none_found: `None of the ${base.companies_checked.length} companies was mentioned on the ${base.sources_checked} pages read. That is not proof they are not working on it.`,
   }[level];
-  trace.log("big_tech", { router: "llm", sources: pages.length, level, counted: companies.map(c => c.name), unconfirmed: unconfirmed.map(c => c.name) });
   return { level, companies, unconfirmed, summary, ...base };
 }

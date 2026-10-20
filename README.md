@@ -37,10 +37,35 @@ With no configuration the whole pipeline runs **key-free in the browser**: deter
 | `#/how-it-works` | Method, statuses, evidence rule, the score and its formulas, overlap and Big Tech risk, data sources, limitations | both |
 | `#/contact` | Who we are, email, feedback, data requests, source code | both |
 | `#/feedback` | Short feedback form | public |
+| `#/study` | Study registration (participant code, role, assigned idea) — for recruited within-subjects participants | public |
+| `#/baseline` | Companion page for the chatbot condition of the study (pre/post confidence, ratings about the chatbot's answer) | public |
 
 Live mode never fabricates: competitor search, Big Tech risk and the TAM need live retrieval and a reader; SAM, SOM and legal output are not produced yet ("Not available in this version yet"). The in-browser mock mode shows clearly labelled sample placeholders for them.
 
 ---
+
+## Research study (BITS F364 / CHI student 2027)
+
+Two tracks, both consent-gated by the Welcome notice (accepting it enrolls the
+visitor automatically in the field track — like a cookie banner; declining
+records nothing):
+
+- **Field track (public/LinkedIn)**: every consenting visitor. Own idea, full
+  telemetry, post-report confidence, per-claim/objection agree-disagree votes,
+  likert survey (trust/usefulness/helpfulness/effort), source self-report.
+- **Study track (recruited, within-subjects)**: participant code + assigned
+  idea + counterbalanced order over [baseline chatbot, VistaDex] via `#/study`
+  and `#/baseline`. Same measures per condition — Wilcoxon-ready at N≈15-25.
+
+Measures: H1 trust calibration (confidence pre→post per condition), H2
+verification behaviour (source clicks + self-report), H3 agreeableness (vote
+rate vs claim status). Researcher console (token-gated): proxy `/research` —
+participants joined with confidence deltas, agreeableness rates, verification
+counts, survey scores, funnel, session purge, CSV/JSON export.
+
+Telemetry contract: `tests/fixtures/event-contract.json` (study_version
+`2026-10-study-1`). No idea text, no report content, no PII in events; traces
+hold pipeline detail and are deleted on session withdraw.
 
 ## Pipeline
 

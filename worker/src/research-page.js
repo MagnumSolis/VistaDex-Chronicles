@@ -12,19 +12,20 @@ export const RESEARCH_PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
-    --bg: #0B3B2C; --bg-deep: #092E22; --surface: #144A38; --surface-2: #0F3D2D;
-    --line: rgba(234,226,210,.14); --line-soft: rgba(234,226,210,.08);
-    --cream: #EEF2E2; --ink: #EEF2E2; --muted: #B5CCBC; --faint: #7FA391;
-    --lime: #CBEF6A; --amber: #FFD166; --red: #FF8787; --green: #7DE8B8;
+    --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #FBFAF7; --surface-3: #EFEDE7;
+    --line: #E3E0D8; --line-soft: #ECEAE3;
+    --ink: #1A231E; --muted: #5A6B60; --faint: #8A968D;
+    --accent: #0B6E4F; --accent-soft: #E3F2EC;
+    --amber: #B26A00; --amber-soft: #FBF0DC; --red: #C0392B; --red-soft: #FBE9E7;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: var(--sans); background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.5; padding: 0 0 60px; }
-  .top { position: sticky; top: 0; z-index: 10; background: rgba(11,59,44,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft); }
+  .top { position: sticky; top: 0; z-index: 10; background: rgba(246,245,241,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
   .top-inner { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
   .logo { font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
-  .logo i { font-style: normal; color: var(--lime); }
+  .logo i { font-style: normal; color: var(--accent); }
   .top-note { color: var(--faint); font-size: 12px; margin-left: auto; font-family: var(--mono); }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px; }
   h2 { font-size: 16px; font-weight: 700; margin: 34px 0 4px; display: flex; align-items: baseline; gap: 10px; }
@@ -33,49 +34,49 @@ export const RESEARCH_PAGE = `<!doctype html>
   h2 .num { font-family: var(--mono); font-size: 11px; color: var(--lime); }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
-  .card { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px; padding: 16px 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
   .card b { font-size: 26px; font-weight: 800; display: block; letter-spacing: -.02em; }
   .card span { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-family: var(--mono); }
   .card small { display: block; color: var(--faint); font-size: 11px; margin-top: 2px; }
 
-  table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 12px 0; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden; }
-  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--mono); padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--line-soft); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 12px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--mono); padding: 10px 14px; background: var(--surface-3); border-bottom: 1px solid var(--line); }
   td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(203,239,106,.04); }
+  tr:hover td { background: var(--accent-soft); }
   td.mono, .mono { font-family: var(--mono); font-size: 12px; }
   td.empty { color: var(--faint); text-align: center; padding: 24px; font-style: italic; }
 
   .pill { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-family: var(--mono); border: 1px solid; }
-  .pill.study { color: var(--lime); border-color: rgba(203,239,106,.4); background: rgba(203,239,106,.08); }
-  .pill.field { color: var(--green); border-color: rgba(125,232,184,.4); background: rgba(125,232,184,.08); }
-  .good { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--amber); }
+  .pill.study { color: var(--accent); border-color: rgba(11,110,79,.35); background: var(--accent-soft); }
+  .pill.field { color: #4A6B5A; border-color: rgba(74,107,90,.3); background: #EEF3EF; }
+  .good { color: var(--accent); } .bad { color: var(--red); } .warn { color: var(--amber); }
 
   .delta { font-family: var(--mono); font-size: 12px; }
-  .delta.up { color: var(--green); } .delta.down { color: var(--red); }
+  .delta.up { color: var(--accent); } .delta.down { color: var(--red); }
 
-  pre.feed { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px 16px; max-height: 320px; overflow: auto; font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--muted); white-space: pre-wrap; }
-  pre.feed .t { color: var(--faint); } pre.feed .k { color: var(--lime); }
+  pre.feed { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; max-height: 320px; overflow: auto; font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--muted); white-space: pre-wrap; }
+  pre.feed .t { color: var(--faint); } pre.feed .k { color: var(--accent); }
 
   .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
-  button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: all .15s; }
+  button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: all .15s; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
   button:hover { border-color: var(--muted); }
-  button.danger { color: var(--amber); border-color: rgba(255,209,102,.35); }
-  button.danger:hover { background: rgba(255,209,102,.1); }
-  button.primary { background: var(--lime); color: #0B2E22; border: none; }
+  button.danger { color: var(--red); border-color: rgba(192,57,43,.35); }
+  button.danger:hover { background: var(--red-soft); }
+  button.primary { background: var(--accent); color: #fff; border: none; }
   .msg { font-size: 12px; color: var(--muted); font-family: var(--mono); }
-  .msg.ok { color: var(--green); } .msg.err { color: var(--red); }
+  .msg.ok { color: var(--accent); } .msg.err { color: var(--red); }
 
-  a { color: var(--lime); text-decoration: none; }
+  a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .dl-row { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0; font-size: 13px; }
-  .dl-row a { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line-soft); padding: 8px 14px; border-radius: 9px; }
+  .dl-row a { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); padding: 8px 14px; border-radius: 9px; box-shadow: 0 1px 2px rgba(26,35,30,.05); }
   .dl-row a:hover { border-color: var(--muted); text-decoration: none; }
   details { margin: 8px 0; }
   summary { cursor: pointer; color: var(--muted); font-size: 12px; }
   details[open] summary { color: var(--ink); margin-bottom: 8px; }
 
-  .err-box { background: rgba(255,135,135,.08); border: 1px solid rgba(255,135,135,.3); border-radius: 12px; padding: 14px 16px; color: var(--red); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
+  .err-box { background: var(--red-soft); border: 1px solid rgba(192,57,43,.3); border-radius: 12px; padding: 14px 16px; color: var(--red); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
 </style>
 </head>
 <body>

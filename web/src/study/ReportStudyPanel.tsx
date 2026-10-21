@@ -28,7 +28,10 @@ function Choice({ name, checked, onSelect, control, children }: { name: string; 
   );
 }
 
-const VOTES: [Vote, string][] = [["agree", "Agree"], ["disagree", "Disagree"], ["not_sure", "Not sure"]];
+/** Text style of every question label in this panel (sliders, choices, claim and objection rows). */
+const QUESTION = "text-sm font-medium";
+
+const VOTES: [Vote, string][] =[["agree", "Agree"], ["disagree", "Disagree"], ["not_sure", "Not sure"]];
 
 function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: Vote) => void; controlId: Record<Vote, string> }) {
   const [vote, setVote] = useState<Vote | null>(null);
@@ -36,7 +39,7 @@ function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: Vote
   const pick = (v: Vote) => { setVote(v); onVote(v); };
   return (
     <fieldset className="min-w-0 py-3">
-      <legend className="w-full truncate text-xs" title={label}>{label}</legend>
+      <legend className={cn("w-full truncate", QUESTION)} title={label}>{label}</legend>
       {/* Three side by side from sm; stacked on phones so the labels stay whole at 320px. */}
       <div className="mt-2 grid gap-2 sm:grid-cols-3">
         {VOTES.map(([v, text]) => (
@@ -52,7 +55,7 @@ function Likert({ label, value, onChange, low, high }: { label: string; value: n
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span id={labelId} className="text-sm font-medium">{label}</span>
+        <span id={labelId} className={QUESTION}>{label}</span>
         <span className="font-mono text-sm text-foreground/70">{value}/7</span>
       </div>
       <input type="range" min={1} max={7} step={1} value={value} data-control="baseline_likert" aria-labelledby={labelId}
@@ -95,7 +98,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
       {/* Post-report confidence — the calibration measure */}
       <Panel tab="Your read" as="section">
         <div className="flex items-baseline justify-between">
-          <span id="study-conf-post-label" className="text-sm font-medium">Now that you've read the report: how confident are you that this idea is novel and viable?</span>
+          <span id="study-conf-post-label" className={QUESTION}>Now that you've read the report: how confident are you that this idea is novel and viable?</span>
           <span className="font-mono text-sm text-foreground/70">{confPost}%</span>
         </div>
         <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} data-control="study_conf_post" aria-labelledby="study-conf-post-label" className="mt-1" />
@@ -113,7 +116,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
           {report.claims.map((c, i) => (
             <VoteRow
               key={i}
-              label={`Claim ${i + 1} — "${c.claim.slice(0, 60)}${c.claim.length > 60 ? "…" : ""}" (${c.status})`}
+              label={`Claim ${i + 1} (${c.status}) — "${c.claim.slice(0, 60)}${c.claim.length > 60 ? "…" : ""}"`}
               controlId={{ agree: "study_claim_agree", disagree: "study_claim_disagree", not_sure: "study_claim_not_sure" }}
               onVote={v => logClaimVote(runId, i, c.status, v)}
             />
@@ -139,7 +142,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
         </div>
         {/* fieldset, not label: a label forwards any click on it to its first button, which picked "0" by itself. */}
         <fieldset className="mt-5">
-          <legend className="text-sm font-medium">Did you open any of the evidence links yourself?</legend>
+          <legend className={QUESTION}>Did you open any of the evidence links yourself?</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
             {(["0", "1-2", "3+"] as const).map((o, i) => (
               <Choice key={o} name="study_sources" checked={checkedSources === [0, 1, 3][i]} onSelect={() => setCheckedSources([0, 1, 3][i])}
@@ -150,14 +153,14 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
           </div>
         </fieldset>
         <label className="mt-4 block">
-          <span className="text-sm font-medium">In your words: what did the report make you think or feel about this idea? (optional)</span>
+          <span className={QUESTION}>In your words: what did the report make you think or feel about this idea? (optional)</span>
           <textarea
             className="mt-1 min-h-24 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
             value={open} onChange={e => setOpen(e.target.value)} maxLength={2000} data-control="study_survey_open"
           />
         </label>
         <fieldset className="mt-5">
-          <legend className="text-sm font-medium">Quick check: in your own understanding, what does an "unverified" claim in this report mean?</legend>
+          <legend className={QUESTION}>Quick check: in your own understanding, what does an "unverified" claim in this report mean?</legend>
           <div className="mt-2 grid gap-2">
             {[["honest_uncertainty", "The system honestly could not find enough evidence either way"], ["system_failure", "The system failed or broke on that claim"], ["not_sure", "I am not sure"]].map(([v, label]) => (
               <Choice key={v} name="comprehension_check" checked={comprehension === v} control="comprehension_check"

@@ -65,7 +65,7 @@ describe("post-report form answers are native radios (option A)", () => {
       .toEqual(["study_sources_3p", "study_sources_0"]);
 
     // Claim 1: agree, then change to disagree; pressing the chosen answer again logs again, as the buttons did.
-    const claim = screen.getAllByText(/^Claim 1 — /)[0].closest("fieldset")!;
+    const claim = screen.getAllByText(/^Claim 1 \(/)[0].closest("fieldset")!;
     fireEvent.click(within(claim).getByRole("radio", { name: "Agree" }));
     fireEvent.click(within(claim).getByRole("radio", { name: "Disagree" }));
     fireEvent.click(within(claim).getByRole("radio", { name: "Disagree" }));
@@ -109,5 +109,25 @@ describe("'Do you agree?' has a Not sure option", () => {
     expect(events().filter(e => e.type === "objection_vote").map(e => e.payload.vote)).toEqual(["not_sure"]);
     expect(events().filter(e => e.type === "control_pressed" && /^study_(claim|objection)_/.test(String(e.payload.control))).map(e => e.payload.control))
       .toEqual(["study_claim_not_sure", "study_claim_agree", "study_objection_not_sure"]);
+  }, 30000);
+});
+
+describe("claim and objection labels", () => {
+  it("use the same text style as the panel's other question labels", async () => {
+    await openPanel();
+    const style = (el: Element) => [...el.classList].filter(c => /^(text-|font-)/.test(c)).sort().join(" ");
+    const question = style(screen.getByText("I trust this report's assessment of the idea"));
+    expect(question).not.toBe("");
+    const legends = [...document.querySelectorAll("legend")].filter(l => /^(Claim|Objection) \d+ /.test(l.textContent ?? ""));
+    expect(legends.length).toBeGreaterThan(1);
+    for (const l of legends) expect(style(l)).toBe(question);
+  }, 30000);
+});
+
+describe("claim and objection labels keep their status or severity readable", () => {
+  it("put it before the (truncatable) quote, so phones don't cut it off", async () => {
+    await openPanel();
+    const legends = [...document.querySelectorAll("legend")].map(l => l.textContent ?? "").filter(t => /^(Claim|Objection) \d+ /.test(t));
+    for (const t of legends) expect(t).toMatch(/^(Claim \d+ \((confirmed|contradicted|disputed|unverified)\)|Objection \d+ \((low|medium|high)\)) — "/);
   }, 30000);
 });

@@ -16,15 +16,29 @@ One app, one build, **two editions** (`web/src/edition.ts` is the only place tha
 The pitch edition is opened with `#edition=pitch` (the `code=…` usually next to it is only the study access code for the proxy). It is **not protected**: the switch is client-side and no code is checked, so never describe it as locked. TODO(team): a separate `PITCH_CODES` secret verified by the Worker (docs/BACKEND-HANDOFF.md §7). A "Pitch edition" badge is always shown in it.
 
 ## Git
-- Work on `feat/ui-revamp` (branched from `feat/weekend-prototype`). Never commit to `master`, `main` or `feat/weekend-prototype`; never merge into, rebase or force-push them. Check the branch before every commit.
+- For each piece of work, branch from the latest `main` (`git fetch` first) and merge back by PR with **Create a merge commit** (never squash or rebase). Never commit to `main` directly, never rewrite pushed history, never force-push. Check the branch before every commit, and push with an explicit remote branch: `git push -u origin <branch>:<branch>`.
 - Ask before the first push. Never commit secrets (`.env` is ignored; see `.env.example`).
+- Never commit `docs/PR-*.md` or `docs/screenshots/` (untracked on purpose). Stage files by name, never `git add -A` / `git add .`. One commit per fix; show each new test failing before its fix; chain the checks and the commit with `&&`.
 
 ## Frozen unless explicitly asked
-- Pipeline logic (`prototype/core/`), the POST /screen contract, the key-free mock path, the proxy (`worker/`). Round 2 (2026-10-20) changed them deliberately: structured input, traction claims, competitors, Big Tech risk, TAM from verified quotes, scores. Every weight and threshold lives in `prototype/core/scoring-config.js`, pinned by `tests/scoring-config.test.js`.
+- Pipeline logic (`prototype/core/`), the POST /screen contract, the key-free mock path. In the Worker: the `/screen` route and its contract, `/events` intake, the D1 schema, `/export` and `DELETE /session` — frozen unless the task explicitly says otherwise. The Research Console (`worker/src/research-page.js`, `worker/src/research-join.js`) is open. Round 2 (2026-10-20) changed them deliberately: structured input, traction claims, competitors, Big Tech risk, TAM from verified quotes, scores. Every weight and threshold lives in `prototype/core/scoring-config.js`, pinned by `tests/scoring-config.test.js`.
 - Telemetry: `tests/fixtures/event-contract.json` is the contract (event types, payload keys, enum values, control ids). The UI must reproduce it; `npm run parity` checks it in Chrome. Bump `STUDY_VERSION` (prototype/ui/study-config.js) whenever the visitor-facing UI or the telemetry changes, and record it in the fixture.
 - No idea text and no report content in telemetry; runs are described by lengths and counts. Feedback is sent under its own random id, never with the usage session.
-- Everything must run end-to-end with zero API keys and deploy as a static site (GitHub Pages).
-- The BITS F364 study UI (consent dialog, trust sliders, per-claim rating, notes, survey) is retired to `web/src/retired/study/` (not routed). The public demo is not used for the F364 paper.
+- Everything must run end-to-end with zero API keys and deploy as a static site (live on Cloudflare Pages, vistadex-app.pages.dev; the relative `base` keeps sub-path hosting working).
+- The BITS F364 study UI (consent dialog, trust sliders, per-claim rating, notes, survey) is retired to `web/src/retired/study/` (not routed). Since 2026-10-study-1 the live public demo is the course research data source (field track: the Welcome notice is the research consent), which is what the Research Console measures.
+
+## Deploys
+- Merging to `main` does **not** deploy the site. The site is deployed by hand: `npm run build`, then `npx wrangler pages deploy web/dist --project-name vistadex-app`.
+- The Worker (`worker/`: proxy, Research Console, D1) deploys from `main` through `.github/workflows/deploy.yml` on pushes that touch `worker/**` or `prototype/**`. After every such merge, check that the run happened. If it didn't, deploy with `cd worker && npx wrangler deploy`.
+- `.github/workflows/graveyard-sync.yml` also deploys the Worker after each graveyard snapshot push, so any sync ships main's Worker code.
+- Claude never deploys and never queries production D1; the team does both.
+
+## Network guard
+- Both test suites load `tests/setup/network-guard.js` (node `--import`, vitest `setupFiles`), which blocks and records any non-localhost request. Tests use `https://proxy.test` with a stub.
+- `npm run smoke` does not load the guard. Run `node --import ../tests/setup/network-guard.js src/smoke.js` from `backend/`.
+- `prototype/config.js` points PROXY_URL at production. For checks, run the dev server only on a scratch Vite config outside the repo with PROXY_URL blanked, and delete it afterwards.
+- Browser scripts (parity, a11y, access-e2e, shots) run only under a Chrome-lock runner outside the repo (`--host-resolver-rules="MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1"` + `--disable-background-networking`), shown blocking https://example.org first.
+- Anything embedded via `Function.prototype.toString` must be tested against the wrangler bundle, not just the source: `npx --offline wrangler deploy --dry-run --outdir <scratch>`. esbuild keepNames inserts `__name` calls.
 
 ## Product principles (they override any visual reference)
 - **Every score is explainable.** The VistaDex Score and each axis are computed in code from the report, never by a model. The breakdown — each axis's value, inputs, search boundary (what was searched or checked), weight and the formula — is always one tap away ("How this was calculated").
@@ -98,6 +112,6 @@ AA verified in `web/src/test/contrast.test.ts`; status hues verified distinguish
 
 ## Commands
 - `npm test` — node tests (pipeline, proxy, telemetry, study_version guard). `npm run test:web` — web tests (contrast, colour vision, editions, flows, telemetry contract, pitch sends zero events).
-- `npm run serve` — web/ dev server on :5173. `npm run build` — static build in web/dist. `npm run dev-proxy` — Worker handler in Node on :8787.
-- With the dev server running (`VD_BASE=<url>` for another port): `npm run parity` (telemetry against the contract, pitch sends nothing), `npm run a11y` (axe at 1280/375/360/320, keyboard, overflow, reduced motion), `npm --prefix web run access-e2e` (access code and edition link), `npm --prefix web run shots` (screenshots). Run parity and a11y after any UI change.
+- `npm run serve` — web/ dev server on :5173 (talks to the production Worker; for checks use the offline config above). `npm run build` — static build in web/dist. `npm run dev-proxy` — Worker handler in Node on :8787.
+- Under the Chrome lock, with the offline dev server running (`VD_BASE=<url>` for another port): `npm run parity` (telemetry against the contract, pitch sends nothing), `npm run a11y` (axe at 1280/375/360/320, keyboard, overflow, reduced motion), `npm --prefix web run access-e2e` (access code and edition link), `npm --prefix web run shots` (screenshots). Run parity and a11y after any UI change.
 - `npm run prelaunch` — fails while blocking team decisions remain; lists the non-blocking TODO(team) defaults as warnings.

@@ -43,3 +43,31 @@ export function logConditionSurvey(condition: Condition, answers: { trust: numbe
 export function logConditionEnded(condition: Condition, runId: string, verifiedSources: number) {
   track("condition_ended", { condition, run_id: runId, verified_sources: verifiedSources });
 }
+
+// ── Learning-loop events (H4, from Berger et al. 2025) ──
+// Per-run measures so calibration change across runs can be analyzed, and
+// verification attention (dwell) captured per claim.
+
+export function logClaimDwell(runId: string, claimIndex: number, ms: number) {
+  track("claim_dwell", { claim_index: claimIndex, ms, run_id: runId });
+}
+
+export function logSourceClickedByClaim(runId: string, claimIndex: number, url: string) {
+  track("source_clicked_by_claim", { claim_index: claimIndex, run_id: runId, url: url.slice(0, 300) });
+}
+
+export function logComprehensionCheck(runId: string, answer: "honest_uncertainty" | "system_failure" | "not_sure" | "other") {
+  track("comprehension_check", { answer, run_id: runId });
+}
+
+export function logRunScopedSurvey(runId: string, condition: Condition, answers: { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string }) {
+  track("run_scoped_survey", {
+    run_id: runId,
+    condition,
+    trust: answers.trust,
+    usefulness: answers.usefulness,
+    helpfulness: answers.helpfulness,
+    effort: answers.effort,
+    open_text: answers.openText.slice(0, 2000),
+  });
+}

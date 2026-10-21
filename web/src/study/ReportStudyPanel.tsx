@@ -2,16 +2,17 @@
 // VistaDex condition (and the field track): post-report confidence, per-claim
 // and per-objection agree/disagree votes (agreeableness measure), and the
 // post-condition survey. Rendered alongside the report, never replacing it.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import type { Report } from "@/types";
-import { logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote } from "./studyEvents";
+import { logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import type { Condition } from "./participant";
 
 function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agree" | "disagree") => void; controlId: { agree: string; disagree: string } }) {
   const [vote, setVote] = useState<"agree" | "disagree" | null>(null);
+  const openedAt = useRef(Date.now());
   const pick = (v: "agree" | "disagree") => { setVote(v); onVote(v); };
   return (
     <div className="flex items-center justify-between gap-3 py-2">
@@ -74,11 +75,14 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
   const [effort, setEffort] = useState(4);
   const [open, setOpen] = useState("");
   const [checkedSources, setCheckedSources] = useState<number | null>(null);
+  const [comprehension, setComprehension] = useState<"honest_uncertainty" | "system_failure" | "not_sure" | "other" | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const submit = () => {
     logConfidencePost(condition, runId, confPost);
     logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open });
+    // Per-run copy for the learning analysis (H4): same answers, run-scoped.
+    logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open });
     setSubmitted(true);
     onDone?.();
   };
@@ -149,6 +153,19 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             className="mt-1 min-h-24 w-full rounded-control border-2 border-foreground/10 bg-card px-3 py-2 outline-none focus:border-foreground"
             value={open} onChange={e => setOpen(e.target.value)} maxLength={2000} data-control="study_survey_open"
           />
+        </label>
+        <label className="mt-5 block">
+          <span className="text-sm font-medium">Quick check: in your own understanding, what does an "unverified" claim in this report mean?</span>
+          <div className="mt-2 grid gap-2">
+            {[["honest_uncertainty", "The system honestly could not find enough evidence either way"], ["system_failure", "The system failed or broke on that claim"], ["not_sure", "I am not sure"]].map(([v, label]) => (
+              <button key={v} type="button"
+                data-control="comprehension_check"
+                onClick={() => { setComprehension(v as any); logComprehensionCheck(runId, v as any); }}
+                className={`rounded-control border-2 px-3 py-2 text-left text-sm ${comprehension === v ? "border-foreground bg-foreground/5 font-semibold" : "border-foreground/15 hover:border-foreground"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
         </label>
         {!submitted ? (
           <Button className="mt-5" data-control="study_survey_submit" onClick={submit}>Submit</Button>

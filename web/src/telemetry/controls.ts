@@ -43,7 +43,7 @@ export const CONTROLS = [
   "baseline_likert", "baseline_minutes_field", "baseline_open_field", "baseline_submit",
   "study_claim_agree", "study_claim_disagree", "study_objection_agree", "study_objection_disagree",
   "study_conf_post", "study_sources_0", "study_sources_1_2", "study_sources_3p",
-  "study_survey_open", "study_survey_submit",
+  "study_survey_open", "study_survey_submit", "comprehension_check",
   // graveyard quiz (while-you-wait)
   "quiz_start", "quiz_answer", "quiz_next", "quiz_finish",
   // not found

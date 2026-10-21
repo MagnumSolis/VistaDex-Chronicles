@@ -160,6 +160,29 @@
     "quiz_started": [],
     "quiz_finished": [
       "score"
+    ],
+    "claim_dwell": [
+      "claim_index",
+      "ms",
+      "run_id"
+    ],
+    "comprehension_check": [
+      "answer",
+      "run_id"
+    ],
+    "run_scoped_survey": [
+      "condition",
+      "effort",
+      "helpfulness",
+      "open_text",
+      "run_id",
+      "trust",
+      "usefulness"
+    ],
+    "source_clicked_by_claim": [
+      "claim_index",
+      "run_id",
+      "url"
     ]
   },
   "optional_keys": {
@@ -369,6 +392,12 @@
     "condition_survey.condition": [
       "baseline",
       "vistadex"
+    ],
+    "comprehension_check.answer": [
+      "honest_uncertainty",
+      "system_failure",
+      "not_sure",
+      "other"
     ]
   },
   "controls": [
@@ -491,7 +520,8 @@
     "quiz_start",
     "quiz_answer",
     "quiz_next",
-    "quiz_finish"
+    "quiz_finish",
+    "comprehension_check"
   ],
   "panel_viewed_rule": {
     "2026-10-pilot-1": "IntersectionObserver threshold 0.5 of the panel's own height. A panel taller than twice the viewport never reported (measurement bug).",

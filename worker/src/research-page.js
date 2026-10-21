@@ -178,6 +178,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <div class="nav-l">Data</div>
     <button class="nav" data-view="events"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Events <span class="cnt" id="cnt-e">–</span></button>
     <button class="nav" data-view="feedback"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Feedback <span class="cnt" id="cnt-f">–</span></button>
+    <button class="nav" data-view="research"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m0 6v4a2 2 0 0 0 2 2h4m6-18h4a2 2 0 0 1 2 2v4m0 6v4a2 2 0 0 1-2 2h-4"/></svg>Research <span class="cnt" id="cnt-r">–</span></button>
     <button class="nav" data-view="sessions"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>Sessions <span class="cnt" id="cnt-s">–</span></button>
     <button class="nav" data-view="export"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export</button>
     <div class="foot">
@@ -225,6 +226,13 @@ export const RESEARCH_PAGE = `<!doctype html>
     <section class="view" id="v-feedback">
       <div class="phead"><h1>Feedback</h1><span class="sub">what visitors told you — form answers, ratings and confidence, summarised</span></div>
       <div id="feedback-content"><div class="tbl-wrap" style="padding:28px;text-align:center;color:var(--ink-3);font-style:italic">No feedback yet.</div></div>
+    </section>
+
+    <section class="view" id="v-research">
+      <div class="phead"><h1>Research analysis</h1><span class="sub">per-run measures · H4 learning stratification · qualitative store</span></div>
+      <div id="research-content" style="margin-bottom:28px"><div class="skel" style="height:200px"></div></div>
+      <h2 style="font-size:14px;margin:26px 0 4px;font-weight:700">Qualitative store <span class="sub" style="font-size:12px;color:var(--ink-3);font-weight:400">MongoDB Atlas · feedback + surveys, verbatim</span></h2>
+      <div id="qualitative-content"><div class="skel" style="height:120px"></div></div>
     </section>
 
     <section class="view" id="v-sessions">
@@ -415,6 +423,92 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="fb-avg">mean ' + (Math.round(avg * 10) / 10) + (unit || "") + "</div></div>";
   }
 
+  function renderResearch(ev) {
+    var box = $("research-content");
+    // collect runs: a run = one run_started..run_completed pair per session
+    var runs = [];
+    var bySid = {};
+    ev.forEach(function (e) {
+      var q = e.payload || {};
+      if (e.type === "run_started") {
+        runs.push({ sid: e.session_id, runId: q.run_id || null, started: e.ts,
+          role: q.role || null, industries: (q.industries || []).join(", "),
+          pre: null, post: null, votes: 0, agrees: 0, clicks: 0, dwell: 0, survey: null, comp: null });
+      }
+    });
+    // join per-run measures (new events carry run_id; old fall back to latest)
+    var byRun = {};
+    runs.forEach(function (r) { byRun[r.runId] = r; });
+    ev.forEach(function (e) {
+      var q = e.payload || {};
+      var r = byRun[q.run_id];
+      if (!r) return;
+      if (e.type === "confidence_pre") r.pre = q.value;
+      else if (e.type === "confidence_post") r.post = q.value;
+      else if (e.type === "claim_vote" || e.type === "objection_vote") { r.votes++; if (q.vote === "agree") r.agrees++; }
+      else if (e.type === "source_clicked_by_claim" || e.type === "source_clicked") r.clicks++;
+      else if (e.type === "claim_dwell") r.dwell += q.ms || 0;
+      else if (e.type === "run_scoped_survey") r.survey = q;
+      else if (e.type === "comprehension_check") r.comp = q.answer;
+    });
+    $("cnt-r").textContent = runs.length;
+
+    // H4 stratification: clickers vs non-clickers
+    var clickers = runs.filter(function (r) { return r.clicks > 0; });
+    var nonClickers = runs.filter(function (r) { return r.clicks === 0; });
+    function cal(r) { return r.pre != null && r.post != null ? r.post - r.pre : null; }
+    function meanCal(arr) {
+      var vals = arr.map(cal).filter(function (v) { return v != null; });
+      return vals.length ? Math.round(10 * vals.reduce(function (a, v) { return a + v; }, 0) / vals.length) / 10 : null;
+    }
+
+    var html = "";
+    // stratification cards
+    html += '<div class="kpis">' +
+      '<div class="kpi"><div class="label">Runs recorded</div><div class="val">' + runs.length + '</div><div class="note">screenings with telemetry</div></div>' +
+      '<div class="kpi hl"><div class="label">Verified (clicked sources)</div><div class="val">' + clickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(clickers) == null ? "—" : (meanCal(clickers) > 0 ? "+" : "") + meanCal(clickers)) + '</div></div>' +
+      '<div class="kpi"><div class="label">Explanation-only</div><div class="val">' + nonClickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(nonClickers) == null ? "—" : (meanCal(nonClickers) > 0 ? "+" : "") + meanCal(nonClickers)) + '</div></div>' +
+      '</div>';
+    html += '<p class="msg" style="margin:6px 0 14px">H4 (Berger et al.): if verification produces learning, clickers should show different calibration deltas than explanation-only users. Both groups computed per run; pair with Track-A for the causal version.</p>';
+
+    // per-run table
+    html += '<div class="tbl-wrap"><table><tr><th>Session</th><th>Run</th><th>Role</th><th>Conf Δ</th><th>Votes</th><th>Agree %</th><th>Sources</th><th>Survey</th><th>Comprehension</th></tr>';
+    if (runs.length) {
+      runs.forEach(function (r) {
+        var c = cal(r);
+        var delta = c != null ? '<span class="delta ' + (c > 0 ? "up" : c < 0 ? "down" : "zero") + '">' + (c > 0 ? "+" : "") + c + "</span>" : "—";
+        var ag = r.votes ? Math.round(100 * r.agrees / r.votes) + "%" : "—";
+        var sv = r.survey ? '<span class="num">T' + r.survey.trust + " · U" + r.survey.usefulness + "</span>" : "—";
+        var comp = r.comp ? esc(r.comp) : "—";
+        html += "<tr><td class='num'>" + esc(r.sid.slice(0, 8)) + "…</td><td class='num'>" + (r.runId ? esc(String(r.runId).slice(0, 8)) : "—") + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
+      });
+    } else {
+      html += '<tr><td colspan="9" class="empty">No runs with telemetry yet.</td></tr>';
+    }
+    html += "</table></div>";
+    box.innerHTML = html;
+  }
+
+  function loadQualitative() {
+    fetch("/research/qualitative", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      var box = $("qualitative-content");
+      if (!d.configured) {
+        box.innerHTML = '<div class="tbl-wrap" style="padding:20px;color:var(--ink-3);font-size:12.5px">' + esc(d.note || "Not configured.") + " To enable: create a Data API app in Atlas (research_data.qualitative), then set MONGODB_DATA_API_URL + MONGODB_DATA_API_KEY as Worker secrets.</div>";
+        return;
+      }
+      var docs = d.docs || [];
+      if (!docs.length) { box.innerHTML = '<div class="tbl-wrap" style="padding:20px;color:var(--ink-3)">No qualitative documents yet.</div>'; return; }
+      box.innerHTML = docs.map(function (doc) {
+        var q = doc.payload || {};
+        var title = doc.type === "feedback_submitted" ? "Feedback form" : doc.type === "condition_survey" ? "Report survey (" + esc(q.condition || "?") + ")" : "Registration";
+        var body = q.wrong || q.open_text || (q.role ? "role: " + esc(q.role) : "—");
+        return '<div class="fb-quote">' + esc(String(body).slice(0, 600)) + '<div class="who">' + title + " · " + esc(String(doc.ts || "").slice(0, 16).replace("T", " ")) + " · Mongo</div></div>";
+      }).join("");
+    }).catch(function () {
+      $("qualitative-content").innerHTML = '<div class="msg err">qualitative store unreachable</div>';
+    });
+  }
+
   function renderFeedback(ev) {
     var box = $("feedback-content");
     var fbForms = ev.filter(function (e) { return e.type === "feedback_submitted"; });
@@ -540,6 +634,10 @@ export const RESEARCH_PAGE = `<!doctype html>
         "<td style='min-width:120px'><span class='bar' style='width:" + Math.max(2, 110 * n / maxT) + "px'></span></td>" +
         "<td style='color:var(--ink-2)'>" + esc(MEANINGS[t] || "auto-collected") + "</td></tr>";
     }).join("");
+
+    // research view (per-run + H4)
+    renderResearch(ev);
+    loadQualitative();
 
     // feedback view
     renderFeedback(ev);

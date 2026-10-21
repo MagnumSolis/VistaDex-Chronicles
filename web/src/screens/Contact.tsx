@@ -36,7 +36,7 @@ export function Contact() {
           )}
         </Item>
         <Item icon={FolderGit2} title="Source code">
-          The full source and methodology will be published with the research paper. Until then, the code is private during the study.
+          Not available yet.
         </Item>
       </ul>
     </div>

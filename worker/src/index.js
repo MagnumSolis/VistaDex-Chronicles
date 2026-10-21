@@ -62,6 +62,7 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     // Research console: GET /research (login + dashboard, token via ?t= or cookie)
     if (url.pathname === "/research") return await researchConsole(request, url, env, { store });
     if (url.pathname === "/research/data" && request.method === "GET") return await researchData(request, url, env, { store });
+    if (url.pathname === "/research/qualitative" && request.method === "GET") return await researchQualitative(request, url, env);
     if (url.pathname === "/research/purge" && request.method === "POST") return await researchPurge(request, env, { store });
     return json({ error: "not found" }, 404, cors);
   } catch (err) {
@@ -134,6 +135,9 @@ async function saveEvents(request, env, { store, now, cors }) {
     if (!ok) return json({ error: "malformed event" }, 400, cors);
   }
   const stored = await store.saveEvents(id, list.map(e => ({ seq: e.seq, ts: e.ts, type: e.type, study_version: e.study_version, payload: e.payload })), now());
+  // Research-qualitative mirror: feedback and survey answers also land in MongoDB
+  // Atlas (durable, console-visible) — best-effort, never blocks the response.
+  mirrorQualitativeToAtlas(env, id, list).catch(() => {});
   return json({ stored, received: list.length }, 200, cors);
 }
 
@@ -156,6 +160,59 @@ async function exportData(request, url, env, { store }) {
   }
   return json(rows.map(r => ({ ...r, ...(r.payload ? { payload: parse(r.payload) } : {}), ...(r.trace ? { trace: parse(r.trace) } : {}) })), 200);
 }
+
+// ── MongoDB Atlas mirror for research-qualitative data ──
+// Feedback text and survey answers are the paper's qualitative corpus; they
+// deserve durable storage beyond the D1 event log. Mirrored best-effort via
+// the Atlas Data API (HTTPS). Collection: research_data.qualitative.
+const QUALITATIVE_TYPES = new Set(["feedback_submitted", "condition_survey", "participant_registered"]);
+const MONGO_DB = "research_data";
+const MONGO_COLL = "qualitative";
+
+async function mirrorQualitativeToAtlas(env, sessionId, events) {
+  const { MONGODB_DATA_API_KEY, MONGODB_DATA_API_URL } = env;
+  if (!MONGODB_DATA_API_KEY || !MONGODB_DATA_API_URL) return; // not configured — skip silently
+  for (const e of events) {
+    if (!QUALITATIVE_TYPES.has(e.type)) continue;
+    try {
+      await fetch(`${MONGODB_DATA_API_URL}/action/insertOne`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "api-key": MONGODB_DATA_API_KEY },
+        body: JSON.stringify({
+          database: MONGO_DB,
+          collection: MONGO_COLL,
+          document: {
+            session_id: sessionId,
+            ts: e.ts || now2(),
+            type: e.type,
+            study_version: e.study_version || null,
+            payload: e.payload || {},
+            received_ts: Date.now(),
+          },
+        }),
+      });
+    } catch { /* best-effort only */ }
+  }
+}
+
+// Console endpoint: read the qualitative store (token-gated like /research).
+async function researchQualitative(request, url, env) {
+  if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
+  const { MONGODB_DATA_API_KEY, MONGODB_DATA_API_URL } = env;
+  if (!MONGODB_DATA_API_KEY || !MONGODB_DATA_API_URL) {
+    return json({ ok: true, configured: false, docs: [], note: "Mongo Data API not configured — qualitative data lives only in D1 events." });
+  }
+  const res = await fetch(`${MONGODB_DATA_API_URL}/action/find`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "api-key": MONGODB_DATA_API_KEY },
+    body: JSON.stringify({ database: MONGO_DB, collection: MONGO_COLL, filter: {}, limit: 500, sort: { received_ts: -1 } }),
+  });
+  if (!res.ok) return json({ ok: false, error: "mongo_query_failed" }, 502);
+  const data = await res.json();
+  return json({ ok: true, configured: true, docs: data.documents || [] });
+}
+
+function now2() { return new Date().toISOString(); }
 
 // ── access code, rate limits, daily cap ──
 // Enforced when ACCESS_REQUIRED is "true" (set in wrangler.toml) or when codes are configured.

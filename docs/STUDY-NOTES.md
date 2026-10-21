@@ -45,7 +45,11 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-10-study-1 (F364 research instrumentation — CURRENT)
+## study_version 2026-10-study-2 (21 Oct frontend fixes — CURRENT)
+
+Same events, payload keys and answer values as 2026-10-study-1. Bumped because the visitor-facing report UI changed: the post-report form no longer selects an answer on background clicks (study-1 data can contain a phantom `study_sources_0` press or `comprehension_check` event right after a real answer), the jump nav lands on and highlights the clicked section, and the report top / walkthrough scrolling changed.
+
+## study_version 2026-10-study-1 (F364 research instrumentation)
 
 The course research data source is now the live public demo: the Welcome notice is the
 research consent, accepting it auto-enrolls the visitor (field track), and the retired

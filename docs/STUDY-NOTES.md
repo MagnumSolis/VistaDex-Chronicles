@@ -44,3 +44,33 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: withdrawal contact channel.** Placeholder in the consent text and in the withdraw-failure message (`WITHDRAWAL_CONTACT`).
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
+
+## study_version 2026-10-study-1 (F364 research instrumentation — CURRENT)
+
+The course research data source is now the live public demo: the Welcome notice is the
+research consent, accepting it auto-enrolls the visitor (field track), and the retired
+study UI is superseded. Two tracks:
+
+- **Field track**: every consenting public visitor; own idea; post-report study panel
+  (confidence slider, per-claim/objection agree-disagree votes, T/U/H/E likerts,
+  source self-report, open text — stored verbatim, the visitor wrote it to be read).
+- **Study track** (recruited, within-subjects): participant code via #/study, assigned
+  idea, counterbalanced [baseline chatbot, VistaDex] via #/baseline; same measures per
+  condition; paired analysis (Wilcoxon). #/study was added to the router TABLE (it 404'd
+  when the TABLE entry was missed — fixed and component-tested).
+
+New events: participant_registered (code, role, track, source/channel — utm_source
+first-touch), condition_started, confidence_pre/post, claim_vote, objection_vote,
+condition_survey (open_text verbatim), condition_ended, quiz_started/finished.
+Withdraw now blocks re-uploads (pre-existing); console purges also write a withdrawal —
+purging a session whose browser is still open silently rejects its later uploads.
+
+**Berger et al. 2025 (arXiv:2512.13253) — human learning & synergy.** Their re-analysis
+of the 74-study synergy meta-analysis: outcome feedback → higher synergy;
+explanations+feedback → positive synergy; explanations WITHOUT feedback → NEGATIVE
+synergy. VistaDex is their paradigm-shift experiment in the ideation domain: every
+status verifiable (2-independent-domain rule), every claim carries sources, the
+graveyard is ground-truth outcome data. New hypothesis **H4**: participants who verify
+(source-clickers) show improving calibration across runs; explanation-only readers do
+not. Stratify the analysis by verification behavior. Cite prominently — the paper is
+positioned as answering their call.

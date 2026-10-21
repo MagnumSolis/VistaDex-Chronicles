@@ -28,12 +28,12 @@ describe("post-report form", () => {
     const { events } = await openPanel();
     const question = screen.getByText("Did you open any of the evidence links yourself?");
     const group = question.parentElement!;
-    fireEvent.click(within(group).getByRole("button", { name: "1-2" }));
+    fireEvent.click(within(group).getByRole("radio", { name: "1-2" }));
     background(question);
     const pressed = events().filter(e => e.type === "control_pressed" && String(e.payload.control).startsWith("study_sources_"));
     expect(pressed.map(e => e.payload.control)).toEqual(["study_sources_1_2"]);
-    expect(within(group).getByRole("button", { name: "1-2" }).getAttribute("aria-pressed")).toBe("true");
-    expect(within(group).getByRole("button", { name: "0" }).getAttribute("aria-pressed")).toBe("false");
+    expect((within(group).getByRole("radio", { name: "1-2" }) as HTMLInputElement).checked).toBe(true);
+    expect((within(group).getByRole("radio", { name: "0" }) as HTMLInputElement).checked).toBe(false);
   }, 30000);
 
   it("the comprehension check selects and logs nothing on background clicks", async () => {
@@ -41,10 +41,43 @@ describe("post-report form", () => {
     const question = screen.getByText(/Quick check: in your own understanding/);
     background(question);
     expect(events().filter(e => e.type === "comprehension_check")).toEqual([]);
-    const second = within(question.parentElement!).getByRole("button", { name: /failed or broke/ });
+    const second = within(question.parentElement!).getByRole("radio", { name: /failed or broke/ }) as HTMLInputElement;
     fireEvent.click(second);
     background(question);
     expect(events().filter(e => e.type === "comprehension_check").map(e => e.payload.answer)).toEqual(["system_failure"]);
-    expect(second.getAttribute("aria-pressed")).toBe("true");
+    expect(second.checked).toBe(true);
+  }, 30000);
+});
+
+describe("post-report form answers are native radios (option A)", () => {
+  it("nothing preselected, one answer per question, changeable, same events and values", async () => {
+    const { events } = await openPanel();
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.length).toBeGreaterThan(6);
+    expect(radios.filter(r => r.checked)).toEqual([]);
+    for (const r of radios) expect(r.closest("fieldset")?.querySelector("legend")?.textContent).toBeTruthy();
+
+    const sources = screen.getByText("Did you open any of the evidence links yourself?").parentElement!;
+    fireEvent.click(within(sources).getByRole("radio", { name: "3+" }));
+    fireEvent.click(within(sources).getByRole("radio", { name: "0" }));
+    expect((within(sources).getAllByRole("radio") as HTMLInputElement[]).map(r => r.checked)).toEqual([true, false, false]);
+    expect(events().filter(e => e.type === "control_pressed" && String(e.payload.control).startsWith("study_sources_")).map(e => e.payload.control))
+      .toEqual(["study_sources_3p", "study_sources_0"]);
+
+    // Claim 1: agree, then change to disagree; pressing the chosen answer again logs again, as the buttons did.
+    const claim = screen.getAllByText(/^Claim 1 — /)[0].closest("fieldset")!;
+    fireEvent.click(within(claim).getByRole("radio", { name: "Agree" }));
+    fireEvent.click(within(claim).getByRole("radio", { name: "Disagree" }));
+    fireEvent.click(within(claim).getByRole("radio", { name: "Disagree" }));
+    expect((within(claim).getByRole("radio", { name: "Disagree" }) as HTMLInputElement).checked).toBe(true);
+    expect(events().filter(e => e.type === "claim_vote").map(e => [e.payload.claim_index, e.payload.vote])).toEqual([[0, "agree"], [0, "disagree"], [0, "disagree"]]);
+    expect(events().filter(e => e.type === "control_pressed" && String(e.payload.control).startsWith("study_claim_")).map(e => e.payload.control))
+      .toEqual(["study_claim_agree", "study_claim_disagree", "study_claim_disagree"]);
+
+    const objection = screen.getAllByText(/^Objection 1 /)[0].closest("fieldset")!;
+    fireEvent.click(within(objection).getByRole("radio", { name: "Agree" }));
+    expect(events().filter(e => e.type === "objection_vote").map(e => e.payload.vote)).toEqual(["agree"]);
+    // Rows don't share a group: claim 1's answer is still there.
+    expect((within(claim).getByRole("radio", { name: "Disagree" }) as HTMLInputElement).checked).toBe(true);
   }, 30000);
 });

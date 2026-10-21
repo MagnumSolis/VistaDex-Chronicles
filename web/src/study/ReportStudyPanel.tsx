@@ -2,49 +2,44 @@
 // VistaDex condition (and the field track): post-report confidence, per-claim
 // and per-objection agree/disagree votes (agreeableness measure), and the
 // post-condition survey. Rendered alongside the report, never replacing it.
-import { useEffect, useRef, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import type { Report } from "@/types";
 import { logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
 
+/** One answer: a full-width rectangle (44px+) around a native radio with a visible dot, in the feedback
+ *  page's colours. Nothing is preselected. onSelect runs on every press of the option itself (click,
+ *  Space, arrow keys), so a repeated press logs again, as the old buttons did. */
+function Choice({ name, checked, onSelect, control, children }: { name: string; checked: boolean; onSelect: () => void; control: string; children: ReactNode }) {
+  return (
+    <label className={cn("flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-control border px-3.5 py-2 text-sm font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
+      checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent")}>
+      <input type="radio" name={name} checked={checked} onClick={onSelect} readOnly data-control={control} className="sr-only" />
+      <span aria-hidden className={cn("flex size-4 shrink-0 items-center justify-center rounded-full border-2", checked ? "border-primary-foreground" : "border-input")}>
+        {checked && <span className="size-2 rounded-full bg-primary-foreground" />}
+      </span>
+      {children}
+    </label>
+  );
+}
+
 function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agree" | "disagree") => void; controlId: { agree: string; disagree: string } }) {
   const [vote, setVote] = useState<"agree" | "disagree" | null>(null);
-  const openedAt = useRef(Date.now());
+  const name = useId();
   const pick = (v: "agree" | "disagree") => { setVote(v); onVote(v); };
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <span className={`min-w-0 flex-1 truncate text-xs ${vote ? "opacity-60" : ""}`} title={label}>{label}</span>
-      <div className="flex shrink-0 gap-1.5">
-        <button
-          type="button"
-          data-control={controlId.agree}
-          onClick={() => pick("agree")}
-          aria-pressed={vote === "agree"}
-          className={`rounded-control border-2 px-2.5 py-1 text-xs transition-colors ${
-            vote === "agree"
-              ? "border-foreground bg-foreground text-background font-semibold"
-              : "border-foreground/25 bg-card hover:border-foreground"
-          }`}
-          aria-label="I agree"
-        >{vote === "agree" ? "✓ " : ""}Agree</button>
-        <button
-          type="button"
-          data-control={controlId.disagree}
-          onClick={() => pick("disagree")}
-          aria-pressed={vote === "disagree"}
-          className={`rounded-control border-2 px-2.5 py-1 text-xs transition-colors ${
-            vote === "disagree"
-              ? "border-foreground bg-foreground text-background font-semibold"
-              : "border-foreground/25 bg-card hover:border-foreground"
-          }`}
-          aria-label="I disagree"
-        >{vote === "disagree" ? "✓ " : ""}Disagree</button>
+    <fieldset className="min-w-0 py-3">
+      <legend className="w-full truncate text-xs" title={label}>{label}</legend>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Choice name={name} checked={vote === "agree"} onSelect={() => pick("agree")} control={controlId.agree}>Agree</Choice>
+        <Choice name={name} checked={vote === "disagree"} onSelect={() => pick("disagree")} control={controlId.disagree}>Disagree</Choice>
       </div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -140,15 +135,12 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
         {/* fieldset, not label: a label forwards any click on it to its first button, which picked "0" by itself. */}
         <fieldset className="mt-5">
           <legend className="text-sm font-medium">Did you open any of the evidence links yourself?</legend>
-          <div className="mt-2 flex gap-2">
-            {["0", "1-2", "3+"].map((o, i) => (
-              <button key={o} type="button"
-                data-control={i === 0 ? "study_sources_0" : i === 1 ? "study_sources_1_2" : "study_sources_3p"}
-                onClick={() => setCheckedSources(i === 0 ? 0 : i === 1 ? 1 : 3)}
-                aria-pressed={checkedSources === (i === 0 ? 0 : i === 1 ? 1 : 3)}
-                className={`rounded-full border-2 px-3 py-1.5 text-sm ${checkedSources === (i === 0 ? 0 : i === 1 ? 1 : 3) ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {(["0", "1-2", "3+"] as const).map((o, i) => (
+              <Choice key={o} name="study_sources" checked={checkedSources === [0, 1, 3][i]} onSelect={() => setCheckedSources([0, 1, 3][i])}
+                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]}>
                 {o}
-              </button>
+              </Choice>
             ))}
           </div>
         </fieldset>
@@ -163,13 +155,10 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
           <legend className="text-sm font-medium">Quick check: in your own understanding, what does an "unverified" claim in this report mean?</legend>
           <div className="mt-2 grid gap-2">
             {[["honest_uncertainty", "The system honestly could not find enough evidence either way"], ["system_failure", "The system failed or broke on that claim"], ["not_sure", "I am not sure"]].map(([v, label]) => (
-              <button key={v} type="button"
-                data-control="comprehension_check"
-                onClick={() => { setComprehension(v as any); logComprehensionCheck(runId, v as any); }}
-                aria-pressed={comprehension === v}
-                className={`rounded-control border-2 px-3 py-2 text-left text-sm ${comprehension === v ? "border-foreground bg-foreground/5 font-semibold" : "border-foreground/15 hover:border-foreground"}`}>
+              <Choice key={v} name="comprehension_check" checked={comprehension === v} control="comprehension_check"
+                onSelect={() => { setComprehension(v as any); logComprehensionCheck(runId, v as any); }}>
                 {label}
-              </button>
+              </Choice>
             ))}
           </div>
         </fieldset>

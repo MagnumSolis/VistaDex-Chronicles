@@ -80,7 +80,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     type="button"
                     data-control="study_role_chip" data-control-value={r}
                     onClick={() => setRole(role === r ? null : r)}
-                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-on-foreground" : "border-foreground/15 bg-card"}`}
+                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}
                   >
                     {r}
                   </button>
@@ -118,7 +118,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     key={r}
                     type="button"
                     onClick={() => setRole(role === r ? null : r)}
-                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-on-foreground" : "border-foreground/15 bg-card"}`}
+                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}
                   >
                     {r}
                   </button>

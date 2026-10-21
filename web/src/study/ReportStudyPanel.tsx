@@ -26,7 +26,7 @@ function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agr
           aria-pressed={vote === "agree"}
           className={`rounded-control border-2 px-2.5 py-1 text-xs transition-colors ${
             vote === "agree"
-              ? "border-foreground bg-foreground text-on-foreground font-semibold"
+              ? "border-foreground bg-foreground text-background font-semibold"
               : "border-foreground/25 bg-card hover:border-foreground"
           }`}
           aria-label="I agree"
@@ -38,7 +38,7 @@ function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agr
           aria-pressed={vote === "disagree"}
           className={`rounded-control border-2 px-2.5 py-1 text-xs transition-colors ${
             vote === "disagree"
-              ? "border-foreground bg-foreground text-on-foreground font-semibold"
+              ? "border-foreground bg-foreground text-background font-semibold"
               : "border-foreground/25 bg-card hover:border-foreground"
           }`}
           aria-label="I disagree"
@@ -137,19 +137,21 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
           <Likert label="The report helped me see what to verify next" value={helpfulness} onChange={setHelpfulness} low="1 — not at all" high="7 — a lot" />
           <Likert label="Getting a good read on the idea took effort" value={effort} onChange={setEffort} low="1 — effortless" high="7 — a lot of work" />
         </div>
-        <label className="mt-5 block">
-          <span className="text-sm font-medium">Did you open any of the evidence links yourself?</span>
+        {/* fieldset, not label: a label forwards any click on it to its first button, which picked "0" by itself. */}
+        <fieldset className="mt-5">
+          <legend className="text-sm font-medium">Did you open any of the evidence links yourself?</legend>
           <div className="mt-2 flex gap-2">
             {["0", "1-2", "3+"].map((o, i) => (
               <button key={o} type="button"
                 data-control={i === 0 ? "study_sources_0" : i === 1 ? "study_sources_1_2" : "study_sources_3p"}
                 onClick={() => setCheckedSources(i === 0 ? 0 : i === 1 ? 1 : 3)}
-                className={`rounded-full border-2 px-3 py-1.5 text-sm ${checkedSources === (i === 0 ? 0 : i === 1 ? 1 : 3) ? "border-foreground bg-foreground text-on-foreground" : "border-foreground/15 bg-card"}`}>
+                aria-pressed={checkedSources === (i === 0 ? 0 : i === 1 ? 1 : 3)}
+                className={`rounded-full border-2 px-3 py-1.5 text-sm ${checkedSources === (i === 0 ? 0 : i === 1 ? 1 : 3) ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}>
                 {o}
               </button>
             ))}
           </div>
-        </label>
+        </fieldset>
         <label className="mt-4 block">
           <span className="text-sm font-medium">In your words: what did the report make you think or feel about this idea? (optional)</span>
           <textarea
@@ -157,19 +159,20 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             value={open} onChange={e => setOpen(e.target.value)} maxLength={2000} data-control="study_survey_open"
           />
         </label>
-        <label className="mt-5 block">
-          <span className="text-sm font-medium">Quick check: in your own understanding, what does an "unverified" claim in this report mean?</span>
+        <fieldset className="mt-5">
+          <legend className="text-sm font-medium">Quick check: in your own understanding, what does an "unverified" claim in this report mean?</legend>
           <div className="mt-2 grid gap-2">
             {[["honest_uncertainty", "The system honestly could not find enough evidence either way"], ["system_failure", "The system failed or broke on that claim"], ["not_sure", "I am not sure"]].map(([v, label]) => (
               <button key={v} type="button"
                 data-control="comprehension_check"
                 onClick={() => { setComprehension(v as any); logComprehensionCheck(runId, v as any); }}
+                aria-pressed={comprehension === v}
                 className={`rounded-control border-2 px-3 py-2 text-left text-sm ${comprehension === v ? "border-foreground bg-foreground/5 font-semibold" : "border-foreground/15 hover:border-foreground"}`}>
                 {label}
               </button>
             ))}
           </div>
-        </label>
+        </fieldset>
         {!submitted ? (
           <Button className="mt-5" data-control="study_survey_submit" onClick={submit}>Submit</Button>
         ) : (

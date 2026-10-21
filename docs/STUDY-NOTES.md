@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-10-study-2 (21 Oct frontend fixes — CURRENT)
+## study_version 2026-10-study-3 (research console fixes, pre-run confidence — CURRENT)
+
+- **New field-track measure: the pre-run confidence slider** on Screen an idea (public edition only; hidden in the pitch edition and in the Home page preview). Every run logs exactly one `confidence_pre { condition: "vistadex", value, run_id, moved }`. An untouched slider logs its starting value: `{ value: 50, moved: false }`. `moved` is optional in the contract (the baseline session's `confidence_pre` has no such key). The console includes untouched values in the calibration delta and marks them ("pre 50 · untouched"); the CSV has `conf_pre_moved`.
+- **Run ids are random**: `r_` + 12 hex. Older ids (`r1`, `r2`…) were per-page-load counters: they restarted on every reload while the session id persisted, so one session can hold several `r1` runs. The console matches those older events to the run that started last before them (by `seq`, then `ts`), and flags every such match as inferred ("matched by start order", counted in the per-run table header). Events with a missing or unmatched `run_id` are matched the same way. A study-panel `run_id` from before 84273db was the report entry id (`<entry>-r<N>`) and is reduced to `r<N>` first.
+- **Agreement uses each item's latest vote.** Every vote press is logged (a change of mind, or the same answer again). The console now counts only the latest vote per (session, run, claim or objection, index). Agree rate = agree ÷ all votes: `not_sure` is a vote, not agreement, so it stays in the denominator. "Votes cast" is now "Items voted"; the CSV adds `votes_agree`, `votes_disagree` and `votes_not_sure`.
+- **The bump resets consent**, as every bump does: returning visitors see the Welcome notice again and get a new session id.
+
+**Known limitations**
+- **Two tabs in one session send duplicate `seq` values.** Each tab counts from the same stored value, and D1 keeps only the first event per (session_id, seq), so the second tab's colliding events are silently dropped. This is older than this version, the lost events cannot be recovered, and it will be fixed separately.
+- **Old r1-style data is matched by start order and flagged as inferred.** One case cannot be told apart: after a reload, a vote on a reopened older report (legacy `r1` id) joins the newest `r1` run. New `r_` ids join exactly.
+
+## study_version 2026-10-study-2 (21 Oct frontend fixes)
 
 Same events, payload keys and answer values as 2026-10-study-1. Bumped because the visitor-facing report UI changed: the post-report form no longer selects an answer on background clicks (study-1 data can contain a phantom `study_sources_0` press or `comprehension_check` event right after a real answer), the jump nav lands on and highlights the clicked section, and the report top / walkthrough scrolling changed.
 

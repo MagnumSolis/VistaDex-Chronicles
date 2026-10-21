@@ -64,7 +64,7 @@ participants joined with confidence deltas, agreeableness rates, verification
 counts, survey scores, funnel, session purge, CSV/JSON export.
 
 Telemetry contract: `tests/fixtures/event-contract.json` (study_version
-`2026-10-study-2`). No idea text, no report content, no PII in events; traces
+`2026-10-study-3`). No idea text, no report content, no PII in events; traces
 hold pipeline detail and are deleted on session withdraw.
 
 ## Pipeline

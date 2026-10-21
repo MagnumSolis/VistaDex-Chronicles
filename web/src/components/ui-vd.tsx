@@ -26,7 +26,8 @@ export function Panel({ children, className, tab, tabId, tone = "cream", as: Tag
   const bg = { cream: "bg-background text-foreground", lime: "bg-lime text-on-lime", paper: "bg-card text-foreground", charcoal: "bg-charcoal text-on-charcoal" }[tone];
   const ring = tone === "charcoal" ? "on-page" : "on-light";
   return (
-    <Tag className={cn("relative min-w-0", ring, tab && "pt-11", className)} {...rest}>
+    // overflow-x-clip: a tab as wide as the panel (long title at 320px) must not push its notch past the page edge.
+    <Tag className={cn("relative min-w-0", ring, tab && "pt-11 overflow-x-clip", className)} {...rest}>
       {tab && (
         <div className={cn("tab-notch absolute left-0 top-0 h-12 rounded-t-[1.25rem] px-5 pt-3", bg)} style={{ ["--notch" as string]: `var(--${tone === "cream" ? "background" : tone === "paper" ? "card" : tone})` }}>
           <div id={tabId} className="font-display text-[1.375rem] leading-tight">{tab}</div>

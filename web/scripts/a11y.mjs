@@ -290,6 +290,35 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
   }
 }
 
+// ── 7: phone header — fits at 320/360/375, 44px targets, named, visible focus ──
+for (const w of [320, 360, 375]) {
+  for (const edition of ["public", "pitch"]) {
+    const { ctx, page } = await openApp(browser, { viewport: { width: w, height: 700 }, isMobile: true, hash: edition === "pitch" ? "#edition=pitch" : "#/" });
+    await page.locator("main h1").first().waitFor();
+    await overflow(page, `${w} ${edition} phone header`);
+    const controls = await page.evaluate(() => [...document.querySelectorAll("header")].filter(h => !h.closest("main") && getComputedStyle(h).display !== "none")
+      .flatMap(h => [...h.querySelectorAll("a, button")]).map(el => {
+        const r = el.getBoundingClientRect();
+        const name = (el.getAttribute("aria-label") || el.textContent || "").trim();
+        return { name, w: Math.round(r.width), h: Math.round(r.height), right: Math.round(r.right), control: el.dataset.control };
+      }));
+    for (const c of controls) {
+      if (c.control === "nav_home") continue; // the wordmark is a text link, not a tap button
+      if (c.w < 44 || c.h < 44) problems.push(`[header ${w} ${edition}] "${c.name}" is ${c.w}x${c.h}px (< 44px)`);
+      if (!c.name) problems.push(`[header ${w} ${edition}] a header control has no accessible name`);
+    }
+    if (edition === "public") {
+      const fb = page.locator("header [data-control=header_feedback]").last();
+      if ((await fb.getAttribute("aria-label")) !== "Feedback" && (await fb.innerText()).trim() !== "Feedback") problems.push(`[header ${w}] the Feedback control is not named "Feedback"`);
+      await fb.focus();
+      await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Tab"); // keyboard focus, so :focus-visible applies
+      const ring = await fb.evaluate(el => { const s = getComputedStyle(el); return document.activeElement === el && ((s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== "none"); });
+      if (!ring) problems.push(`[header ${w}] the Feedback control has no visible focus style`);
+    }
+    await ctx.close();
+  }
+}
+
 await browser.close();
 if (problems.length) { console.error(`A11Y: ${problems.length} problem(s)\n- ` + problems.join("\n- ")); process.exit(1); }
 console.log("A11Y OK: axe (WCAG 2.2 A/AA) clean on every screen and state at 1280/375/360/320 px in both editions; no horizontal scroll; keyboard-only flow with visible focus; no animation under reduced motion.");

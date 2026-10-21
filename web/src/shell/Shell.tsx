@@ -117,16 +117,17 @@ function HeaderExtras({ onHelp, compact = false }: { onHelp?: () => void; compac
       )}
       {features.walkthrough && onHelp && (
         <button type="button" onClick={onHelp} data-control="help_replay_walkthrough" aria-label="Replay the walkthrough"
-          className={cn("inline-flex size-10 items-center justify-center rounded-control border transition-colors duration-150",
+          className={cn("inline-flex items-center justify-center rounded-control border transition-colors duration-150", compact ? "size-11" : "size-10",
             compact ? "border-on-page/70 text-on-page hover:bg-page-raised" : "border-foreground/70 text-foreground hover:bg-accent")}>
           <CircleHelp aria-hidden className="size-5" strokeWidth={1.75} />
         </button>
       )}
       {features.feedback && (
+        // Phones: 44px tall; below 360px icon only (the label stays as its accessible name) so the bar fits 320px.
         <a href={href(PATHS.feedback)} data-control="header_feedback"
-          className={cn("inline-flex h-10 items-center gap-2 rounded-control px-3.5 text-sm font-medium transition-colors duration-150",
-            compact ? "bg-lime text-on-lime hover:bg-[color-mix(in_oklch,var(--lime),black_8%)]" : "bg-primary text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),black_18%)]")}>
-          <MessageSquareText aria-hidden className="size-4" strokeWidth={1.75} /> Feedback
+          className={cn("inline-flex items-center justify-center gap-2 rounded-control px-3.5 text-sm font-medium transition-colors duration-150",
+            compact ? "h-11 max-[359px]:w-11 max-[359px]:px-0 bg-lime text-on-lime hover:bg-[color-mix(in_oklch,var(--lime),black_8%)]" : "h-10 bg-primary text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),black_18%)]")}>
+          <MessageSquareText aria-hidden className="size-4" strokeWidth={1.75} /> <span className={cn(compact && "max-[359px]:sr-only")}>Feedback</span>
         </a>
       )}
     </>

@@ -50,12 +50,13 @@ export function useRun() {
 
 export const reportPath = (id: string) => `${PATHS.report}/${encodeURIComponent(id)}`;
 
-export async function startRun({ input, sample }: { input: IdeaInput; sample: string | null }) {
+export async function startRun({ input, sample, confPre = null }: { input: IdeaInput; sample: string | null; confPre?: number | null }) {
   const ideaText = buildIdeaText(input) as string;
   const { markets } = input;
   if (state.status === "running") return;
   const live = liveMode();
   const runId = telemetry.runStarted({ input, ideaChars: ideaText.length, mode: live ? "live" : "mock", sample });
+  if (confPre != null) telemetry.logConfidencePreRun(runId, confPre);
   controller = new AbortController();
   const signal = controller.signal;
   const stages = idleStages();

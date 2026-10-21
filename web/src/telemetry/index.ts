@@ -26,6 +26,11 @@ export function track(type: string, payload: Record<string, unknown> = {}) {
   return tm.log(type, payload);
 }
 
+/** Pre-run prior confidence for a VistaDex/field run, logged with the real run id (H1 calibration). */
+export function logConfidencePreRun(runId: string, value: number) {
+  track("confidence_pre", { condition: "vistadex", value, run_id: runId });
+}
+
 // ── Welcome notice ──
 export const noticeAnswered = () => !features.welcome || tm.consentStatus() !== null;
 export const recording = () => features.telemetry && tm.consentStatus() === "given";

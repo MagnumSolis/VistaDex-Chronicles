@@ -227,6 +227,26 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
   }
 }
 
+// Scrolled to the bottom by hand (wheel), the last section is current even where it can't reach the top
+// (a tall window, little content below it): every demo and sample report in the pitch edition.
+{
+  const { ctx, page } = await openApp(browser, { viewport: { width: 1280, height: 1400 }, hash: "#edition=pitch" });
+  await go(page, "#/reports");
+  await page.locator("[data-control=reports_samples]").selectOption("15");
+  await page.getByText("Sample report", { exact: true }).first().waitFor();
+  const ids = await page.evaluate(async () => (await import("/src/lib/reports.ts")).listedEntries().filter(e => e.kind !== "session").map(e => e.id));
+  for (const id of ids) {
+    await go(page, `#/report/${id}`);
+    await page.locator("#section-market").waitFor();
+    await page.waitForFunction(() => scrollY === 0); // the route's own scroll to the top has happened
+    await page.mouse.move(640, 700);
+    for (let i = 0; i < 40 && !(await page.evaluate(() => scrollY + innerHeight >= document.documentElement.scrollHeight - 2)); i++) await page.mouse.wheel(0, 1200);
+    const ok = await page.waitForFunction(() => document.querySelector("[data-control=report_section_jump][aria-current=location]")?.dataset.controlValue === "market", null, { timeout: 2000 }).then(() => true, () => false);
+    if (!ok) problems.push(`[jump 1280x1400 pitch] ${id}: scrolled to the bottom, "${await page.evaluate(() => document.querySelector("[aria-current=location]")?.dataset.controlValue)}" is current, not "market"`);
+  }
+  await ctx.close();
+}
+
 // ── 6: top of the report — nothing under the sticky header, Summary card text left-aligned ──
 {
   const settled = page => page.evaluate(() => new Promise(r => { let y = -1; const t = setInterval(() => { if (scrollY === y) { clearInterval(t); r(); } y = scrollY; }, 300); }));

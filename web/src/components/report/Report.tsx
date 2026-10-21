@@ -13,7 +13,7 @@ import { ClaimCard, sourceCount } from "./ClaimCard";
 import { GraveyardLeads } from "./GraveyardLeads";
 import { Objections } from "./Objections";
 import { LegalSection, MarketSection } from "./LegalMarket";
-import { pickActive, ReportSection, SECTIONS, type SectionId } from "./ReportSection";
+import { atBottom, pickActive, ReportSection, SECTIONS, type SectionId } from "./ReportSection";
 import { BigTech, Competitors, Profile, ScoreSummary } from "./ScoreParts";
 
 const MODE_LABEL: Record<RunMode | "demo" | "sample", string> = {
@@ -213,7 +213,8 @@ function useScrollSpy(): [SectionId, (id: SectionId) => void] {
     const update = () => {
       frame = 0;
       const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-      setActive(pickActive(SECTIONS.map(s => ({ id: s.id, top: document.getElementById(`section-${s.id}`)?.getBoundingClientRect().top ?? Infinity })), offset));
+      const sections = SECTIONS.map(s => ({ id: s.id, top: document.getElementById(`section-${s.id}`)?.getBoundingClientRect().top ?? Infinity }));
+      setActive(pickActive(sections, offset, atBottom(window.scrollY, window.innerHeight, document.documentElement.scrollHeight)));
     };
     const onScroll = () => {
       const p = pinned.current;

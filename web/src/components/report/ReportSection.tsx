@@ -15,10 +15,17 @@ export const SECTIONS: { id: SectionId; label: string }[] = [
 ];
 
 /** The jump nav's current section: the last one whose top has reached the sticky offset (html
- *  scroll-padding-top, the same offset a jump scrolls to). 1px of slack for sub-pixel landings. */
-export function pickActive(sections: { id: SectionId; top: number }[], offset: number): SectionId {
+ *  scroll-padding-top, the same offset a jump scrolls to). 1px of slack for sub-pixel landings. At the
+ *  bottom of the page the last section is current: a short one there can never reach the offset. */
+export function pickActive(sections: { id: SectionId; top: number }[], offset: number, bottom = false): SectionId {
+  if (bottom) return sections[sections.length - 1].id;
   return sections.filter(s => s.top <= offset + 1).at(-1)?.id ?? sections[0].id;
 }
+
+/** Scrolled to the end, within 2px (zoomed and high-DPI screens land on fractions); a page too short to
+ *  scroll doesn't count. */
+export const atBottom = (scrollY: number, viewport: number, scrollHeight: number) =>
+  scrollHeight > viewport && scrollY + viewport >= scrollHeight - 2;
 
 /** A report section: cream panel with a folder-tab title (and count), time-in-view tracked. */
 export function ReportSection({ id, title, count, intro, runId, children, className }: {

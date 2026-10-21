@@ -89,3 +89,25 @@ describe("post-report form sliders", () => {
       expect(screen.getByRole("slider", { name })).toBeTruthy();
   }, 30000);
 });
+
+describe("'Do you agree?' has a Not sure option", () => {
+  it("every row offers Agree · Disagree · Not sure; Not sure is selectable, changeable and logged as not_sure", async () => {
+    const { events } = await openPanel();
+    const rows = [...document.querySelectorAll("fieldset")].filter(f => /^(Claim|Objection) \d+ /.test(f.querySelector("legend")?.textContent ?? ""));
+    expect(rows.length).toBeGreaterThan(1);
+    for (const row of rows) expect(within(row as HTMLElement).getAllByRole("radio").map(r => r.closest("label")!.textContent!.trim())).toEqual(["Agree", "Disagree", "Not sure"]);
+
+    const claim = rows.find(r => r.querySelector("legend")!.textContent!.startsWith("Claim 1 "))! as HTMLElement;
+    fireEvent.click(within(claim).getByRole("radio", { name: "Not sure" }));
+    expect((within(claim).getByRole("radio", { name: "Not sure" }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(within(claim).getByRole("radio", { name: "Agree" }));
+    expect((within(claim).getByRole("radio", { name: "Not sure" }) as HTMLInputElement).checked).toBe(false);
+    const objection = rows.find(r => r.querySelector("legend")!.textContent!.startsWith("Objection 1 "))! as HTMLElement;
+    fireEvent.click(within(objection).getByRole("radio", { name: "Not sure" }));
+
+    expect(events().filter(e => e.type === "claim_vote").map(e => e.payload.vote)).toEqual(["not_sure", "agree"]);
+    expect(events().filter(e => e.type === "objection_vote").map(e => e.payload.vote)).toEqual(["not_sure"]);
+    expect(events().filter(e => e.type === "control_pressed" && /^study_(claim|objection)_/.test(String(e.payload.control))).map(e => e.payload.control))
+      .toEqual(["study_claim_not_sure", "study_claim_agree", "study_objection_not_sure"]);
+  }, 30000);
+});

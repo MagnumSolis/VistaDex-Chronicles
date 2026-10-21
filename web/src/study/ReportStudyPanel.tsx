@@ -8,7 +8,7 @@ import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { Report } from "@/types";
-import { logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
+import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
 
@@ -28,16 +28,20 @@ function Choice({ name, checked, onSelect, control, children }: { name: string; 
   );
 }
 
-function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agree" | "disagree") => void; controlId: { agree: string; disagree: string } }) {
-  const [vote, setVote] = useState<"agree" | "disagree" | null>(null);
+const VOTES: [Vote, string][] = [["agree", "Agree"], ["disagree", "Disagree"], ["not_sure", "Not sure"]];
+
+function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: Vote) => void; controlId: Record<Vote, string> }) {
+  const [vote, setVote] = useState<Vote | null>(null);
   const name = useId();
-  const pick = (v: "agree" | "disagree") => { setVote(v); onVote(v); };
+  const pick = (v: Vote) => { setVote(v); onVote(v); };
   return (
     <fieldset className="min-w-0 py-3">
       <legend className="w-full truncate text-xs" title={label}>{label}</legend>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Choice name={name} checked={vote === "agree"} onSelect={() => pick("agree")} control={controlId.agree}>Agree</Choice>
-        <Choice name={name} checked={vote === "disagree"} onSelect={() => pick("disagree")} control={controlId.disagree}>Disagree</Choice>
+      {/* Three side by side from sm; stacked on phones so the labels stay whole at 320px. */}
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        {VOTES.map(([v, text]) => (
+          <Choice key={v} name={name} checked={vote === v} onSelect={() => pick(v)} control={controlId[v]}>{text}</Choice>
+        ))}
       </div>
     </fieldset>
   );
@@ -110,7 +114,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             <VoteRow
               key={i}
               label={`Claim ${i + 1} — "${c.claim.slice(0, 60)}${c.claim.length > 60 ? "…" : ""}" (${c.status})`}
-              controlId={{ agree: "study_claim_agree", disagree: "study_claim_disagree" }}
+              controlId={{ agree: "study_claim_agree", disagree: "study_claim_disagree", not_sure: "study_claim_not_sure" }}
               onVote={v => logClaimVote(runId, i, c.status, v)}
             />
           ))}
@@ -118,7 +122,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             <VoteRow
               key={"obj" + i}
               label={`Objection ${i + 1} (${o.severity}) — "${o.objection.slice(0, 60)}${o.objection.length > 60 ? "…" : ""}"`}
-              controlId={{ agree: "study_objection_agree", disagree: "study_objection_disagree" }}
+              controlId={{ agree: "study_objection_agree", disagree: "study_objection_disagree", not_sure: "study_objection_not_sure" }}
               onVote={v => logObjectionVote(runId, i, o.severity, v)}
             />
           ))}

@@ -375,11 +375,13 @@
     ],
     "claim_vote.vote": [
       "agree",
-      "disagree"
+      "disagree",
+      "not_sure"
     ],
     "objection_vote.vote": [
       "agree",
-      "disagree"
+      "disagree",
+      "not_sure"
     ],
     "participant_registered.track": [
       "study",
@@ -515,8 +517,10 @@
     "study_survey_submit",
     "study_claim_agree",
     "study_claim_disagree",
+    "study_claim_not_sure",
     "study_objection_agree",
     "study_objection_disagree",
+    "study_objection_not_sure",
     "quiz_start",
     "quiz_answer",
     "quiz_next",

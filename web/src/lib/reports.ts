@@ -39,8 +39,8 @@ function load(): ReportEntry[] {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "[]");
     if (!Array.isArray(raw)) return [];
-    // runId ("r1", "r2"…) is kept so the study panel's votes/surveys rejoin the
-    // same telemetry run after a reload; it is a per-browser counter, not PII.
+    // runId ("r_" + 12 random hex; older entries: "r1", "r2"… per-page-load counters) is kept so the
+    // study panel's votes/surveys rejoin the same telemetry run after a reload; it is not PII.
     return raw.filter(e => e && e.id && e.report).map(e => ({ ...e, runId: typeof e.runId === "string" ? e.runId : null, kind: "session", createdAt: e.createdAt ? new Date(e.createdAt) : null }));
   } catch { return []; }
 }

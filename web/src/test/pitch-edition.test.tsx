@@ -30,7 +30,7 @@ describe("pitch edition", () => {
     await screen.findByLabelText(/^Idea title/);
     fillIdea();
     run();
-    await waitFor(() => expect(location.hash).toMatch(/^#\/report\/[a-z0-9]+-r1$/), { timeout: 10000 });
+    await waitFor(() => expect(location.hash).toMatch(/^#\/report\/[a-z0-9]+-r_[0-9a-f]{12}$/), { timeout: 10000 });
     go("#/welcome");
     await waitFor(() => expect(location.hash).toBe("#/reports")); // no Welcome in pitch
     go("#/feedback");

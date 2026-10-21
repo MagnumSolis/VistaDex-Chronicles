@@ -24,7 +24,7 @@ export const CONTROLS = [
   "lead_source_link", "legal_registry_link", "legal_rule_source_link", "market_citation_link",
   "report_save_pdf", "report_screen_another", "report_feedback_prompt", "report_how_it_works", "report_empty_screen",
   // contact
-  "contact_feedback", "contact_your_data", "contact_github",
+  "contact_feedback", "contact_your_data",
   // how it works
   "how_replay_walkthrough", "how_registry_link", "how_try_it",
   // feedback

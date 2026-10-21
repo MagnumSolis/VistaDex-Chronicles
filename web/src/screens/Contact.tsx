@@ -36,9 +36,7 @@ export function Contact() {
           )}
         </Item>
         <Item icon={FolderGit2} title="Source code">
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer" data-control="contact_github" className="inline-flex items-center gap-1.5 font-medium text-link underline underline-offset-4">
-            github.com/MagnumSolis/VistaDex-Chronicles <ExternalLink aria-hidden className="size-3.5" /><span className="sr-only">(opens in a new tab)</span>
-          </a>
+          The full source and methodology will be published with the research paper. Until then, the code is private during the study.
         </Item>
       </ul>
     </div>

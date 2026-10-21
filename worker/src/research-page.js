@@ -346,13 +346,13 @@ export const RESEARCH_PAGE = `<!doctype html>
       if (!reg && !ran) return;
       var pl = (reg && reg.payload) || {};
       var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"), source: pl.source || null,
-        confPre: null, confPost: null, survey: null, clicks: 0,
+        confPre: null, confPreMoved: null, confPost: null, survey: null, clicks: 0,
         runs: 0, n: evs.length, last: evs[evs.length - 1].ts, industries: null, markets: null };
       var t = JOIN.voteTotals(votesBySid[sid] || []);
       p.votes = t.votes; p.agrees = t.agrees; p.disagrees = t.disagrees; p.notSure = t.notSure;
       evs.forEach(function (e) {
         var q = e.payload || {};
-        if (e.type === "confidence_pre") p.confPre = q.value;
+        if (e.type === "confidence_pre") { p.confPre = q.value; p.confPreMoved = typeof q.moved === "boolean" ? q.moved : null; }
         else if (e.type === "confidence_post") p.confPost = q.value;
         else if (e.type === "condition_survey") p.survey = q;
         else if (e.type === "source_clicked") p.clicks++;
@@ -398,14 +398,14 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
   var HEAD = "<tr><th>Track</th><th>Session ID</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
   function metricsCSV(people) {
-    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","votes_agree","votes_disagree","votes_not_sure","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
+    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_pre_moved","conf_post","conf_delta","votes","agree_rate_pct","votes_agree","votes_disagree","votes_not_sure","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
     var rows = [cols.join(",")];
     people.forEach(function (p) {
       var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
       rows.push([
         p.sid, p.track, p.code || "", p.role === "—" ? "" : p.role, p.roleFrom || "",
         p.source || "", p.industries || "", p.markets || "",
-        p.confPre == null ? "" : p.confPre, p.confPost == null ? "" : p.confPost, delta,
+        p.confPre == null ? "" : p.confPre, p.confPreMoved == null ? "" : p.confPreMoved, p.confPost == null ? "" : p.confPost, delta,
         p.votes, p.votes ? JOIN.agreePct(p) : "", p.agrees, p.disagrees, p.notSure,
         p.clicks,
         p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.helpfulness : "", p.survey ? p.survey.effort : "",
@@ -491,6 +491,8 @@ export const RESEARCH_PAGE = `<!doctype html>
       runs.forEach(function (r) {
         var c = cal(r);
         var delta = c != null ? '<span class="delta ' + (c > 0 ? "up" : c < 0 ? "down" : "zero") + '">' + (c > 0 ? "+" : "") + c + "</span>" : "—";
+        // an untouched slider still counts in the delta, marked so it can be told apart from a chosen 50
+        if (r.pre != null && r.preMoved === false) delta += ' <span style="color:var(--ink-3);font-size:11px">pre ' + esc(r.pre) + " · untouched</span>";
         var ag = r.votes ? JOIN.agreePct(r) + "%" : "—";
         var sv = r.survey ? '<span class="num">T' + r.survey.trust + "\u00b7U" + r.survey.usefulness + "\u00b7E" + r.survey.effort + "</span>" : "\u2014";
         var comp = r.comp ? esc(r.comp) : "—";

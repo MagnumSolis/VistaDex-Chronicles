@@ -190,6 +190,23 @@ test("research console page counts agreement only through the shared helper", ()
   for (const col of ["votes_agree", "votes_disagree", "votes_not_sure"]) assert.ok(rest.includes(`"${col}"`), `CSV column ${col}`);
 });
 
+// ── pre-run confidence: an untouched slider logs 50 with moved: false and still counts ──
+test("research join: an untouched pre-run slider (moved: false) is kept and marked; legacy events have no flag", () => {
+  seq = 0;
+  const runs = joinRuns([
+    ev("run_started", { run_id: RA }),
+    ev("confidence_pre", { run_id: RA, condition: "vistadex", value: 50, moved: false }),
+    ev("confidence_post", { run_id: RA, value: 70 }),
+    ev("run_started", { run_id: RB }),
+    ev("confidence_pre", { run_id: RB, condition: "vistadex", value: 30, moved: true }),
+    ev("run_started", { run_id: "r1" }),
+    ev("confidence_pre", { run_id: "r1", condition: "vistadex", value: 60 }), // before the flag existed
+  ]);
+  assert.deepEqual(runs.map(r => [r.pre, r.preMoved, r.post]), [[50, false, 70], [30, true, null], [60, null, null]]);
+  assert.ok(RESEARCH_PAGE.includes('"conf_pre_moved"'), "CSV column conf_pre_moved");
+  assert.ok(RESEARCH_PAGE.includes(" · untouched"), "per-run table marks untouched sliders");
+});
+
 test("research console page embeds the shared join and its inline script parses", () => {
   assert.ok(RESEARCH_PAGE.includes(researchJoin.toString()), "page carries research-join.js's source verbatim");
   const scripts = [...RESEARCH_PAGE.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);

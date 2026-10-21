@@ -188,6 +188,9 @@
   "optional_keys": {
     "control_pressed": [
       "value"
+    ],
+    "confidence_pre": [
+      "moved"
     ]
   },
   "values": {
@@ -509,6 +512,7 @@
     "baseline_minutes_field",
     "baseline_open_field",
     "baseline_submit",
+    "study_conf_pre",
     "study_conf_post",
     "study_sources_0",
     "study_sources_1_2",

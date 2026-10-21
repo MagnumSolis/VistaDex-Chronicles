@@ -28,6 +28,7 @@ describe("pitch edition", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Show sources/ })[0]);
     go("#/screen");
     await screen.findByLabelText(/^Idea title/);
+    expect(screen.queryByRole("slider")).toBeNull(); // no pre-run confidence slider in pitch
     fillIdea();
     run();
     await waitFor(() => expect(location.hash).toMatch(/^#\/report\/[a-z0-9]+-r_[0-9a-f]{12}$/), { timeout: 10000 });

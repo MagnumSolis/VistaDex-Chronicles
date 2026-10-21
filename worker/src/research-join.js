@@ -91,7 +91,7 @@ export function researchJoin() {
         runs.push({ sid: e.session_id, runId: q.run_id || null, started: e.ts, seq: e.seq, ts: e.ts, order: i,
           label: null, inferred: 0,
           role: q.role || null, industries: (q.industries || []).join(", "),
-          pre: null, post: null, votes: 0, agrees: 0, disagrees: 0, notSure: 0, clicks: 0, dwell: 0, survey: null, comp: null });
+          pre: null, preMoved: null, post: null, votes: 0, agrees: 0, disagrees: 0, notSure: 0, clicks: 0, dwell: 0, survey: null, comp: null });
       }
     });
     var bySidRuns = runsBySession(runs.slice());
@@ -102,7 +102,8 @@ export function researchJoin() {
       if (!m) return;
       var r = m.run;
       if (m.inferred) r.inferred++;
-      if (e.type === "confidence_pre") r.pre = q.value;
+      // moved: false = the slider was left at its starting 50 (still counted); null = logged before the flag existed
+      if (e.type === "confidence_pre") { r.pre = q.value; r.preMoved = typeof q.moved === "boolean" ? q.moved : null; }
       else if (e.type === "confidence_post") r.post = q.value;
       else if (e.type === "source_clicked_by_claim" || e.type === "source_clicked") r.clicks++;
       else if (e.type === "claim_dwell") r.dwell += q.ms || 0;

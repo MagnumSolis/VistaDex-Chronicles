@@ -65,7 +65,9 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
       return;
     }
     const sample = draft.sample && same(SAMPLES.find(s => s.id === draft.sample)?.input, current) ? draft.sample : null;
-    void startRun({ input: current, sample, confPre });
+    // Only where the slider is shown; untouched = its starting 50, moved: false.
+    const pre = features.telemetry && !preview ? { value: confPre ?? 50, moved: confPre !== null } : null;
+    void startRun({ input: current, sample, confPre: pre });
   }
 
   const copy = run.error && !preview ? errorCopy(run.error.code) : null;

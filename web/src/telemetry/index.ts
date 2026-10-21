@@ -27,8 +27,9 @@ export function track(type: string, payload: Record<string, unknown> = {}) {
 }
 
 /** Pre-run prior confidence for a VistaDex/field run, logged with the real run id (H1 calibration). */
-export function logConfidencePreRun(runId: string, value: number) {
-  track("confidence_pre", { condition: "vistadex", value, run_id: runId });
+// The pre-run slider. An untouched slider logs its starting 50 with moved: false.
+export function logConfidencePreRun(runId: string, { value, moved }: { value: number; moved: boolean }) {
+  track("confidence_pre", { condition: "vistadex", value, run_id: runId, moved });
 }
 
 // ── Welcome notice ──

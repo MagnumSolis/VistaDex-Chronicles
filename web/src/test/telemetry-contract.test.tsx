@@ -33,7 +33,7 @@ describe("control registry", () => {
 
 function unregistered() {
   const ids = new Set<string>(CONTROLS);
-  return [...document.querySelectorAll("button, a[href], input, textarea, select, [role=radio]")]
+  return [...document.querySelectorAll("button, a[href], input, textarea, select, [role=radio], [role=slider]")]
     .filter(el => !(el as HTMLElement).closest("[data-control]") || !ids.has(((el as HTMLElement).closest("[data-control]") as HTMLElement).dataset.control!))
     .filter(el => !(el instanceof HTMLInputElement && el.type === "radio" && el.closest("label")?.querySelector("[data-control]")))
     .map(el => `${el.tagName.toLowerCase()} "${(el.textContent || (el as HTMLInputElement).name || el.getAttribute("aria-label") || "").trim().slice(0, 40)}" on ${location.hash}`);

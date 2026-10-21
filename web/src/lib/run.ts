@@ -53,7 +53,7 @@ export function useRun() {
 
 export const reportPath = (id: string) => `${PATHS.report}/${encodeURIComponent(id)}`;
 
-export async function startRun({ input, sample, confPre = null }: { input: IdeaInput; sample: string | null; confPre?: number | null }) {
+export async function startRun({ input, sample, confPre = null }: { input: IdeaInput; sample: string | null; confPre?: { value: number; moved: boolean } | null }) {
   const ideaText = buildIdeaText(input) as string;
   const { markets } = input;
   if (state.status === "running") return;

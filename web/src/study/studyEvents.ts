@@ -15,11 +15,6 @@ export function logConfidencePre(condition: Condition, value: number, runId: str
   track("confidence_pre", { condition, value, run_id: runId });
 }
 
-/** VistaDex/field runs: prior confidence captured on the screening form, logged with the real telemetry run id. */
-export function logConfidencePreForRun(runId: string, value: number) {
-  track("confidence_pre", { condition: "vistadex", value, run_id: runId });
-}
-
 export function logConfidencePost(condition: Condition, runId: string, value: number) {
   track("confidence_post", { condition, run_id: runId, value });
 }

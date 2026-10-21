@@ -46,6 +46,7 @@ async function main() {
   // Idempotent upsert: (session_id, seq, type) identifies an event uniquely.
   let written = 0;
   for (const e of qualitative) {
+    process.stdout.write(`\r  qualitative ${written}/${qualitative.length}`);
     await coll.updateOne(
       { session_id: e.session_id, seq: e.seq, type: e.type },
       { $set: {
@@ -60,12 +61,16 @@ async function main() {
       }},
       { upsert: true }
     );
-    written++;
   }
+  process.stdout.write("\n");
 
   // Also archive a full snapshot of ALL events for the paper (events_all collection)
   const allColl = client.db("research_data").collection("events_all");
+  console.log(`  archiving full dataset (${events.length} events)…`);
+  let archived = 0;
   for (const e of events) {
+    archived++;
+    process.stdout.write(`\r  events_all ${archived}/${events.length}`);
     await allColl.updateOne(
       { session_id: e.session_id, seq: e.seq },
       { $set: {
@@ -78,6 +83,7 @@ async function main() {
       { upsert: true }
     );
   }
+  process.stdout.write("\n");
 
   const qCount = await coll.countDocuments();
   const aCount = await allColl.countDocuments();

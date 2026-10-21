@@ -2,7 +2,7 @@
 // the same source, so these tests cover what the console shows.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { joinRuns, researchJoin } from "../worker/src/research-join.js";
+import { agreePct, joinRuns, latestVotes, researchJoin, voteTotals } from "../worker/src/research-join.js";
 import { RESEARCH_PAGE } from "../worker/src/research-page.js";
 
 const SID = "99999999-8888-4777-a666-555555555555";
@@ -130,6 +130,64 @@ test("research join (known limit, accepted): after a reload, a reopened old repo
   ]);
   // Indistinguishable in legacy data: it joins the newest r1. New r_ ids do not have this problem.
   assert.deepEqual(runs.map(r => [r.votes, r.inferred]), [[0, 0], [1, 1]]);
+});
+
+// ── agreement: each item's latest vote; not_sure counts as a vote, not as agreement ──
+test("research agreement: only each item's latest vote counts; not_sure stays in the denominator; runs stay separate", () => {
+  seq = 0;
+  const votes = run => [
+    ev("claim_vote", { run_id: run, claim_index: 0, vote: "agree" }),
+    ev("claim_vote", { run_id: run, claim_index: 0, vote: "disagree" }), // changed their mind
+    ev("claim_vote", { run_id: run, claim_index: 0, vote: "disagree" }), // pressed the same answer again
+    ev("claim_vote", { run_id: run, claim_index: 1, vote: "not_sure" }),
+    ev("objection_vote", { run_id: run, objection_index: 0, vote: "agree" }),
+  ];
+  const events = [ev("run_started", { run_id: RA }), ...votes(RA), ev("run_started", { run_id: RB }), ...votes(RB)];
+  const runs = joinRuns(events);
+  for (const r of runs) {
+    assert.deepEqual({ votes: r.votes, agrees: r.agrees, disagrees: r.disagrees, notSure: r.notSure, pct: agreePct(r) },
+      { votes: 3, agrees: 1, disagrees: 1, notSure: 1, pct: 33 }, r.runId);
+  }
+  const latest = latestVotes(events, runs);
+  assert.equal(latest.length, 6);
+  const t = voteTotals(latest.filter(v => v.sid === SID));
+  assert.deepEqual(t, { votes: 6, agrees: 2, disagrees: 2, notSure: 2 }); // the session (People row): both runs
+  assert.equal(agreePct(t), 33);
+});
+
+test("research agreement: claim 0 and objection 0 are different items", () => {
+  seq = 0;
+  const events = [
+    ev("run_started", { run_id: RA }),
+    ev("claim_vote", { run_id: RA, claim_index: 0, vote: "disagree" }),
+    ev("objection_vote", { run_id: RA, objection_index: 0, vote: "agree" }),
+  ];
+  const latest = latestVotes(events, joinRuns(events));
+  assert.deepEqual(latest.map(v => [v.type, v.index, v.vote]), [["claim_vote", 0, "disagree"], ["objection_vote", 0, "agree"]]);
+  assert.equal(agreePct(voteTotals(latest)), 50);
+});
+
+test("research agreement: legacy votes use the run resolved by start order; votes in a session with no run still count", () => {
+  seq = 0;
+  const lone = "22222222-3333-4444-8555-666666666666";
+  const events = [
+    ev("run_started", { run_id: "r1" }),
+    ev("claim_vote", { run_id: "r1", claim_index: 0, vote: "agree" }),
+    ev("run_started", { run_id: "r1" }), // reload
+    ev("claim_vote", { run_id: "r1", claim_index: 0, vote: "disagree" }), // same item index, different run
+    ev("claim_vote", { claim_index: 2, vote: "agree" }, lone), // e.g. an old report reopened after a consent reset
+    ev("claim_vote", { claim_index: 2, vote: "not_sure" }, lone),
+  ];
+  const runs = joinRuns(events);
+  assert.deepEqual(runs.map(r => [r.votes, r.agrees]), [[1, 1], [1, 0]]);
+  const latest = latestVotes(events, runs);
+  assert.deepEqual(voteTotals(latest.filter(v => v.sid === lone)), { votes: 1, agrees: 0, disagrees: 0, notSure: 1 });
+});
+
+test("research console page counts agreement only through the shared helper", () => {
+  const rest = RESEARCH_PAGE.replace(researchJoin.toString(), "");
+  assert.ok(!/vote === "agree"|agrees\+\+|votes\+\+/.test(rest), "no vote counting outside research-join.js");
+  for (const col of ["votes_agree", "votes_disagree", "votes_not_sure"]) assert.ok(rest.includes(`"${col}"`), `CSV column ${col}`);
 });
 
 test("research console page embeds the shared join and its inline script parses", () => {

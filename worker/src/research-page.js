@@ -334,6 +334,9 @@ export const RESEARCH_PAGE = `<!doctype html>
       (by[e.session_id] = by[e.session_id] || []).push(e);
     });
     var people = [];
+    // Agreement: each item's latest vote (research-join.js), summed over the session's runs.
+    var votesBySid = {};
+    JOIN.latestVotes(events, JOIN.joinRuns(events)).forEach(function (v) { (votesBySid[v.sid] = votesBySid[v.sid] || []).push(v); });
     Object.keys(by).forEach(function (sid) {
       var evs = by[sid];
       var reg = evs.find(function (e) { return e.type === "participant_registered"; });
@@ -343,14 +346,15 @@ export const RESEARCH_PAGE = `<!doctype html>
       if (!reg && !ran) return;
       var pl = (reg && reg.payload) || {};
       var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"), source: pl.source || null,
-        confPre: null, confPost: null, survey: null, votes: 0, agrees: 0, clicks: 0,
+        confPre: null, confPost: null, survey: null, clicks: 0,
         runs: 0, n: evs.length, last: evs[evs.length - 1].ts, industries: null, markets: null };
+      var t = JOIN.voteTotals(votesBySid[sid] || []);
+      p.votes = t.votes; p.agrees = t.agrees; p.disagrees = t.disagrees; p.notSure = t.notSure;
       evs.forEach(function (e) {
         var q = e.payload || {};
         if (e.type === "confidence_pre") p.confPre = q.value;
         else if (e.type === "confidence_post") p.confPost = q.value;
         else if (e.type === "condition_survey") p.survey = q;
-        else if (e.type === "claim_vote" || e.type === "objection_vote") { p.votes++; if (q.vote === "agree") p.agrees++; }
         else if (e.type === "source_clicked") p.clicks++;
         else if (e.type === "run_started") {
           p.runs++;
@@ -377,7 +381,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       cal = p.confPost - p.confPre;
       conf += ' <span class="delta ' + (cal > 0 ? "up" : cal < 0 ? "down" : "zero") + '">' + (cal > 0 ? "+" : "") + cal + "</span>";
     }
-    var ag = p.votes ? '<span class="bar" style="width:' + Math.max(2, 30 * p.agrees / p.votes) + 'px"></span>' + Math.round(100 * p.agrees / p.votes) + "% <span style='color:var(--ink-3)'>of " + p.votes + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    var ag = p.votes ? '<span class="bar" style="width:' + Math.max(2, 30 * p.agrees / p.votes) + 'px"></span>' + JOIN.agreePct(p) + "% <span style='color:var(--ink-3)' title='items voted (latest vote each): agree / disagree / not sure = " + p.agrees + " / " + p.disagrees + " / " + p.notSure + "'>of " + p.votes + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var sv = p.survey ? '<span class="num">T' + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var from = p.roleFrom ? '<span style="color:var(--ink-3);font-size:11px">' + esc(p.roleFrom) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var src = p.source ? '<span class="num" style="color:var(--accent)">' + esc(p.source) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
@@ -394,7 +398,7 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
   var HEAD = "<tr><th>Track</th><th>Session ID</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
   function metricsCSV(people) {
-    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
+    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","votes_agree","votes_disagree","votes_not_sure","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
     var rows = [cols.join(",")];
     people.forEach(function (p) {
       var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
@@ -402,7 +406,7 @@ export const RESEARCH_PAGE = `<!doctype html>
         p.sid, p.track, p.code || "", p.role === "—" ? "" : p.role, p.roleFrom || "",
         p.source || "", p.industries || "", p.markets || "",
         p.confPre == null ? "" : p.confPre, p.confPost == null ? "" : p.confPost, delta,
-        p.votes, p.votes ? Math.round(100 * p.agrees / p.votes) : "",
+        p.votes, p.votes ? JOIN.agreePct(p) : "", p.agrees, p.disagrees, p.notSure,
         p.clicks,
         p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.helpfulness : "", p.survey ? p.survey.effort : "",
         p.survey && p.survey.open_text ? String(p.survey.open_text) : "",
@@ -487,7 +491,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       runs.forEach(function (r) {
         var c = cal(r);
         var delta = c != null ? '<span class="delta ' + (c > 0 ? "up" : c < 0 ? "down" : "zero") + '">' + (c > 0 ? "+" : "") + c + "</span>" : "—";
-        var ag = r.votes ? Math.round(100 * r.agrees / r.votes) + "%" : "—";
+        var ag = r.votes ? JOIN.agreePct(r) + "%" : "—";
         var sv = r.survey ? '<span class="num">T' + r.survey.trust + "\u00b7U" + r.survey.usefulness + "\u00b7E" + r.survey.effort + "</span>" : "\u2014";
         var comp = r.comp ? esc(r.comp) : "—";
         // "run N of M" in the session; the raw run id shows on hover and copies on click
@@ -682,7 +686,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="kpi"><div class="label">Pipeline traces</div><div class="val">' + d.totals.traces + '</div><div class="note">screens run (any mode)</div></div>' +
       '<div class="kpi hl"><div class="label">Participants</div><div class="val">' + people.length + '</div><div class="note">' + study.length + " study · " + (people.length - study.length) + " field</div></div>" +
       '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>study track, both surveys in</div></div>" +
-      '<div class="kpi"><div class="label">Votes cast</div><div class="val">' + people.reduce(function (a, p) { return a + p.votes; }, 0) + '</div><div class="note">' + voted.length + " participants voted</div></div>";
+      '<div class="kpi"><div class="label">Items voted</div><div class="val">' + people.reduce(function (a, p) { return a + p.votes; }, 0) + '</div><div class="note">latest vote per item · ' + voted.length + " participants voted</div></div>";
 
     $("recent-participants").innerHTML = HEAD + (people.length
       ? people.slice(0, 6).map(personRow).join("")

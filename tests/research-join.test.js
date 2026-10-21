@@ -207,6 +207,19 @@ test("research join: an untouched pre-run slider (moved: false) is kept and mark
   assert.ok(RESEARCH_PAGE.includes(" · untouched"), "per-run table marks untouched sliders");
 });
 
+// wrangler bundles with esbuild keepNames, which inserts __name(fn, "fn") calls into function bodies, so the
+// researchJoin.toString() the deployed Worker embeds calls __name. The page must define it before the embed.
+test("research console page: the embedded join still runs when the bundler injected __name calls", () => {
+  const bundled = researchJoin.toString().replace(/\n(\s*)function before\(/, '\n$1__name(before, "before");\n$1function before(');
+  assert.ok(bundled.includes("__name(before"), "simulated keepNames output");
+  const shim = /\n\s*(var __name = [^\n]+)\n\s*var JOIN = /.exec(RESEARCH_PAGE);
+  assert.ok(shim, "page defines __name right before the embedded join");
+  const J = new Function(`"use strict"; ${shim[1]}\nreturn (${bundled})();`)();
+  seq = 0;
+  const runs = J.joinRuns([ev("run_started", { run_id: RA }), ev("claim_vote", { run_id: RA, claim_index: 0, vote: "agree" })]);
+  assert.deepEqual(runs.map(r => [r.label, r.votes, r.agrees]), [["run 1 of 1", 1, 1]]);
+});
+
 test("research console page embeds the shared join and its inline script parses", () => {
   assert.ok(RESEARCH_PAGE.includes(researchJoin.toString()), "page carries research-join.js's source verbatim");
   const scripts = [...RESEARCH_PAGE.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);

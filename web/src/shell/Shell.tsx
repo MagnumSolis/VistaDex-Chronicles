@@ -1,6 +1,6 @@
 // ── Shell.tsx — Header (floating cream bar on desktop), bottom tab bar on phones, footer ──
 // What appears is decided by `features` (edition.ts); this file never checks the edition itself.
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { BookOpen, CircleHelp, Files, House, Mail, MessageSquareText, ScanSearch, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { features, type NavId } from "@/edition";
@@ -17,6 +17,17 @@ const NAV: Record<NavId, { label: string; short: string; path: string; icon: Luc
 
 export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: () => void; children: ReactNode }) {
   const active = (id: NavId) => NAV[id].routes.includes(route);
+  // The sticky header's height (it wraps at some widths; 0 when hidden on phones) as --header-h,
+  // the base of the page's scroll offset (index.css) and of the report jump nav's sticky top.
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = header.current!;
+    const set = () => document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div className="on-page flex min-h-dvh flex-col bg-page text-on-page">
       <a href="#main" data-control="skip_to_content" onClick={e => { e.preventDefault(); document.getElementById("main")?.focus(); }}
@@ -25,7 +36,7 @@ export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: 
       </a>
 
       {/* Desktop: floating cream bar, inset from the page edges. */}
-      <header className="sticky top-0 z-40 hidden px-6 pt-4 md:block print:hidden">
+      <header ref={header} className="sticky top-0 z-40 hidden px-6 pt-4 md:block print:hidden">
         <div className="on-light mx-auto flex max-w-6xl items-center gap-6 rounded-2xl bg-background py-3 pl-6 pr-3 text-foreground">
           <Wordmark />
           <nav aria-label="Main" className="flex items-center gap-1">

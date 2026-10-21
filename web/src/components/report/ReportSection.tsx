@@ -14,6 +14,12 @@ export const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "market", label: "Market" },
 ];
 
+/** The jump nav's current section: the last one whose top has reached the sticky offset (html
+ *  scroll-padding-top, the same offset a jump scrolls to). 1px of slack for sub-pixel landings. */
+export function pickActive(sections: { id: SectionId; top: number }[], offset: number): SectionId {
+  return sections.filter(s => s.top <= offset + 1).at(-1)?.id ?? sections[0].id;
+}
+
 /** A report section: cream panel with a folder-tab title (and count), time-in-view tracked. */
 export function ReportSection({ id, title, count, intro, runId, children, className }: {
   id: SectionId; title: string; count?: number; intro?: ReactNode; runId: string | null; children: ReactNode; className?: string;
@@ -21,7 +27,7 @@ export function ReportSection({ id, title, count, intro, runId, children, classN
   const ref = useRef<HTMLElement>(null);
   useSectionInView(ref, id, runId);
   return (
-    <section ref={ref} id={`section-${id}`} aria-labelledby={`section-${id}-title`} className={cn("on-light relative min-w-0 scroll-mt-32 pt-11 md:scroll-mt-28", className)}>
+    <section ref={ref} id={`section-${id}`} aria-labelledby={`section-${id}-title`} className={cn("on-light relative min-w-0 pt-11", className)}>
       <div className="tab-notch absolute left-0 top-0 flex h-12 items-center gap-2.5 rounded-t-[1.25rem] bg-background px-5 text-foreground" style={{ ["--notch" as string]: "var(--background)" }}>
         <h2 id={`section-${id}-title`} tabIndex={-1} className="font-display text-[1.5rem] leading-none outline-none">{title}</h2>
         {count !== undefined && (

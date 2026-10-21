@@ -185,6 +185,46 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
   await ctx.close();
 }
 
+// ── 5: report jump nav — every section, both editions ──
+// After a click the section heading is fully visible (not under the sticky header or chip bar) and the
+// clicked item is the highlighted one, during the smooth scroll and after it.
+{
+  // Resolves once scrollY has not changed for 300ms (the smooth scroll has landed).
+  const settled = page => page.evaluate(() => new Promise(r => { let y = -1; const t = setInterval(() => { if (scrollY === y) { clearInterval(t); r(); } y = scrollY; }, 300); }));
+  // What is drawn over the heading's top and bottom edge (null when the heading itself is on top).
+  const covered = (page, id) => page.evaluate(id => {
+    const el = document.getElementById(`section-${id}-title`), h = el.getBoundingClientRect();
+    const over = [h.top + 2, h.bottom - 2].map(y => document.elementFromPoint(h.left + 4, y)).find(hit => !el.contains(hit));
+    return over === undefined ? null : `${over ? over.tagName.toLowerCase() + (over.getAttribute("aria-label") ? `[${over.getAttribute("aria-label")}]` : "") : "nothing (off screen)"} at y=${Math.round(h.top)}`;
+  }, id);
+  const activeItem = page => page.evaluate(() => document.querySelector("[data-control=report_section_jump][aria-current=location]")?.dataset.controlValue ?? null);
+  async function jumpNav(page, label) {
+    const ids = await page.$$eval("[data-control=report_section_jump]", els => els.map(e => e.dataset.controlValue));
+    for (const id of ids) {
+      await page.locator(`[data-control=report_section_jump][data-control-value=${id}]`).click();
+      const during = await activeItem(page);
+      await settled(page);
+      const after = await activeItem(page);
+      if (during !== id || after !== id) problems.push(`[jump ${label}] clicked "${id}", highlighted "${during}" while scrolling and "${after}" after`);
+      const over = await covered(page, id);
+      if (over) problems.push(`[jump ${label}] the "${id}" heading is covered: ${over}`);
+    }
+  }
+  for (const [name, viewport, isMobile] of [VIEWPORTS[0], ["820", { width: 820, height: 1000 }, false], VIEWPORTS[1], VIEWPORTS[2]]) {
+    for (const edition of ["public", "pitch"]) {
+      const { ctx, page } = await openApp(browser, { viewport, isMobile, hash: edition === "pitch" ? "#edition=pitch" : "#/screen" });
+      if (edition === "public") await page.getByRole("button", { name: "Skip to the tool" }).click();
+      await go(page, "#/reports");
+      await page.locator("[data-control=reports_samples]").selectOption("5");
+      await page.getByText("Sample report", { exact: true }).first().waitFor();
+      await go(page, "#/report/sample-student-bank");
+      await page.getByRole("heading", { name: "CampusBank", level: 1 }).waitFor();
+      await jumpNav(page, `${name} ${edition}`);
+      await ctx.close();
+    }
+  }
+}
+
 await browser.close();
 if (problems.length) { console.error(`A11Y: ${problems.length} problem(s)\n- ` + problems.join("\n- ")); process.exit(1); }
 console.log("A11Y OK: axe (WCAG 2.2 A/AA) clean on every screen and state at 1280/375/360/320 px in both editions; no horizontal scroll; keyboard-only flow with visible focus; no animation under reduced motion.");

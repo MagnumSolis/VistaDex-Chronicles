@@ -453,7 +453,9 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="fb-avg">mean ' + (Math.round(avg * 10) / 10) + (unit || "") + "</div></div>";
   }
 
-  // Run join: worker/src/research-join.js, embedded verbatim.
+  // Run join: worker/src/research-join.js, embedded verbatim. In the deployed Worker that source comes from
+  // wrangler's bundle, where esbuild (keepNames) inserts __name(fn, "fn") calls, so __name must exist here.
+  var __name = function (fn) { return fn; };
   var JOIN = (${researchJoin.toString()})();
 
   function renderResearch(ev) {

@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-study-2). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-10-study-2",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-study-3). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-10-study-3",
   "envelope": [
     "session_id",
     "seq",
@@ -188,6 +188,9 @@
   "optional_keys": {
     "control_pressed": [
       "value"
+    ],
+    "confidence_pre": [
+      "moved"
     ]
   },
   "values": {
@@ -509,6 +512,7 @@
     "baseline_minutes_field",
     "baseline_open_field",
     "baseline_submit",
+    "study_conf_pre",
     "study_conf_post",
     "study_sources_0",
     "study_sources_1_2",

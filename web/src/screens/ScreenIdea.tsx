@@ -11,6 +11,8 @@ import { href, PATHS } from "@/router";
 import { SAMPLES } from "@/lib/samples";
 import { latestSessionReport, useSessionReports } from "@/lib/reports";
 import { clearRunError, errorCopy, reportPath, startRun, useRun } from "@/lib/run";
+import { features } from "@/edition";
+import { Slider } from "@/components/ui/slider";
 import { JURISDICTIONS, type IdeaInput, type Jurisdiction, type Role } from "@/types";
 
 type TextField = "title" | "pitch" | "problem" | "solution" | "moat";
@@ -40,6 +42,7 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
   const last = preview ? null : latestSessionReport();
   const [input, setInputState] = useState<IdeaInput>(preview ?? draft.input);
   const [errors, setErrors] = useState<TextField[]>([]);
+  const [confPre, setConfPre] = useState<number | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const running = run.status === "running";
 
@@ -62,7 +65,9 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
       return;
     }
     const sample = draft.sample && same(SAMPLES.find(s => s.id === draft.sample)?.input, current) ? draft.sample : null;
-    void startRun({ input: current, sample });
+    // Only where the slider is shown; untouched = its starting 50, moved: false.
+    const pre = features.telemetry && !preview ? { value: confPre ?? 50, moved: confPre !== null } : null;
+    void startRun({ input: current, sample, confPre: pre });
   }
 
   const copy = run.error && !preview ? errorCopy(run.error.code) : null;
@@ -163,6 +168,18 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
                 </Chip>
               ))}
             </ChipGroup>
+            {features.telemetry && !preview && (
+              <div className="border-t pt-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[0.9375rem] font-semibold">Before you run it: how confident are you that this idea is novel and viable?</span>
+                  <span className="font-mono text-sm text-foreground/70">{confPre ?? 50}%</span>
+                </div>
+                <Slider value={[confPre ?? 50]} min={0} max={100} step={5}
+                  onValueChange={v => setConfPre(v[0])} disabled={running} data-control="study_conf_pre"
+                  className="mt-2" aria-label="Prior confidence in the idea" />
+                <div className="flex justify-between text-[11px] font-medium text-foreground/75"><span>0 — no idea</span><span>100 — certain</span></div>
+              </div>
+            )}
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-4 border-t pt-6">
             <Button size="lg" onClick={submit} disabled={running} data-control="run_screening" data-tour="run" className="h-12 px-7 text-base">

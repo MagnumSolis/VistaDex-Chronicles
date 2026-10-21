@@ -39,7 +39,9 @@ function load(): ReportEntry[] {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "[]");
     if (!Array.isArray(raw)) return [];
-    return raw.filter(e => e && e.id && e.report).map(e => ({ ...e, runId: null, kind: "session", createdAt: e.createdAt ? new Date(e.createdAt) : null }));
+    // runId ("r_" + 12 random hex; older entries: "r1", "r2"… per-page-load counters) is kept so the
+    // study panel's votes/surveys rejoin the same telemetry run after a reload; it is not PII.
+    return raw.filter(e => e && e.id && e.report).map(e => ({ ...e, runId: typeof e.runId === "string" ? e.runId : null, kind: "session", createdAt: e.createdAt ? new Date(e.createdAt) : null }));
   } catch { return []; }
 }
 function save() {
@@ -48,7 +50,7 @@ function save() {
   // Full storage: drop the oldest until it fits (or give up and keep them for this tab only).
   while (list.length) {
     try {
-      localStorage.setItem(KEY, JSON.stringify(list.map(({ runId: _r, ...e }) => ({ ...e, createdAt: e.createdAt?.toISOString() ?? null }))));
+      localStorage.setItem(KEY, JSON.stringify(list.map(e => ({ ...e, createdAt: e.createdAt?.toISOString() ?? null }))));
       return;
     } catch { list = list.slice(0, -1); }
   }

@@ -195,3 +195,50 @@ test("POST /screen structured input: required fields and per-field limits", asyn
   assert.equal(long.status, 413);
   assert.deepEqual((await long.json()).fields, ["pitch"]);
 });
+
+// ── Research console: data joins + page shell ──
+test("research console: per-run measures join to run_started events and the page shows full session ids", async () => {
+  const store = memoryStore();
+  const sid = "99999999-8888-4777-a666-555555555555";
+  const events = [
+    { session_id: sid, seq: 1, ts: "2026-10-21T10:00:00Z", type: "participant_registered", study_version: "v", payload: { code: "", role: "founder", track: "field" } },
+    { session_id: sid, seq: 2, ts: "2026-10-21T10:01:00Z", type: "run_started", study_version: "v", payload: { run_id: "r1", mode: "mock", role: "founder", industries: ["AI"] } },
+    { session_id: sid, seq: 3, ts: "2026-10-21T10:02:00Z", type: "confidence_pre", study_version: "v", payload: { condition: "vistadex", value: 50, run_id: "r1" } },
+    { session_id: sid, seq: 4, ts: "2026-10-21T10:03:00Z", type: "confidence_post", study_version: "v", payload: { run_id: "r1", value: 70 } },
+    { session_id: sid, seq: 5, ts: "2026-10-21T10:04:00Z", type: "claim_vote", study_version: "v", payload: { run_id: "r1", claim_index: 0, vote: "agree" } },
+    { session_id: sid, seq: 6, ts: "2026-10-21T10:05:00Z", type: "run_scoped_survey", study_version: "v", payload: { run_id: "r1", condition: "vistadex", trust: 5, usefulness: 4, helpfulness: 6, effort: 3, open_text: "Great read" } },
+    { session_id: sid, seq: 7, ts: "2026-10-21T10:06:00Z", type: "comprehension_check", study_version: "v", payload: { run_id: "r1", answer: "honest_uncertainty" } },
+  ];
+  const save = await handle(req("POST", "/events", { body: { session_id: sid, events } }), ENV, { store });
+  assert.equal(save.status, 200);
+
+  const data = await handle(req("GET", `/research/data?full=1&t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  assert.equal(data.status, 200);
+  const d = await data.json();
+  assert.equal(d.totals.events, events.length);
+  const all = d.all_events;
+  // the same joins the console page performs: run by (session_id, run_id)
+  const run = all.find(e => e.type === "run_started");
+  assert.equal(run.payload.run_id, "r1");
+  const pre = all.find(e => e.type === "confidence_pre");
+  const post = all.find(e => e.type === "confidence_post");
+  assert.equal(post.payload.value - pre.payload.value, 20, "calibration delta computable per run");
+  const survey = all.find(e => e.type === "run_scoped_survey");
+  assert.equal(survey.payload.trust, 5);
+  assert.ok(all.every(e => e.payload && typeof e.payload === "object"));
+
+  // the page shell: full session ids are rendered, not truncated
+  const page = await handle(req("GET", `/research?t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  const html = await page.text();
+  assert.ok(html.includes("copySid"), "session id copy handler present");
+  assert.ok(!html.includes("slice(0, 8)"), "no 8-char session id truncation left in the page");
+  assert.ok(html.includes("qualitative-meta"), "qualitative store renders from D1 (no Mongo required)");
+  assert.ok(html.includes("Every response"), "per-response answers table present");
+
+  // qualitative endpoint: without Mongo configured it must still report usable data
+  const qual = await handle(req("GET", `/research/qualitative?t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  const q = await qual.json();
+  assert.equal(q.ok, true);
+  assert.equal(q.configured, false);
+  assert.ok(/D1/i.test(q.note), "note points at D1, not a dead end");
+});

@@ -26,6 +26,12 @@ export function track(type: string, payload: Record<string, unknown> = {}) {
   return tm.log(type, payload);
 }
 
+/** Pre-run prior confidence for a VistaDex/field run, logged with the real run id (H1 calibration). */
+// The pre-run slider. An untouched slider logs its starting 50 with moved: false.
+export function logConfidencePreRun(runId: string, { value, moved }: { value: number; moved: boolean }) {
+  track("confidence_pre", { condition: "vistadex", value, run_id: runId, moved });
+}
+
 // ── Welcome notice ──
 export const noticeAnswered = () => !features.welcome || tm.consentStatus() !== null;
 export const recording = () => features.telemetry && tm.consentStatus() === "given";
@@ -114,11 +120,12 @@ export function screenChanged(screen: string) {
 export const getScreen = () => currentScreen;
 
 // ── runs ──
-let runCount = 0;
 // Field lengths and selections only — never the text.
 export function runStarted({ input, ideaChars, mode, sample }: { input: IdeaInput; ideaChars: number; mode: "mock" | "live"; sample: string | null }) {
   endReport("new_run");
-  const id = `r${++runCount}`;
+  // Random, so (session_id, run_id) stays unique across reloads and tabs: the session id persists in
+  // localStorage, and the old r1, r2… counter restarted on every page load. 12 hex of a v4 UUID are all random.
+  const id = `r_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
   const field_chars = { title: input.title.length, pitch: input.pitch.length, problem: input.problem.length, solution: input.solution.length, moat: input.moat.length };
   track("run_started", { run_id: id, mode, idea_chars: ideaChars, field_chars, industries: input.industries, role: input.role, markets: input.markets, sample });
   return id;

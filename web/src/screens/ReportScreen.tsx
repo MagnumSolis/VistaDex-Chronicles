@@ -36,9 +36,9 @@ export function ReportScreen({ param }: { param: string | null }) {
         The score, the evidence behind it, the leads and the objections. Every number can be taken apart; the decision is yours.
       </PageTitle>
       <Report key={entry.id} entry={entry} />
-      {entry.kind === "session" && entry.report && (
+      {entry.kind === "session" && entry.report && entry.runId && (
         <div className="mt-4 md:mt-5">
-          <ReportStudyPanel report={entry.report} runId={entry.id} condition="vistadex" />
+          <ReportStudyPanel report={entry.report} runId={entry.runId} condition="vistadex" />
         </div>
       )}
     </div>

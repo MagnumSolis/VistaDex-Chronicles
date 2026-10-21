@@ -26,7 +26,12 @@ async function overflow(page, label) {
   const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: document.documentElement.clientWidth }));
   if (sw > iw + 1) problems.push(`[overflow ${label}] page is ${sw}px wide in a ${iw}px viewport`);
 }
-const both = async (page, label) => { await axe(page, label); await overflow(page, label); };
+// Folder-tab titles (.tab-notch) must fit inside their tab: a wrapped title must not spill onto the panel.
+async function tabs(page, label) {
+  const spill = await page.evaluate(() => [...document.querySelectorAll(".tab-notch")].filter(t => t.getClientRects().length && t.scrollHeight > t.clientHeight + 1).map(t => t.textContent.trim()));
+  for (const t of spill) problems.push(`[tab ${label}] "${t}" overflows its folder tab onto the panel`);
+}
+const both = async (page, label) => { await axe(page, label); await overflow(page, label); await tabs(page, label); };
 const go = (page, hash) => page.evaluate(h => { location.hash = h; }, hash);
 
 const VIEWPORTS = [["1280", { width: 1280, height: 900 }, false], ["375", { width: 375, height: 812 }, true], ["360", { width: 360, height: 780 }, true], ["320", { width: 320, height: 640 }, true]];

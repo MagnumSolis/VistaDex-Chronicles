@@ -21,7 +21,9 @@ async function axe(page, label) {
   for (const v of res) problems.push(`[axe ${label}] ${v.id} (${v.impact}): ${v.help} — ${v.nodes.join(" | ")}`);
 }
 async function overflow(page, label) {
-  const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
+  // clientWidth, not innerWidth: on a phone (isMobile) Chrome widens the layout viewport to fit an
+  // over-wide page, so innerWidth grows with it and hides the overflow.
+  const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: document.documentElement.clientWidth }));
   if (sw > iw + 1) problems.push(`[overflow ${label}] page is ${sw}px wide in a ${iw}px viewport`);
 }
 const both = async (page, label) => { await axe(page, label); await overflow(page, label); };
@@ -220,6 +222,69 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
       await go(page, "#/report/sample-student-bank");
       await page.getByRole("heading", { name: "CampusBank", level: 1 }).waitFor();
       await jumpNav(page, `${name} ${edition}`);
+      await ctx.close();
+    }
+  }
+}
+
+// ── 6: top of the report — nothing under the sticky header, Summary card text left-aligned ──
+{
+  const settled = page => page.evaluate(() => new Promise(r => { let y = -1; const t = setInterval(() => { if (scrollY === y) { clearInterval(t); r(); } y = scrollY; }, 300); }));
+  // "visible": the eyebrow and title are fully on screen below the sticky header; "partly": the header
+  // covers part of them; "scrolled past": entirely above it.
+  const titleState = page => page.evaluate(() => {
+    const hdr = document.querySelector("header.sticky");
+    const below = hdr && getComputedStyle(hdr).display !== "none" ? hdr.getBoundingClientRect().bottom : 0;
+    const top = document.querySelector("main header p").getBoundingClientRect().top, bottom = document.querySelector("main h1").getBoundingClientRect().bottom;
+    return top >= below ? "visible" : bottom <= below ? "scrolled past" : `partly under the header (top ${Math.round(top)}, header ends ${Math.round(below)})`;
+  });
+  const summaryAligned = page => page.evaluate(() => [...document.querySelectorAll("#section-summary dl:first-of-type dd")].every(dd => ["start", "left"].includes(getComputedStyle(dd).textAlign)));
+  for (const [name, viewport, isMobile] of [VIEWPORTS[0], ["1280x720", { width: 1280, height: 720 }, false], ["820", { width: 820, height: 1000 }, false], VIEWPORTS[1], VIEWPORTS[2]]) {
+    // Arriving from Screen an idea, with and without the walkthrough.
+    for (const tour of [false, true]) {
+      const { ctx, page } = await openApp(browser, { viewport, isMobile });
+      await page.getByRole("button", { name: tour ? "Start with walkthrough" : "Skip to the tool" }).click();
+      await fillIdea(page);
+      await page.getByRole("button", { name: /^Run$/ }).click();
+      await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
+      await settled(page);
+      const state = await titleState(page);
+      // The tour may scroll to the score only where it doesn't fit under the title (phones, short windows),
+      // and then all the way, never leaving the title half under the header.
+      const mayScroll = tour && ["1280x720", "375", "360"].includes(name);
+      if (mayScroll ? state.startsWith("partly") : state !== "visible") problems.push(`[top ${name}${tour ? " tour" : ""}] arriving from Screen an idea: title ${state}`);
+      if (tour && await page.locator("[data-testid=tour-card]").evaluate(c => { const r = c.getBoundingClientRect(); return r.top < 0 || r.bottom > innerHeight; })) problems.push(`[top ${name} tour] the tour card is not fully on screen`);
+      if (!tour) {
+        // Fresh load of the same report, then the Summary jump.
+        await page.reload();
+        await page.getByRole("heading", { name: "Your report" }).waitFor();
+        if ((await titleState(page)) !== "visible") problems.push(`[top ${name}] fresh load: title ${await titleState(page)}`);
+        if (!(await summaryAligned(page))) problems.push(`[top ${name}] Summary card meta text is not left-aligned`);
+        await page.locator("[data-control=report_section_jump][data-control-value=claims]").click();
+        await settled(page);
+        await page.locator("[data-control=report_section_jump][data-control-value=summary]").click();
+        await settled(page);
+        if ((await titleState(page)) !== "visible") problems.push(`[top ${name}] after the Summary jump: title ${await titleState(page)}`);
+      }
+      await ctx.close();
+    }
+    // Every sample report (and, in pitch, every demo report): alignment and title on open.
+    for (const edition of ["public", "pitch"]) {
+      const { ctx, page } = await openApp(browser, { viewport, isMobile, hash: edition === "pitch" ? "#edition=pitch" : "#/screen" });
+      if (edition === "public") await page.getByRole("button", { name: "Skip to the tool" }).click();
+      await go(page, "#/reports");
+      await page.locator("[data-control=reports_samples]").selectOption("15");
+      await page.getByText("Sample report", { exact: true }).first().waitFor();
+      const ids = await page.evaluate(async () => (await import("/src/lib/reports.ts")).listedEntries().filter(e => e.kind !== "session").map(e => e.id));
+      for (const id of ids) {
+        await go(page, `#/report/${id}`);
+        await page.locator("#section-summary").waitFor();
+        await settled(page);
+        if (!(await summaryAligned(page))) problems.push(`[top ${name} ${edition}] ${id}: Summary card meta text is not left-aligned`);
+        if ((await titleState(page)) !== "visible") problems.push(`[top ${name} ${edition}] ${id}: title ${await titleState(page)}`);
+        await go(page, "#/reports");
+        await page.getByText("Sample report", { exact: true }).first().waitFor();
+      }
       await ctx.close();
     }
   }

@@ -40,7 +40,9 @@ export function Report({ entry }: { entry: ReportEntry }) {
     const el = document.getElementById(`section-${id}`);
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     pin(id);
-    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    // Summary is the first section: go to the very top so the page title isn't left half under the header.
+    if (id === "summary") window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    else el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     document.getElementById(`section-${id}-title`)?.focus({ preventScroll: true });
   };
   const another = () => { clearDraft(); navigate(PATHS.screen); };
@@ -91,7 +93,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
                 </button>
               )}
             </div>
-            <dl className="grid shrink-0 gap-x-4 gap-y-1 text-sm lg:text-right">
+            <dl className="grid gap-x-4 gap-y-1 text-sm">
               <div><dt className="sr-only">Date</dt><dd>{entry.checkedOn ? `Sources checked ${checkedLabel(entry.checkedOn)}` : dateLabel(entry.createdAt)}</dd></div>
               <div><dt className="sr-only">Mode</dt><dd className="text-muted-foreground">{MODE_LABEL[entry.mode]}</dd></div>
               {entry.markets.length > 0 && <div><dt className="sr-only">Target markets</dt><dd className="text-muted-foreground">Markets: {entry.markets.join(", ")}</dd></div>}

@@ -36,6 +36,8 @@ export const STEPS: Step[] = [
 ];
 const GATE = STEPS.findIndex(s => s.gate === "run");
 const FIRST_REPORT = STEPS.findIndex(s => s.route === "report");
+// The page's sticky offset (html scroll-padding-top, index.css): what the sticky header and chip bar cover.
+const stickyOffset = () => parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
 
 // ── state ──
 let active = false;
@@ -93,6 +95,7 @@ export function Walkthrough({ route }: { route: RouteName }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [missing, setMissing] = useState(false);
+  const [inView, setInView] = useState(false); // the target was on screen already, so the page didn't scroll
 
   const here = on && !running && step.route === route;
 
@@ -109,9 +112,13 @@ export function Walkthrough({ route }: { route: RouteName }) {
       setBox({ top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height });
     };
     measure();
+    // Scroll only when the target isn't already fully on screen below the sticky header; then put it at the
+    // top (block "start" honours the page's scroll-padding), so the page title is never left half under it.
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const narrow = !matchMedia("(min-width: 768px)").matches; // phones: card docks at the bottom, target goes on top
-    el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: narrow ? "start" : "center" });
+    const r = el.getBoundingClientRect();
+    const fits = r.top >= stickyOffset() && r.bottom <= window.innerHeight;
+    setInView(fits);
+    if (!fits) el.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     ro.observe(document.body);
@@ -140,14 +147,17 @@ export function Walkthrough({ route }: { route: RouteName }) {
 
   const wide = matchMedia("(min-width: 768px)").matches; // same breakpoint as the CSS (md)
   // Desktop: beside the target (below, else above) in document coordinates; if it fits neither, docked.
-  const CARD_H = 260;
+  const CARD_H = Math.max(260, cardRef.current?.offsetHeight ?? 0); // the last rendered card, if taller
   const vh = window.innerHeight;
-  const placed = wide && box && box.height + 16 + CARD_H < vh; // target and card fit on screen together
+  // Target and card fit on screen together (below the sticky header) — and, when the page didn't scroll
+  // because the target was already in view, the card below or above it is on screen too; else it docks.
+  const fitsBeside = (top: number) => !inView || (top >= window.scrollY + stickyOffset() && top + CARD_H <= window.scrollY + vh);
+  const belowTop = box ? box.top + box.height + 16 : 0;
+  const below = box !== null && fitsBeside(belowTop) && belowTop + CARD_H <= document.documentElement.scrollHeight;
+  const placed = wide && box && box.height + 16 + CARD_H < vh - stickyOffset() && (below || fitsBeside(box.top - 16 - CARD_H));
   const style: CSSProperties = {};
   if (placed && box) {
-    const belowTop = box.top + box.height + 16;
-    const roomBelow = belowTop + CARD_H <= document.documentElement.scrollHeight;
-    style.top = roomBelow ? belowTop : Math.max(16, box.top - 16 - CARD_H);
+    style.top = below ? belowTop : Math.max(16, box.top - 16 - CARD_H);
     style.left = Math.min(Math.max(16, box.left), document.documentElement.clientWidth - 16 - 352);
   }
   const gated = Boolean(step.gate);

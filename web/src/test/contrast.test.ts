@@ -1,4 +1,6 @@
 // WCAG AA contrast for every text/background token pair used in the UI.
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrast, token } from "./colour";
 
@@ -29,6 +31,8 @@ const PAIRS: [string, string, number][] = [
   // non-text: focus rings and field outlines (WCAG 1.4.11, 3:1)
   ["ring", "card", 3], ["ring", "background", 3], ["lime", "page", 3], ["input", "card", 3], ["input", "background", 3],
   ["on-page-muted", "page-raised", 3],
+  // selected option in the post-report form: cream label on an ink fill
+  ["background", "foreground", 4.5],
 ];
 
 describe("WCAG AA contrast of design tokens", () => {
@@ -37,4 +41,12 @@ describe("WCAG AA contrast of design tokens", () => {
       expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(min);
     });
   }
+
+  // A class naming a token that doesn't exist silently falls back to the inherited colour
+  // (text-on-foreground once left selected options ink on ink).
+  it("every text-on-* class names a defined token", () => {
+    const files = (readdirSync("src", { recursive: true }) as string[]).filter(f => f.endsWith(".tsx"));
+    const used = new Set(files.flatMap(f => [...readFileSync(join("src", f), "utf8").matchAll(/\btext-(on-[a-z-]+)/g)].map(m => m[1])));
+    expect([...used].filter(t => { try { token(t); return false; } catch { return true; } })).toEqual([]);
+  });
 });

@@ -30,6 +30,9 @@ export interface RunState {
   server: boolean;
   error: { code: RunErrorCode; message: string } | null;
   ideaChars: number;
+  /** performance.now() when the run started: elapsed time and the live estimate count from here, so
+   *  leaving the running screen and coming back doesn't restart them. */
+  startedAt: number;
 }
 
 // Fixed per-stage pause in mock mode so progress is readable (no random jitter).
@@ -37,7 +40,7 @@ export const STAGE_ANIMATION_MS = 600;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const idleStages = (): Record<StageKey, StageView> => Object.fromEntries(STAGES.map(s => [s.key, { state: "idle" }])) as Record<StageKey, StageView>;
 
-let state: RunState = { status: "idle", runId: null, stages: idleStages(), server: false, error: null, ideaChars: 0 };
+let state: RunState = { status: "idle", runId: null, stages: idleStages(), server: false, error: null, ideaChars: 0, startedAt: 0 };
 let controller: AbortController | null = null;
 let activeStage: StageKey | null = null;
 const listeners = new Set<() => void>();
@@ -61,10 +64,10 @@ export async function startRun({ input, sample, confPre = null }: { input: IdeaI
   const signal = controller.signal;
   const stages = idleStages();
   if (live) for (const s of STAGES) stages[s.key] = { state: s.key === "legal" ? "skipped" : "server" };
-  set({ status: "running", runId, stages, server: live, error: null, ideaChars: ideaText.length });
+  const t0 = performance.now();
+  set({ status: "running", runId, stages, server: live, error: null, ideaChars: ideaText.length, startedAt: t0 });
   navigate(PATHS.running);
 
-  const t0 = performance.now();
   const onStage = async (n: number, st: "running" | "done", note?: string) => {
     if (live) return; // the proxy answers all at once; the tracker says so instead of pretending
     const key = PIPELINE[n];

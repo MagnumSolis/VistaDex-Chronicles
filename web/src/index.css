@@ -159,12 +159,17 @@
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
     /* Keep focused and scrolled-to elements clear of the sticky header / jump nav and, on phones,
-       the bottom tab bar (WCAG 2.4.11 focus not obscured). */
-    scroll-padding-top: 4.5rem;
+       the bottom tab bar (WCAG 2.4.11 focus not obscured). The one sticky offset: report jumps and the
+       jump nav's scroll-spy both use it. --header-h is the desktop header's measured height (Shell;
+       0 on phones, where it is hidden); below lg, 4.5rem more for the report's sticky chip bar. */
+    scroll-padding-top: calc(var(--header-h, 0px) + 4.5rem);
     scroll-padding-bottom: 6rem;
   }
   @media (min-width: 768px) {
-    html { scroll-padding-top: 8rem; scroll-padding-bottom: 1.5rem; }
+    html { scroll-padding-bottom: 1.5rem; }
+  }
+  @media (min-width: 1024px) {
+    html { scroll-padding-top: calc(var(--header-h, 0px) + 1.5rem); }
   }
   body {
     @apply bg-background text-foreground antialiased;

@@ -1,13 +1,11 @@
-// ── Contact us — who we are, how to reach us, data requests, source code ──
+// ── Contact us — who we are, how to reach us, data requests ──
 import type { ReactNode } from "react";
-import { ExternalLink, FolderGit2, Mail, MessageSquareText, ShieldCheck, Users } from "lucide-react";
+import { Mail, MessageSquareText, ShieldCheck, Users } from "lucide-react";
 import { PageTitle } from "@/components/ui-vd";
 import { features } from "@/edition";
 import { studyConfig } from "@/proto";
 import { href, PATHS } from "@/router";
 
-// The repository is public (checked 2026-10-20).
-export const REPO_URL = "https://github.com/MagnumSolis/VistaDex-Chronicles";
 const { WITHDRAWAL_CONTACT } = studyConfig;
 
 export function Contact() {
@@ -34,9 +32,6 @@ export function Contact() {
           ) : (
             <>This edition records nothing. For data requests, email us at the address above.</>
           )}
-        </Item>
-        <Item icon={FolderGit2} title="Source code">
-          Not available yet.
         </Item>
       </ul>
     </div>

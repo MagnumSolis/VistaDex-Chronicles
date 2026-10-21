@@ -1,6 +1,7 @@
 // Pitch edition, in its own file so no public-edition modules from other tests share the window.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { STUDY_VERSION } from "@proto/ui/study-config.js";
 import { fillIdea, go, json, loadApp, PROXY_REPORT, stubFetch } from "./helpers";
 
 const run = () => fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
@@ -12,8 +13,8 @@ describe("pitch edition", () => {
   it("opens on the Dashboard with the badge, has no Welcome, and sends zero events", async () => {
     // A previous public visit in this browser (same study version) left consent and unsent events behind.
     localStorage.setItem("vistadex.study.v1", JSON.stringify({
-      session_id: "11111111-1111-4111-8111-111111111111", consent: "given", consent_at: "t", consent_version: "2026-10-study-1",
-      seq: 1, sent: 0, events: [{ session_id: "11111111-1111-4111-8111-111111111111", seq: 1, ts: "t", type: "consent_given", study_version: "2026-10-study-1", payload: {} }],
+      session_id: "11111111-1111-4111-8111-111111111111", consent: "given", consent_at: "t", consent_version: STUDY_VERSION,
+      seq: 1, sent: 0, events: [{ session_id: "11111111-1111-4111-8111-111111111111", seq: 1, ts: "t", type: "consent_given", study_version: STUDY_VERSION, payload: {} }],
     }));
     const calls = stubFetch(url => (url.endsWith("/screen") ? json(PROXY_REPORT, 200, { "X-VistaDex-Mode": "live" }) : json({ stored: 1 })));
     const { tm } = await loadApp({ edition: "pitch", proxy: true });

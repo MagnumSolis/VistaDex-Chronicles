@@ -26,13 +26,16 @@ export function Panel({ children, className, tab, tabId, tone = "cream", as: Tag
   const bg = { cream: "bg-background text-foreground", lime: "bg-lime text-on-lime", paper: "bg-card text-foreground", charcoal: "bg-charcoal text-on-charcoal" }[tone];
   const ring = tone === "charcoal" ? "on-page" : "on-light";
   return (
-    <Tag className={cn("relative min-w-0", ring, tab && "pt-11", className)} {...rest}>
+    // overflow-x-clip: a tab as wide as the panel (long title at 320px) must not push its notch past the page edge.
+    <Tag className={cn("relative min-w-0", ring, tab && "overflow-x-clip", className)} {...rest}>
       {tab && (
-        <div className={cn("tab-notch absolute left-0 top-0 h-12 rounded-t-[1.25rem] px-5 pt-3", bg)} style={{ ["--notch" as string]: `var(--${tone === "cream" ? "background" : tone === "paper" ? "card" : tone})` }}>
+        // In flow (min 48px tall), so a title that wraps on a narrow phone makes the tab taller instead of
+        // spilling onto the panel; the panel tucks 4px under it, as before.
+        <div className={cn("tab-notch relative min-h-12 w-fit max-w-full rounded-t-[1.25rem] px-5 pb-2 pt-3", bg)} style={{ ["--notch" as string]: `var(--${tone === "cream" ? "background" : tone === "paper" ? "card" : tone})` }}>
           <div id={tabId} className="font-display text-[1.375rem] leading-tight">{tab}</div>
         </div>
       )}
-      <div className={cn("rounded-panel p-5 md:p-8", bg, tab && "rounded-tl-none")}>{children}</div>
+      <div className={cn("rounded-panel p-5 md:p-8", bg, tab && "-mt-1 rounded-tl-none")}>{children}</div>
     </Tag>
   );
 }

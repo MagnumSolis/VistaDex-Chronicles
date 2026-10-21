@@ -1,11 +1,19 @@
+// Guarded even when run directly (node --test tests/telemetry.test.js): no request may leave localhost.
+import "./setup/network-guard.js";
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
 
 // Minimal browser stand-ins: telemetry.js only needs storage, crypto and listeners.
-before(() => {
+// The proxy is a stub on a reserved host: prototype/config.js points at the production Worker, which
+// these tests reached (DELETE /session) until 2026-10-21. Requests are recorded, never sent.
+const sent = [];
+before(async () => {
   const store = new Map();
   globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
   globalThis.addEventListener ??= () => {};
+  const { CONFIG } = await import("../prototype/config.js");
+  CONFIG.PROXY_URL = "https://proxy.test";
+  globalThis.fetch = async (url, init = {}) => { sent.push({ url: String(url), method: init.method ?? "GET" }); return { ok: true, status: 200 }; };
 });
 
 test("nothing is logged before or after declining consent", async () => {
@@ -30,11 +38,12 @@ test("after consent, events carry an anonymous session id and no identity fields
 
 test("withdraw wipes local data and stops logging", async () => {
   const tm = await import("../prototype/ui/telemetry.js");
+  const id = tm.sessionId();
+  sent.length = 0;
   const res = await tm.withdraw();
-  // With PROXY_URL configured the server is called (and a live proxy deletes the
-  // session); with it empty the client reports "not-configured". Either way the
-  // local store must be wiped and logging must stop.
-  assert.ok(res.server === "not-configured" || res.server === "deleted", `unexpected server state: ${res.server}`);
+  // The (stubbed) server is asked to delete exactly this session, and nothing else is sent.
+  assert.equal(res.server, "deleted");
+  assert.deepEqual(sent, [{ url: `https://proxy.test/session/${id}`, method: "DELETE" }]);
   assert.equal(tm.events().length, 0);
   assert.equal(tm.log("run_started", {}), null);
 });

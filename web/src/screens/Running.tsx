@@ -48,7 +48,7 @@ export function Running() {
               The server runs these steps together and answers once, so they finish together. This can take up to a minute.
             </p>
           )}
-          <RunProgress running={run.status === "running"} doneCount={done} total={STAGES.length} server={run.server} />
+          <RunProgress running={run.status === "running"} doneCount={done} total={STAGES.length} server={run.server} startedAt={run.startedAt} />
           <ol className="space-y-1.5">
             {STAGES.map((s, i) => {
               const st = run.stages[s.key];

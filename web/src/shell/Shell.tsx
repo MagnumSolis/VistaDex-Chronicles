@@ -1,6 +1,6 @@
 // ── Shell.tsx — Header (floating cream bar on desktop), bottom tab bar on phones, footer ──
 // What appears is decided by `features` (edition.ts); this file never checks the edition itself.
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { BookOpen, CircleHelp, Files, House, Mail, MessageSquareText, ScanSearch, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { features, type NavId } from "@/edition";
@@ -17,6 +17,17 @@ const NAV: Record<NavId, { label: string; short: string; path: string; icon: Luc
 
 export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: () => void; children: ReactNode }) {
   const active = (id: NavId) => NAV[id].routes.includes(route);
+  // The sticky header's height (it wraps at some widths; 0 when hidden on phones) as --header-h,
+  // the base of the page's scroll offset (index.css) and of the report jump nav's sticky top.
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = header.current!;
+    const set = () => document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div className="on-page flex min-h-dvh flex-col bg-page text-on-page">
       <a href="#main" data-control="skip_to_content" onClick={e => { e.preventDefault(); document.getElementById("main")?.focus(); }}
@@ -25,7 +36,7 @@ export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: 
       </a>
 
       {/* Desktop: floating cream bar, inset from the page edges. */}
-      <header className="sticky top-0 z-40 hidden px-6 pt-4 md:block print:hidden">
+      <header ref={header} className="sticky top-0 z-40 hidden px-6 pt-4 md:block print:hidden">
         <div className="on-light mx-auto flex max-w-6xl items-center gap-6 rounded-2xl bg-background py-3 pl-6 pr-3 text-foreground">
           <Wordmark />
           <nav aria-label="Main" className="flex items-center gap-1">
@@ -58,7 +69,10 @@ export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: 
       <footer className="mx-auto w-full max-w-6xl px-4 pb-28 text-sm text-on-page-muted md:px-6 md:pb-8 print:hidden">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-page-raised pt-5">
           <span>Prototype. Reports can be wrong; you make the decision.</span>
-          <span className="font-mono text-xs">This demo is part of a BITS Pilani research study — your anonymous usage helps us study how people judge startup ideas with AI. Opt out any time via “Your data &amp; privacy”.</span>
+          {/* Only where usage is recorded: the pitch edition records nothing and has no "Your data & privacy". */}
+          {features.telemetry && (
+            <span className="font-mono text-xs">This demo is part of a BITS Pilani research study — your anonymous usage helps us study how people judge startup ideas with AI. Opt out any time via “Your data &amp; privacy”.</span>
+          )}
           <span className="font-mono text-xs">{liveMode() ? "Live providers" : "Mock mode: no live evidence"}</span>
           {features.welcome && (
             <a href={href(PATHS.welcome)} data-control="footer_your_data" className="underline underline-offset-4 hover:text-on-page">Your data &amp; privacy</a>
@@ -106,16 +120,17 @@ function HeaderExtras({ onHelp, compact = false }: { onHelp?: () => void; compac
       )}
       {features.walkthrough && onHelp && (
         <button type="button" onClick={onHelp} data-control="help_replay_walkthrough" aria-label="Replay the walkthrough"
-          className={cn("inline-flex size-10 items-center justify-center rounded-control border transition-colors duration-150",
+          className={cn("inline-flex items-center justify-center rounded-control border transition-colors duration-150", compact ? "size-11" : "size-10",
             compact ? "border-on-page/70 text-on-page hover:bg-page-raised" : "border-foreground/70 text-foreground hover:bg-accent")}>
           <CircleHelp aria-hidden className="size-5" strokeWidth={1.75} />
         </button>
       )}
       {features.feedback && (
+        // Phones: 44px tall; below 360px icon only (the label stays as its accessible name) so the bar fits 320px.
         <a href={href(PATHS.feedback)} data-control="header_feedback"
-          className={cn("inline-flex h-10 items-center gap-2 rounded-control px-3.5 text-sm font-medium transition-colors duration-150",
-            compact ? "bg-lime text-on-lime hover:bg-[color-mix(in_oklch,var(--lime),black_8%)]" : "bg-primary text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),black_18%)]")}>
-          <MessageSquareText aria-hidden className="size-4" strokeWidth={1.75} /> Feedback
+          className={cn("inline-flex items-center justify-center gap-2 rounded-control px-3.5 text-sm font-medium transition-colors duration-150",
+            compact ? "h-11 max-[359px]:w-11 max-[359px]:px-0 bg-lime text-on-lime hover:bg-[color-mix(in_oklch,var(--lime),black_8%)]" : "h-10 bg-primary text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),black_18%)]")}>
+          <MessageSquareText aria-hidden className="size-4" strokeWidth={1.75} /> <span className={cn(compact && "max-[359px]:sr-only")}>Feedback</span>
         </a>
       )}
     </>

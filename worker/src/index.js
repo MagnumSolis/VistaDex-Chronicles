@@ -200,7 +200,7 @@ async function researchQualitative(request, url, env) {
   if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
   const { MONGODB_DATA_API_KEY, MONGODB_DATA_API_URL } = env;
   if (!MONGODB_DATA_API_KEY || !MONGODB_DATA_API_URL) {
-    return json({ ok: true, configured: false, docs: [], note: "Mongo Data API not configured — qualitative data lives only in D1 events." });
+    return json({ ok: true, configured: false, docs: [], note: "Qualitative data lives in D1 (see the Feedback view — it renders from there). For a durable MongoDB archive, run backend 'npm run research:sync' from a laptop with MONGODB_URI; it upserts everything into Atlas research_data.qualitative." });
   }
   const res = await fetch(`${MONGODB_DATA_API_URL}/action/find`, {
     method: "POST",

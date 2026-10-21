@@ -164,6 +164,11 @@ export const RESEARCH_PAGE = `<!doctype html>
 
   input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
 
+  /* full session ids: monospace, copy-on-click, never truncated */
+  .sid { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); background: none; border: 1px solid transparent; border-radius: 5px; padding: 2px 6px; cursor: copy; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sid:hover { color: var(--accent); border-color: var(--border); background: var(--panel-2); }
+  .sid.copied { color: var(--good); border-color: rgba(74,222,128,.4); }
+
   @media (max-width: 800px) { .app { grid-template-columns: 1fr; } .side { display: none; } }
 </style>
 </head>
@@ -231,7 +236,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <section class="view" id="v-research">
       <div class="phead"><h1>Research analysis</h1><span class="sub">per-run measures · H4 learning stratification · qualitative store</span></div>
       <div id="research-content" style="margin-bottom:28px"><div class="skel" style="height:200px"></div></div>
-      <h2 style="font-size:14px;margin:26px 0 4px;font-weight:700">Qualitative store <span class="sub" style="font-size:12px;color:var(--ink-3);font-weight:400">MongoDB Atlas · feedback + surveys, verbatim</span></h2>
+      <h2 style="font-size:14px;margin:26px 0 4px;font-weight:700">Qualitative store <span class="sub" id="qualitative-meta" style="font-size:12px;color:var(--ink-3);font-weight:400">every survey, feedback and comprehension answer, verbatim</span></h2>
       <div id="qualitative-content"><div class="skel" style="height:120px"></div></div>
     </section>
 
@@ -288,6 +293,10 @@ export const RESEARCH_PAGE = `<!doctype html>
     section_time: "per-section attention",
     report_time: "report attention",
     feedback_submitted: "open feedback (unlinked id)",
+    claim_dwell: "per-claim attention (H4)",
+    source_clicked_by_claim: "verification behaviour, per claim (H2/H4)",
+    run_scoped_survey: "per-run survey copy (H4)",
+    comprehension_check: "did they read unverified correctly",
     walkthrough_started: "onboarding",
     walkthrough_step_time: "step attention",
     walkthrough_ended: "onboarding completion",
@@ -295,6 +304,17 @@ export const RESEARCH_PAGE = `<!doctype html>
   };
 
   // nav switching
+  window.copySid = function (btn) {
+    var sid = btn.dataset.sid || "";
+    var done = function () { btn.classList.add("copied"); btn.title = "copied"; setTimeout(function () { btn.classList.remove("copied"); btn.title = "click to copy"; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(sid).then(done, done); }
+    else { var ta = document.createElement("textarea"); ta.value = sid; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); done(); }
+  };
+  // copy session ids (delegated: works for rows rendered later)
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest ? ev.target.closest(".sid") : null;
+    if (b) copySid(b);
+  });
   document.querySelectorAll(".nav[data-view]").forEach(function (n) {
     n.onclick = function () {
       document.querySelectorAll(".nav").forEach(function (m) { m.classList.remove("on"); });
@@ -357,15 +377,20 @@ export const RESEARCH_PAGE = `<!doctype html>
     var sv = p.survey ? '<span class="num">T' + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var from = p.roleFrom ? '<span style="color:var(--ink-3);font-size:11px">' + esc(p.roleFrom) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var src = p.source ? '<span class="num" style="color:var(--accent)">' + esc(p.source) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
-    return "<tr><td>" + track + "</td><td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td><td>" + src + "</td>" +
+    return "<tr>" + "<td>" + track + "</td>" + sidCell(p.sid) + "<td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td><td>" + src + "</td>" +
       "<td>" + conf + "</td><td>" + ag + "</td><td>" + (p.clicks || '<span style="color:var(--ink-3)">—</span>') + "</td>" +
       "<td>" + sv + "</td><td class='num' style='color:var(--ink-3)'>" + esc(p.industries || "—") + "</td>" +
       "<td class='num'>" + p.runs + "</td><td class='num'>" + p.n + "</td>" +
       "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
   }
-  var HEAD = "<tr><th>Track</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
+  // Full session id, copy-to-clipboard on click — researchers must be able to
+  // tell participants apart (the 8-char truncation made that impossible).
+  function sidCell(sid) {
+    return '<td><button class="sid num" title="click to copy" data-sid="' + esc(sid) + '">' + esc(sid) + '</button></td>';
+  }
+  var HEAD = "<tr><th>Track</th><th>Session ID</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
   function metricsCSV(people) {
-    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","effort","runs","events"];
+    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_post","conf_delta","votes","agree_rate_pct","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
     var rows = [cols.join(",")];
     people.forEach(function (p) {
       var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
@@ -375,7 +400,8 @@ export const RESEARCH_PAGE = `<!doctype html>
         p.confPre == null ? "" : p.confPre, p.confPost == null ? "" : p.confPost, delta,
         p.votes, p.votes ? Math.round(100 * p.agrees / p.votes) : "",
         p.clicks,
-        p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.effort : "",
+        p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.helpfulness : "", p.survey ? p.survey.effort : "",
+        p.survey && p.survey.open_text ? String(p.survey.open_text) : "",
         p.runs, p.n
       ].map(function (v) {
         v = String(v);
@@ -400,10 +426,6 @@ export const RESEARCH_PAGE = `<!doctype html>
           '<span class="num" style="color:var(--ink-3)">' + Math.round(100 * x[1] / total) + '%</span></div>';
       }).join("") + "</div>";
   }
-  function bucketBy10(values) {
-    return values.filter(function (v) { return typeof v === "number" && !isNaN(v); })
-      .map(function (v) { return Math.min(9, Math.floor(v / 10)); });
-  }
   function likertCard(title, values, min, max, unit) {
     var vals = values.filter(function (v) { return typeof v === "number" && !isNaN(v); });
     if (!vals.length) return "";
@@ -423,25 +445,35 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="fb-avg">mean ' + (Math.round(avg * 10) / 10) + (unit || "") + "</div></div>";
   }
 
+  // Events that belong to a run even when the run_id is missing (legacy data).
+  var PER_RUN_TYPES = { confidence_pre: 1, confidence_post: 1, claim_vote: 1, objection_vote: 1,
+    source_clicked: 1, source_clicked_by_claim: 1, claim_dwell: 1, run_scoped_survey: 1, comprehension_check: 1, condition_survey: 1 };
+
   function renderResearch(ev) {
     var box = $("research-content");
     // collect runs: a run = one run_started..run_completed pair per session
     var runs = [];
-    var bySid = {};
+    var bySidRuns = {};
     ev.forEach(function (e) {
       var q = e.payload || {};
       if (e.type === "run_started") {
-        runs.push({ sid: e.session_id, runId: q.run_id || null, started: e.ts,
+        var r = { sid: e.session_id, runId: q.run_id || null, started: e.ts,
           role: q.role || null, industries: (q.industries || []).join(", "),
-          pre: null, post: null, votes: 0, agrees: 0, clicks: 0, dwell: 0, survey: null, comp: null });
+          pre: null, post: null, votes: 0, agrees: 0, clicks: 0, dwell: 0, survey: null, comp: null };
+        runs.push(r);
+        (bySidRuns[e.session_id] = bySidRuns[e.session_id] || []).push(r);
       }
     });
-    // join per-run measures (new events carry run_id; old fall back to latest)
+    // Join per-run measures. run ids ("r1"…) are per-browser counters, so the
+    // composite key (session_id, run_id) is unique. Legacy events without a
+    // run_id fall back to the session's latest run.
     var byRun = {};
-    runs.forEach(function (r) { byRun[r.runId] = r; });
+    runs.forEach(function (r) { if (r.runId) byRun[r.sid + "\u0000" + r.runId] = r; });
     ev.forEach(function (e) {
       var q = e.payload || {};
-      var r = byRun[q.run_id];
+      var r = q.run_id ? byRun[e.session_id + "\u0000" + q.run_id] : null;
+      var sessRuns = bySidRuns[e.session_id];
+      if (!r && PER_RUN_TYPES[e.type] && sessRuns && sessRuns.length) r = sessRuns[sessRuns.length - 1];
       if (!r) return;
       if (e.type === "confidence_pre") r.pre = q.value;
       else if (e.type === "confidence_post") r.post = q.value;
@@ -450,6 +482,8 @@ export const RESEARCH_PAGE = `<!doctype html>
       else if (e.type === "claim_dwell") r.dwell += q.ms || 0;
       else if (e.type === "run_scoped_survey") r.survey = q;
       else if (e.type === "comprehension_check") r.comp = q.answer;
+      // Legacy sessions logged the survey as condition_survey (no run-scoped copy yet).
+      else if (e.type === "condition_survey" && !r.survey) r.survey = q;
     });
     $("cnt-r").textContent = runs.length;
 
@@ -478,9 +512,9 @@ export const RESEARCH_PAGE = `<!doctype html>
         var c = cal(r);
         var delta = c != null ? '<span class="delta ' + (c > 0 ? "up" : c < 0 ? "down" : "zero") + '">' + (c > 0 ? "+" : "") + c + "</span>" : "—";
         var ag = r.votes ? Math.round(100 * r.agrees / r.votes) + "%" : "—";
-        var sv = r.survey ? '<span class="num">T' + r.survey.trust + " · U" + r.survey.usefulness + "</span>" : "—";
+        var sv = r.survey ? '<span class="num">T' + r.survey.trust + "\u00b7U" + r.survey.usefulness + "\u00b7E" + r.survey.effort + "</span>" : "\u2014";
         var comp = r.comp ? esc(r.comp) : "—";
-        html += "<tr><td class='num'>" + esc(r.sid.slice(0, 8)) + "…</td><td class='num'>" + (r.runId ? esc(String(r.runId).slice(0, 8)) : "—") + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
+        html += "<tr>" + sidCell(r.sid) + "<td class='num'>" + esc(r.runId || "—") + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
       });
     } else {
       html += '<tr><td colspan="9" class="empty">No runs with telemetry yet.</td></tr>';
@@ -489,24 +523,54 @@ export const RESEARCH_PAGE = `<!doctype html>
     box.innerHTML = html;
   }
 
+  // The qualitative store view: every survey + feedback answer, verbatim, right
+  // here. Rendered from the same D1 events the console already loads — no
+  // external service required. When MongoDB Atlas is configured the archive
+  // is noted (durable sync via backend research:sync) but never a blocker.
+  var lastEvents = [];
+  function renderQualitative(ev) {
+    var box = $("qualitative-content");
+    var types = { condition_survey: 1, run_scoped_survey: 1, feedback_submitted: 1, comprehension_check: 1, participant_registered: 1 };
+    var docs = ev.filter(function (e) { return types[e.type]; }).slice().reverse(); // newest first
+    if (!docs.length) {
+      box.innerHTML = '<div class="tbl-wrap" style="padding:20px;color:var(--ink-3)">No qualitative answers yet — they appear the moment a visitor submits a survey or feedback.</div>';
+      return;
+    }
+    var html = docs.map(function (e) {
+      var q = e.payload || {};
+      var title, body = [];
+      if (e.type === "feedback_submitted") {
+        title = "Feedback form";
+        if (q.role) body.push("Who: " + q.role);
+        if (q.useful) body.push("Useful: " + q.useful);
+        if (q.section) body.push("Mattered most: " + q.section);
+        if (q.would_use) body.push("Would use: " + q.would_use);
+        if (q.wrong) body.push("\u201c" + q.wrong + "\u201d");
+      } else if (e.type === "comprehension_check") {
+        title = "Comprehension check";
+        body.push("What does unverified mean: " + String(q.answer).replace(/_/g, " "));
+      } else if (e.type === "participant_registered") {
+        title = "Registration";
+        body.push("Track " + (q.track || "?") + (q.role ? " \u00b7 role " + q.role : "") + (q.code ? " \u00b7 code " + q.code : "") + (q.source ? " \u00b7 via " + q.source : ""));
+      } else {
+        title = "Report survey (" + (q.condition || "?") + ")";
+        body.push("Trust " + q.trust + "/7 \u00b7 usefulness " + q.usefulness + "/7 \u00b7 helped next steps " + q.helpfulness + "/7 \u00b7 effort " + q.effort + "/7");
+        if (q.open_text && String(q.open_text).trim()) body.push("\u201c" + String(q.open_text).trim() + "\u201d");
+      }
+      return '<div class="fb-quote"><div>' + body.map(function (b) { return esc(b); }).join("</div><div style='margin-top:4px'>") + "</div>" +
+        '<div class="who">' + esc(title) + " \u00b7 " + esc(String(e.ts || "").slice(0, 16).replace("T", " ")) + " \u00b7 " + esc(e.session_id) + " \u00b7 D1</div></div>";
+    }).join("");
+    box.innerHTML = html;
+  }
+
   function loadQualitative() {
     fetch("/research/qualitative", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-      var box = $("qualitative-content");
-      if (!d.configured) {
-        box.innerHTML = '<div class="tbl-wrap" style="padding:20px;color:var(--ink-3);font-size:12.5px">' + esc(d.note || "Not configured.") + " To enable: create a Data API app in Atlas (research_data.qualitative), then set MONGODB_DATA_API_URL + MONGODB_DATA_API_KEY as Worker secrets.</div>";
-        return;
-      }
-      var docs = d.docs || [];
-      if (!docs.length) { box.innerHTML = '<div class="tbl-wrap" style="padding:20px;color:var(--ink-3)">No qualitative documents yet.</div>'; return; }
-      box.innerHTML = docs.map(function (doc) {
-        var q = doc.payload || {};
-        var title = doc.type === "feedback_submitted" ? "Feedback form" : doc.type === "condition_survey" ? "Report survey (" + esc(q.condition || "?") + ")" : "Registration";
-        var body = q.wrong || q.open_text || (q.role ? "role: " + esc(q.role) : "—");
-        return '<div class="fb-quote">' + esc(String(body).slice(0, 600)) + '<div class="who">' + title + " · " + esc(String(doc.ts || "").slice(0, 16).replace("T", " ")) + " · Mongo</div></div>";
-      }).join("");
-    }).catch(function () {
-      $("qualitative-content").innerHTML = '<div class="msg err">qualitative store unreachable</div>';
-    });
+      var box = $("qualitative-meta");
+      if (!box) return;
+      box.textContent = d.configured
+        ? "MongoDB Atlas archive connected (research_data.qualitative) \u00b7 showing live D1 data below"
+        : "D1 (live) \u00b7 optional MongoDB Atlas archive: backend 'npm run research:sync' with MONGODB_URI";
+    }).catch(function () { /* cosmetic note only */ });
   }
 
   function renderFeedback(ev) {
@@ -527,8 +591,28 @@ export const RESEARCH_PAGE = `<!doctype html>
     if (confPre.length || confPost.length) {
       html += '<h2 style="font-size:15px;margin:20px 0 4px">Confidence in the idea <span class="sub" style="font-size:12px;color:var(--ink-3)">(sliders, 0-100% — the calibration measure)</span></h2>';
       html += '<div class="fb-grid">';
-      html += likertCard("Before the report", bucketBy10(confPre.map(function (e) { return e.payload && e.payload.value; })), 0, 9);
-      html += likertCard("After the report", bucketBy10(confPost.map(function (e) { return e.payload && e.payload.value; })), 0, 9);
+      // Real 0-100 slider values, binned by 10 with the bin labelled as a %.
+      function confCard(title, list) {
+        var vals = list.map(function (e) { return e.payload && e.payload.value; })
+          .filter(function (v) { return typeof v === "number" && !isNaN(v); });
+        if (!vals.length) return "";
+        var hist = {};
+        vals.forEach(function (v) { var b = Math.min(9, Math.floor(v / 10)); hist[b] = (hist[b] || 0) + 1; });
+        var maxCount = Math.max.apply(null, Object.keys(hist).map(function (k) { return hist[k]; }));
+        var cols = "";
+        for (var b = 0; b <= 9; b++) {
+          var c = hist[b] || 0;
+          cols += '<div class="col"><span class="v">' + (c || "") + '</div>' +
+            '<div class="b" style="height:' + Math.max(2, 70 * c / maxCount) + 'px"></div>' +
+            '<span class="c">' + (b * 10) + "+</span></div>";
+        }
+        var mean = Math.round(10 * vals.reduce(function (a, v) { return a + v; }, 0) / vals.length) / 10;
+        return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + vals.length + ' ratings</span></h3>' +
+          '<div class="fb-likert">' + cols + "</div>" +
+          '<div class="fb-avg">mean ' + mean + "%</div></div>";
+      }
+      html += confCard("Before the report", confPre);
+      html += confCard("After the report", confPost);
       html += "</div>";
     }
 
@@ -571,6 +655,33 @@ export const RESEARCH_PAGE = `<!doctype html>
       }
     }
 
+    // Every response, one row each — the actual answers, not just aggregates.
+    var responses = [];
+    fbForms.forEach(function (e) {
+      var q = e.payload || {};
+      responses.push({ ts: e.ts, sid: e.session_id, kind: "Feedback form",
+        main: [q.role ? "who: " + q.role : null, q.useful ? "useful: " + q.useful : null, q.section ? "section: " + q.section : null, q.would_use ? "would use: " + q.would_use : null].filter(Boolean).join(" \u00b7 "),
+        open: q.wrong || "" });
+    });
+    surveys.forEach(function (e) {
+      var q = e.payload || {};
+      responses.push({ ts: e.ts, sid: e.session_id, kind: "Report survey (" + (q.condition || "?") + ")",
+        main: "trust " + (q.trust == null ? "\u2014" : q.trust) + "/7 \u00b7 usefulness " + (q.usefulness == null ? "\u2014" : q.usefulness) + "/7 \u00b7 next steps " + (q.helpfulness == null ? "\u2014" : q.helpfulness) + "/7 \u00b7 effort " + (q.effort == null ? "\u2014" : q.effort) + "/7",
+        open: q.open_text || "" });
+    });
+    responses.sort(function (a, b) { return String(b.ts).localeCompare(String(a.ts)); });
+    if (responses.length) {
+      html += '<div style="margin:26px 0 4px"><p style="font-size:15px;font-weight:700">Every response (' + responses.length + ')</p><p style="font-size:12px;color:var(--ink-3)">one row per submission, newest first \u00b7 click a session id to copy it</p></div>';
+      html += '<div class="tbl-wrap"><table><tr><th>When</th><th>Source</th><th>Session ID</th><th>Answers</th><th>Open answer</th></tr>';
+      responses.forEach(function (r) {
+        html += '<tr><td class="num" style="color:var(--ink-2)">' + esc(String(r.ts).slice(0, 16).replace("T", " ")) + "</td>" +
+          '<td>' + esc(r.kind) + "</td>" + sidCell(r.sid) +
+          '<td style="white-space:normal;max-width:340px">' + esc(r.main || "\u2014") + "</td>" +
+          '<td style="white-space:normal;max-width:340px">' + (r.open && String(r.open).trim() ? "\u201c" + esc(String(r.open).slice(0, 400)) + "\u201d" : '<span style="color:var(--ink-3)">\u2014</span>') + "</td></tr>";
+      });
+      html += "</table></div>";
+    }
+
     box.innerHTML = html;
   }
 
@@ -585,7 +696,6 @@ export const RESEARCH_PAGE = `<!doctype html>
     var study = people.filter(function (p) { return p.track === "study"; });
     var complete = study.filter(function (p) { return p.survey && p.confPost != null && p.confPre != null; });
     var voted = people.filter(function (p) { return p.votes > 0; });
-    var avgTrust = people.filter(function (p) { return p.survey }).reduce(function (a, p, i, arr) { return a + p.survey.trust / arr.length; }, 0);
 
     $("kpis").innerHTML =
       '<div class="kpi"><div class="label">Sessions</div><div class="val">' + d.totals.sessions + '</div><div class="note">consented visitors</div></div>' +
@@ -597,7 +707,7 @@ export const RESEARCH_PAGE = `<!doctype html>
 
     $("recent-participants").innerHTML = HEAD + (people.length
       ? people.slice(0, 6).map(personRow).join("")
-      : '<tr><td colspan="12" class="empty">No participants yet — they appear when someone accepts the Welcome notice.</td></tr>');
+      : '<tr><td colspan="14" class="empty">No participants yet — they appear when someone accepts the Welcome notice.</td></tr>');
 
     var roles = []; people.forEach(function (p) { if (p.role && p.role !== "—" && roles.indexOf(p.role) < 0) roles.push(p.role); });
     var curRole = $("roleFilter").value;
@@ -608,7 +718,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     });
     $("participants").innerHTML = HEAD + (shown.length
       ? shown.map(personRow).join("")
-      : '<tr><td colspan="12" class="empty">No participants match the filters.</td></tr>');
+      : '<tr><td colspan="14" class="empty">No participants match the filters.</td></tr>');
     window.__people = people; // for CSV export
 
     // funnel
@@ -637,6 +747,8 @@ export const RESEARCH_PAGE = `<!doctype html>
 
     // research view (per-run + H4)
     renderResearch(ev);
+    lastEvents = ev;
+    renderQualitative(ev);
     loadQualitative();
 
     // feedback view
@@ -649,12 +761,12 @@ export const RESEARCH_PAGE = `<!doctype html>
     $("raw").textContent = JSON.stringify(d.latest_events, null, 1);
 
     // sessions
-    $("sessions").innerHTML = "<tr><th></th><th>Session</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr>" +
+    $("sessions").innerHTML = "<tr><th></th><th>Session ID</th><th>Events</th><th>First seen</th><th>Last seen</th><th>Top types</th></tr>" +
       d.sessions.map(function (s) {
         var top = Object.keys(s.types).sort(function (a, b) { return s.types[b] - s.types[a]; }).slice(0, 3)
-          .map(function (t) { return t + "·" + s.types[t]; }).join("  ");
+          .map(function (t) { return t + "\u00b7" + s.types[t]; }).join("  ");
         return "<tr><td><input type='checkbox' class='sel' value='" + esc(s.session_id) + "'></td>" +
-          "<td class='num'>" + esc(s.session_id.slice(0, 8)) + "…</td><td class='num'>" + s.events + "</td>" +
+          sidCell(s.session_id) + "<td class='num'>" + s.events + "</td>" +
           "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.first).slice(0, 16).replace("T", " ")) + "</td>" +
           "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.last).slice(0, 16).replace("T", " ")) + "</td>" +
           "<td class='num' style='color:var(--ink-3)'>" + esc(top) + "</td></tr>";

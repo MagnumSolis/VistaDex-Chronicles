@@ -8,6 +8,7 @@ import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import type { Report } from "@/types";
 import { logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
+import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
 
 function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agree" | "disagree") => void; controlId: { agree: string; disagree: string } }) {
@@ -83,6 +84,8 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
     logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open });
     // Per-run copy for the learning analysis (H4): same answers, run-scoped.
     logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open });
+    // Survey answers are the study's core measure: upload immediately, never wait for the batch window.
+    flushNow().catch(() => {});
     setSubmitted(true);
     onDone?.();
   };

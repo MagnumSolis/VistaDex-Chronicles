@@ -242,3 +242,6 @@ export function installLifecycle() {
 }
 
 export type { ClaimStatus, ClaimType, ControlId };
+
+/** Upload queued telemetry now (used when critical study answers are submitted). */
+export const flushNow = () => tm.flush();

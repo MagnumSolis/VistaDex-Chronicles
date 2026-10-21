@@ -110,6 +110,11 @@ export async function flush({ beacon = false } = {}) {
       state.sent += batch.length;
       save();
       if (state.sent < state.events.length) scheduleFlush(); // more than one batch waiting
+    } else {
+      // Non-OK (e.g. 429 rate-limited, 410 withdrawn): keep the batch queued and
+      // warn — a future log() or pagehide retries it. 410 means withdrawn: drop instead.
+      if (res.status === 410) { state.sent = state.events.length; save(); }
+      else console.warn(`[vistadex] telemetry upload HTTP ${res.status}; ${batch.length} events stay queued for retry`);
     }
   } catch { /* offline: retried on the next event or page hide */ }
 }

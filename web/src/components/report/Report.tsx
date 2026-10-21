@@ -1,5 +1,5 @@
 // ── Report — one long page: Summary · Profile · Claims · Leads to check · Objections · Big Tech risk · Legal · Market ──
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, FileDown, MessageSquareText, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ import { ClaimCard, sourceCount } from "./ClaimCard";
 import { GraveyardLeads } from "./GraveyardLeads";
 import { Objections } from "./Objections";
 import { LegalSection, MarketSection } from "./LegalMarket";
-import { ReportSection, SECTIONS, type SectionId } from "./ReportSection";
+import { atBottom, pickActive, ReportSection, SECTIONS, type SectionId } from "./ReportSection";
 import { BigTech, Competitors, Profile, ScoreSummary } from "./ScoreParts";
 
 const MODE_LABEL: Record<RunMode | "demo" | "sample", string> = {
@@ -29,7 +29,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
   const { report } = entry;
   // Telemetry follows only this session's runs; demo reports are never instrumented.
   const runId = entry.runId;
-  const active = useScrollSpy();
+  const [active, pin] = useScrollSpy();
   const counts = Object.fromEntries(STATUS_ORDER.map(s => [s, report.claims.filter(c => c.status === s).length]));
   const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
   const [ideaOpen, setIdeaOpen] = useState(false);
@@ -39,7 +39,10 @@ export function Report({ entry }: { entry: ReportEntry }) {
   const jump = (id: SectionId) => {
     const el = document.getElementById(`section-${id}`);
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    pin(id);
+    // Summary is the first section: go to the very top so the page title isn't left half under the header.
+    if (id === "summary") window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    else el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     document.getElementById(`section-${id}-title`)?.focus({ preventScroll: true });
   };
   const another = () => { clearDraft(); navigate(PATHS.screen); };
@@ -48,7 +51,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
   return (
     <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8 print:block">
       {/* Jump nav: sticky rail on desktop, sticky horizontal chips on phones. */}
-      <nav aria-label="Report sections" className="sticky top-0 z-30 -mx-4 mb-4 bg-page px-4 py-2.5 md:top-[5.5rem] md:-mx-6 md:px-6 lg:top-28 lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 print:hidden">
+      <nav aria-label="Report sections" className="sticky top-0 z-30 -mx-4 mb-4 bg-page px-4 py-2.5 md:top-[var(--header-h,5.5rem)] md:-mx-6 md:px-6 lg:top-[calc(var(--header-h,5rem)+2rem)] lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 print:hidden">
         <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible">
           {SECTIONS.map(s => (
             <li key={s.id} className="shrink-0">
@@ -90,7 +93,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
                 </button>
               )}
             </div>
-            <dl className="grid shrink-0 gap-x-4 gap-y-1 text-sm lg:text-right">
+            <dl className="grid gap-x-4 gap-y-1 text-sm">
               <div><dt className="sr-only">Date</dt><dd>{entry.checkedOn ? `Sources checked ${checkedLabel(entry.checkedOn)}` : dateLabel(entry.createdAt)}</dd></div>
               <div><dt className="sr-only">Mode</dt><dd className="text-muted-foreground">{MODE_LABEL[entry.mode]}</dd></div>
               {entry.markets.length > 0 && <div><dt className="sr-only">Target markets</dt><dd className="text-muted-foreground">Markets: {entry.markets.join(", ")}</dd></div>}
@@ -194,17 +197,40 @@ function Actions({ onAnother }: { onAnother: () => void }) {
   );
 }
 
-// The section nearest the top of the viewport is marked current in the jump nav.
-function useScrollSpy(): SectionId {
+// The section at the sticky offset is marked current in the jump nav (pickActive). A clicked item is
+// pinned through its smooth scroll, and after it (a short last section may never reach the top),
+// until the visitor scrolls again.
+function useScrollSpy(): [SectionId, (id: SectionId) => void] {
   const [active, setActive] = useState<SectionId>("summary");
+  const pinned = useRef<{ id: SectionId; settled: boolean; timer?: ReturnType<typeof setTimeout> } | null>(null);
+  const settle = () => {
+    const p = pinned.current!;
+    clearTimeout(p.timer);
+    p.timer = setTimeout(() => { p.settled = true; }, 150); // no scroll event for 150ms: the jump has landed
+  };
   useEffect(() => {
-    if (!("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver(entries => {
-      const top = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      if (top) setActive(top.target.id.replace("section-", "") as SectionId);
-    }, { rootMargin: "-20% 0px -70% 0px" });
-    SECTIONS.forEach(s => { const el = document.getElementById(`section-${s.id}`); if (el) io.observe(el); });
-    return () => io.disconnect();
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      const sections = SECTIONS.map(s => ({ id: s.id, top: document.getElementById(`section-${s.id}`)?.getBoundingClientRect().top ?? Infinity }));
+      setActive(pickActive(sections, offset, atBottom(window.scrollY, window.innerHeight, document.documentElement.scrollHeight)));
+    };
+    const onScroll = () => {
+      const p = pinned.current;
+      if (p && !p.settled) return settle();
+      if (p) { clearTimeout(p.timer); pinned.current = null; }
+      frame ||= requestAnimationFrame(update);
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => { removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); clearTimeout(pinned.current?.timer); };
   }, []);
-  return active;
+  const pin = (id: SectionId) => {
+    clearTimeout(pinned.current?.timer);
+    pinned.current = { id, settled: false };
+    settle();
+    setActive(id);
+  };
+  return [active, pin];
 }

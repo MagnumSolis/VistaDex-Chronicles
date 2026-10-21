@@ -19,11 +19,14 @@ export function logConfidencePost(condition: Condition, runId: string, value: nu
   track("confidence_post", { condition, run_id: runId, value });
 }
 
-export function logClaimVote(runId: string, claimIndex: number, status: string, vote: "agree" | "disagree") {
+/** A claim or objection vote; "not_sure" as in comprehension_check. */
+export type Vote = "agree" | "disagree" | "not_sure";
+
+export function logClaimVote(runId: string, claimIndex: number, status: string, vote: Vote) {
   track("claim_vote", { claim_index: claimIndex, run_id: runId, status, vote });
 }
 
-export function logObjectionVote(runId: string, objectionIndex: number, severity: string, vote: "agree" | "disagree") {
+export function logObjectionVote(runId: string, objectionIndex: number, severity: string, vote: Vote) {
   track("objection_vote", { objection_index: objectionIndex, run_id: runId, severity, vote });
 }
 

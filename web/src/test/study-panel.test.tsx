@@ -81,3 +81,11 @@ describe("post-report form answers are native radios (option A)", () => {
     expect((within(claim).getByRole("radio", { name: "Disagree" }) as HTMLInputElement).checked).toBe(true);
   }, 30000);
 });
+
+describe("post-report form sliders", () => {
+  it("every slider has an accessible name (its question)", async () => {
+    await openPanel();
+    for (const name of [/how confident are you that this idea is novel/, /I trust this report's assessment/, /useful for judging/, /see what to verify next/, /took effort/])
+      expect(screen.getByRole("slider", { name })).toBeTruthy();
+  }, 30000);
+});

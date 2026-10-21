@@ -44,13 +44,14 @@ function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: "agr
 }
 
 function Likert({ label, value, onChange, low, high }: { label: string; value: number; onChange: (v: number) => void; low: string; high: string }) {
+  const labelId = useId();
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium">{label}</span>
+        <span id={labelId} className="text-sm font-medium">{label}</span>
         <span className="font-mono text-sm text-foreground/70">{value}/7</span>
       </div>
-      <input type="range" min={1} max={7} step={1} value={value} data-control="baseline_likert"
+      <input type="range" min={1} max={7} step={1} value={value} data-control="baseline_likert" aria-labelledby={labelId}
         onChange={e => onChange(Number(e.target.value))}
         className="mt-1 w-full accent-foreground" />
       <div className="flex justify-between text-[11px] font-medium text-foreground/75"><span>{low}</span><span>{high}</span></div>
@@ -90,10 +91,10 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
       {/* Post-report confidence — the calibration measure */}
       <Panel tab="Your read" as="section">
         <div className="flex items-baseline justify-between">
-          <span className="text-sm font-medium">Now that you've read the report: how confident are you that this idea is novel and viable?</span>
+          <span id="study-conf-post-label" className="text-sm font-medium">Now that you've read the report: how confident are you that this idea is novel and viable?</span>
           <span className="font-mono text-sm text-foreground/70">{confPost}%</span>
         </div>
-        <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} data-control="study_conf_post" className="mt-1" />
+        <Slider value={[confPost]} min={0} max={100} step={5} onValueChange={v => setConfPost(v[0])} data-control="study_conf_post" aria-labelledby="study-conf-post-label" className="mt-1" />
         <p className="mt-2 text-xs text-foreground/70">
           {checkedSources === null ? "" : checkedSources > 0
             ? `You opened ${checkedSources} source${checkedSources === 1 ? "" : "s"} yourself — noted, thanks.`

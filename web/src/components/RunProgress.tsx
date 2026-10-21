@@ -8,20 +8,22 @@ import { cn } from "cn";
 
 const ESTIMATE_MS = 75_000; // typical live run
 
-export function RunProgress({ running, doneCount, total, server }: {
+export function RunProgress({ running, doneCount, total, server, startedAt }: {
   running: boolean;
   doneCount: number;
   total: number;
   server: boolean;
+  /** performance.now() when the run started (run state), not when this was drawn. */
+  startedAt: number;
 }) {
-  const [elapsed, setElapsed] = useState(0);
+  const [now, setNow] = useState(() => performance.now());
   useEffect(() => {
     if (!running) return;
-    setElapsed(0);
-    const started = performance.now();
-    const t = window.setInterval(() => setElapsed(performance.now() - started), 250);
+    setNow(performance.now());
+    const t = window.setInterval(() => setNow(performance.now()), 250);
     return () => window.clearInterval(t);
   }, [running]);
+  const elapsed = Math.max(0, now - startedAt);
 
   if (!running) return null;
 

@@ -69,7 +69,10 @@ export function Shell({ route, onHelp, children }: { route: RouteName; onHelp?: 
       <footer className="mx-auto w-full max-w-6xl px-4 pb-28 text-sm text-on-page-muted md:px-6 md:pb-8 print:hidden">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-page-raised pt-5">
           <span>Prototype. Reports can be wrong; you make the decision.</span>
-          <span className="font-mono text-xs">This demo is part of a BITS Pilani research study — your anonymous usage helps us study how people judge startup ideas with AI. Opt out any time via “Your data &amp; privacy”.</span>
+          {/* Only where usage is recorded: the pitch edition records nothing and has no "Your data & privacy". */}
+          {features.telemetry && (
+            <span className="font-mono text-xs">This demo is part of a BITS Pilani research study — your anonymous usage helps us study how people judge startup ideas with AI. Opt out any time via “Your data &amp; privacy”.</span>
+          )}
           <span className="font-mono text-xs">{liveMode() ? "Live providers" : "Mock mode: no live evidence"}</span>
           {features.welcome && (
             <a href={href(PATHS.welcome)} data-control="footer_your_data" className="underline underline-offset-4 hover:text-on-page">Your data &amp; privacy</a>

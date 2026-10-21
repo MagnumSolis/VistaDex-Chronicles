@@ -309,7 +309,8 @@ export const RESEARCH_PAGE = `<!doctype html>
   // nav switching
   window.copySid = function (btn) {
     var sid = btn.dataset.sid || "";
-    var done = function () { btn.classList.add("copied"); btn.title = "copied"; setTimeout(function () { btn.classList.remove("copied"); btn.title = "click to copy"; }, 1200); };
+    var title = btn.title; // run cells keep the raw run id in the title
+    var done = function () { btn.classList.add("copied"); btn.title = "copied"; setTimeout(function () { btn.classList.remove("copied"); btn.title = title; }, 1200); };
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(sid).then(done, done); }
     else { var ta = document.createElement("textarea"); ta.value = sid; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); done(); }
   };
@@ -474,8 +475,14 @@ export const RESEARCH_PAGE = `<!doctype html>
       '</div>';
     html += '<p class="msg" style="margin:6px 0 14px">H4 (Berger et al.): if verification produces learning, clickers should show different calibration deltas than explanation-only users. Both groups computed per run; pair with Track-A for the causal version.</p>';
 
-    // per-run table
-    html += '<div class="tbl-wrap"><table><tr><th>Session</th><th>Run</th><th>Role</th><th>Conf Δ</th><th>Votes</th><th>Agree %</th><th>Sources</th><th>Survey</th><th>Comprehension</th></tr>';
+    // per-run table. Legacy run ids ("r1"…) restarted on every page load, so their measures are matched to
+    // the run that started before them and flagged; new ids ("r_" + 12 hex) join exactly.
+    var inferredRuns = runs.filter(function (r) { return r.inferred > 0; });
+    var inferredN = inferredRuns.reduce(function (a, r) { return a + r.inferred; }, 0);
+    html += '<p class="msg" style="margin:0 0 8px">' + (inferredN
+      ? inferredN + " measure" + (inferredN === 1 ? "" : "s") + " on " + inferredRuns.length + " run" + (inferredRuns.length === 1 ? "" : "s") + " matched by start order (legacy run ids that repeat after a reload, or missing / unmatched ids). Exact for new r_ ids."
+      : "Every measure matched its run exactly.") + "</p>";
+    html += '<div class="tbl-wrap"><table><tr><th>Session</th><th>Run (' + inferredN + ' inferred)</th><th>Role</th><th>Conf Δ</th><th>Votes</th><th>Agree %</th><th>Sources</th><th>Survey</th><th>Comprehension</th></tr>';
     if (runs.length) {
       runs.forEach(function (r) {
         var c = cal(r);
@@ -483,7 +490,10 @@ export const RESEARCH_PAGE = `<!doctype html>
         var ag = r.votes ? Math.round(100 * r.agrees / r.votes) + "%" : "—";
         var sv = r.survey ? '<span class="num">T' + r.survey.trust + "\u00b7U" + r.survey.usefulness + "\u00b7E" + r.survey.effort + "</span>" : "\u2014";
         var comp = r.comp ? esc(r.comp) : "—";
-        html += "<tr>" + sidCell(r.sid) + "<td class='num'>" + esc(r.runId || "—") + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
+        // "run N of M" in the session; the raw run id shows on hover and copies on click
+        var runCell = '<button class="sid num" data-sid="' + esc(r.runId || "") + '" title="' + esc((r.runId || "no run id") + " — click to copy") + '">' + esc(r.label) + "</button>" +
+          (r.inferred ? '<div style="color:var(--ink-3);font-size:11px">matched by start order</div>' : "");
+        html += "<tr>" + sidCell(r.sid) + "<td>" + runCell + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
       });
     } else {
       html += '<tr><td colspan="9" class="empty">No runs with telemetry yet.</td></tr>';

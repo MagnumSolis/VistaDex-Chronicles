@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-10-study-3 (research console fixes, pre-run confidence — CURRENT)
+## study_version 2026-11-study-4 (seq unique across tabs: CURRENT)
+
+Same events, payload keys and answer values as 2026-10-study-3. Bumped because what `seq` means changed, so data from before and after can be told apart (decision: 2026-11-09, before data window 2 opens on 2026-11-11).
+
+- **The bug (study-1 to study-3).** All tabs of one browser share one telemetry session, but each tab kept its own copy of the stored state and wrote the whole copy back on every event. So (1) two tabs counted `seq` from the same value and sent the same numbers; D1 keeps only the first event per (session_id, seq), so the other tab's events were silently dropped; (2) each tab overwrote the other's unsent events in storage; (3) a tab still open after "Delete my session" in another tab wrote the old session and its consent back. Dropped events cannot be recovered, and nothing in the stored data marks which sessions used two tabs.
+- **`seq` is now unique across tabs.** Each page load claims a tab slot (0 to 1023, from a counter in the shared record) and every `seq` it sends is `max(now_ms × 1024 + slot, previous seq of this tab + 1024)`. Two tabs never send the same `seq`; within a tab it strictly increases; across tabs and reloads it follows the time the event was logged (to the millisecond), so ordering by `seq` (as the console's start-order join and "latest vote" do) still means "earlier". Values are large (about 1.8 × 10^15) and no longer consecutive: do not read gaps as lost events, and do not use `seq` as an event count. Two tabs can only share a slot if 1024 page loads of one session happen in between or two tabs load in the same instant (then they would also have to log in the same millisecond to collide).
+- **Shared storage is merged, not overwritten.** Every tab writes only its own unsent events into the shared queue (merged by `seq`), so a reload of any tab can still send everything; an event may then be uploaded by two tabs, which D1 ignores as a duplicate (`stored` < `received` in the `/events` reply is expected).
+- **A withdrawal or a new consent in one tab is followed by the others.** A recording tab re-reads the shared answer before every event and every upload: after "Delete my session" elsewhere it stops recording and drops what it held. A tab that has not answered the Welcome notice does not start recording because another tab did (it waits for its own answer or a reload, as before).
+- **Analysis.** Compare runs before and after this version with the two-tab loss in mind: study-1 to study-3 sessions that used two tabs at once can miss events (votes, section times, survey answers) from one of the tabs.
+- **The bump resets consent**, as every bump does: returning visitors see the Welcome notice again and get a new session id.
+
+## study_version 2026-10-study-3 (research console fixes, pre-run confidence)
 
 - **New field-track measure: the pre-run confidence slider** on Screen an idea (public edition only; hidden in the pitch edition and in the Home page preview). Every run logs exactly one `confidence_pre { condition: "vistadex", value, run_id, moved }`. An untouched slider logs its starting value: `{ value: 50, moved: false }`. `moved` is optional in the contract (the baseline session's `confidence_pre` has no such key). The console includes untouched values in the calibration delta and marks them ("pre 50 · untouched"); the CSV has `conf_pre_moved`.
 - **Run ids are random**: `r_` + 12 hex. Older ids (`r1`, `r2`…) were per-page-load counters: they restarted on every reload while the session id persisted, so one session can hold several `r1` runs. The console matches those older events to the run that started last before them (by `seq`, then `ts`), and flags every such match as inferred ("matched by start order", counted in the per-run table header). Events with a missing or unmatched `run_id` are matched the same way. A study-panel `run_id` from before 84273db was the report entry id (`<entry>-r<N>`) and is reduced to `r<N>` first.
@@ -53,7 +64,7 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **The bump resets consent**, as every bump does: returning visitors see the Welcome notice again and get a new session id.
 
 **Known limitations**
-- **Two tabs in one session send duplicate `seq` values.** Each tab counts from the same stored value, and D1 keeps only the first event per (session_id, seq), so the second tab's colliding events are silently dropped. This is older than this version, the lost events cannot be recovered, and it will be fixed separately.
+- **Two tabs in one session send duplicate `seq` values.** Each tab counts from the same stored value, and D1 keeps only the first event per (session_id, seq), so the second tab's colliding events are silently dropped. This is older than this version and the lost events cannot be recovered. Fixed in 2026-11-study-4.
 - **Old r1-style data is matched by start order and flagged as inferred.** One case cannot be told apart: after a reload, a vote on a reopened older report (legacy `r1` id) joins the newest `r1` run. New `r_` ids join exactly.
 
 ## study_version 2026-10-study-2 (21 Oct frontend fixes)

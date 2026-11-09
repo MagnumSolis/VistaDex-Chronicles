@@ -3,8 +3,9 @@
 // Bump whenever the visitor-facing UI or the telemetry changes (CLAUDE.md), and record it in
 // tests/fixtures/event-contract.json. pilot-1 = vanilla UI; pilot-2 = first web/ UI (BITS F364 study);
 // public-1 = two-edition revamp (public demo + pitch); public-2 = scores, structured input, Reports,
-// landing page. The public demo is not used for the F364 paper.
-export const STUDY_VERSION = "2026-10-study-3";
+// landing page; study-1 to study-3 = F364 research instrumentation on the public demo (docs/STUDY-NOTES.md);
+// study-4 = seq unique across tabs of one session.
+export const STUDY_VERSION = "2026-11-study-4";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

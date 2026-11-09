@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-10-study-3). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-10-study-3",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-4). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-11-study-4",
   "envelope": [
     "session_id",
     "seq",
@@ -541,7 +541,8 @@
     "field_edited": "Sent when a text field loses focus; carries the length only, never the text.",
     "uploads": "Batched: at most one /events request per 10 s while events arrive, at most 200 events per request, plus a beacon on page hide (Worker limits: 60 requests/min/IP, 200 events/request).",
     "run_started": "Lengths of the five text fields and the selected industries, role and markets; never the text.",
-    "select": "A <select> logs control_pressed with its new value on change."
+    "select": "A <select> logs control_pressed with its new value on change.",
+    "seq": "Unique per session across all tabs of one browser (since 2026-11-study-4): each page load claims a tab slot 0..1023 and every seq it sends is max(now_ms * 1024 + slot, previous seq of that tab + 1024). Strictly increasing within a tab, follows logging time across tabs and reloads, positive safe integer, not dense."
   },
   "history": {
     "2026-10-pilot-2": {

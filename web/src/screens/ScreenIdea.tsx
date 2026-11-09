@@ -13,6 +13,7 @@ import { latestSessionReport, useSessionReports } from "@/lib/reports";
 import { clearRunError, errorCopy, reportPath, startRun, useRun } from "@/lib/run";
 import { features } from "@/edition";
 import { Slider } from "@/components/ui/slider";
+import { assignedStudyIdea } from "@/study/participant";
 import { JURISDICTIONS, type IdeaInput, type Jurisdiction, type Role } from "@/types";
 
 type TextField = "title" | "pitch" | "problem" | "solution" | "moat";
@@ -35,11 +36,27 @@ const same = (a: IdeaInput | undefined, b: IdeaInput) => JSON.stringify(a) === J
 const draft: { input: IdeaInput; sample: string | null } = { input: empty(), sample: null };
 export function clearDraft() { draft.input = empty(); draft.sample = null; }
 
+// Study track, VistaDex condition: an untouched form starts with the assigned idea, so everyone with the
+// same idea screens the same input. The run is marked "study_<key>" only if it is run unedited.
+function prefillAssigned() {
+  const assigned = assignedStudyIdea();
+  if (!assigned || !same(draft.input, empty())) return;
+  draft.input = { ...empty(), ...assigned.input };
+  draft.sample = assigned.sample;
+}
+function sampleInput(id: string | null): IdeaInput | undefined {
+  const assigned = assignedStudyIdea();
+  if (assigned && id === assigned.sample) return { ...empty(), ...assigned.input };
+  return SAMPLES.find(s => s.id === id)?.input;
+}
+
 /** `preview`: show this input read-only-style (the Home page's product screens); the draft is untouched. */
 export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
   const run = useRun();
   useSessionReports();
   const last = preview ? null : latestSessionReport();
+  if (!preview) prefillAssigned();
+  const assigned = preview ? null : assignedStudyIdea();
   const [input, setInputState] = useState<IdeaInput>(preview ?? draft.input);
   const [errors, setErrors] = useState<TextField[]>([]);
   const [confPre, setConfPre] = useState<number | null>(null);
@@ -64,7 +81,7 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
       requestAnimationFrame(() => summaryRef.current?.focus());
       return;
     }
-    const sample = draft.sample && same(SAMPLES.find(s => s.id === draft.sample)?.input, current) ? draft.sample : null;
+    const sample = draft.sample && same(sampleInput(draft.sample), current) ? draft.sample : null;
     // Only where the slider is shown; untouched = its starting 50, moved: false.
     const pre = features.telemetry && !preview ? { value: confPre ?? 50, moved: confPre !== null } : null;
     void startRun({ input: current, sample, confPre: pre });
@@ -119,6 +136,11 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
           <p className="text-sm text-muted-foreground">
             {studyConfig.INPUT_WARNING.base}. {liveMode() ? "The text is sent to our server to make the report." : "In this version it never leaves your browser."} It is not stored in usage records. Fields marked * are required.
           </p>
+          {assigned && (
+            <p className="mt-4 rounded-inner bg-muted p-4 text-[0.9375rem] text-foreground">
+              Your assigned idea (Idea {assigned.key}) is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.
+            </p>
+          )}
           {errors.length > 0 && (
             <div ref={summaryRef} tabIndex={-1} role="alert" className="mt-4 rounded-inner border-2 border-foreground bg-card p-4 outline-none">
               <p className="font-semibold">Fill in {errors.length === 1 ? "this field" : "these fields"} to run the screening:</p>

@@ -9,6 +9,16 @@ import { ReportStudyPanel } from "@/study/ReportStudyPanel";
 import { features } from "@/edition";
 import { findEntry, latestSessionReport, useSessionReports } from "@/lib/reports";
 import { navigate, PATHS } from "@/router";
+import { conditionDone, currentParticipant, markConditionDone } from "@/study/participant";
+
+// Study track: the ratings under a VistaDex report finish the VistaDex condition. A participant who has
+// not done the AI chatbot part yet goes on to it (as the chatbot part hands over to VistaDex).
+function finishVistaDexCondition() {
+  const p = currentParticipant();
+  if (!p || p.track !== "study" || conditionDone(p, "vistadex")) return;
+  markConditionDone("vistadex");
+  if (!conditionDone(p, "baseline")) navigate(PATHS.baseline);
+}
 
 export function ReportScreen({ param }: { param: string | null }) {
   useSessionReports();
@@ -38,7 +48,7 @@ export function ReportScreen({ param }: { param: string | null }) {
       <Report key={entry.id} entry={entry} />
       {entry.kind === "session" && entry.report && entry.runId && (
         <div className="mt-4 md:mt-5">
-          <ReportStudyPanel report={entry.report} runId={entry.runId} condition="vistadex" />
+          <ReportStudyPanel report={entry.report} runId={entry.runId} condition="vistadex" onDone={finishVistaDexCondition} />
         </div>
       )}
     </div>

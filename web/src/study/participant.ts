@@ -34,6 +34,54 @@ const STUDY_IDEAS: Record<string, string> = {
   "D": "We are building a same-day hardware-repair marketplace connecting users with verified local technicians, with upfront pricing and a warranty. No one has cracked this since Homejoy failed. The home-services market is $500B. Our moat is a vetting process and a pricing model built from 10,000 completed repair records.",
 };
 
+// The same ideas as Screen an idea input, filled in for the VistaDex condition so every participant
+// with the same idea screens the same input. Every sentence of the paragraph above appears verbatim
+// (the "We are building..." sentence is the solution); the one-line pitch is the only added text.
+// TODO(team): approve the added pitch lines.
+type StudyInput = { title: string; pitch: string; problem: string; solution: string; moat: string };
+const STUDY_INPUTS: Record<string, StudyInput> = {
+  "A": {
+    title: "AI meal-planning for diabetics",
+    pitch: "Meal plans built from glucose readings, for people with diabetes.",
+    problem: "No such tool exists. The diabetes app market is worth $4.2B and growing 15% annually.",
+    solution: "We are building an AI-powered meal-planning app for diabetic patients that reads continuous glucose monitor data and plans meals around readings, at $25/month.",
+    moat: "Our moat is a nutrition model trained on 200,000 anonymized diabetic meal logs.",
+  },
+  "B": {
+    title: "Student skill-swap marketplace",
+    pitch: "A money-free skill-swap marketplace for university students.",
+    problem: "No platform does this well today. The global ed-tech market is $250B.",
+    solution: "We are building a peer-to-peer skill-swap marketplace for university students — teach what you know, learn what you need, no money involved.",
+    moat: "Our moat is exclusive partnerships with 40 university clubs in our first year.",
+  },
+  "C": {
+    title: "AI mock-interview platform",
+    pitch: "Practice interviews with an AI interviewer, for job applicants.",
+    problem: "Existing tools only offer static question banks. The job-readiness market is $8B.",
+    solution: "We are building an AI mock-interview platform that simulates a real interviewer from the company you're applying to, with voice and follow-up questions, at $15/month.",
+    moat: "Our moat is interview transcripts from 500 hired candidates.",
+  },
+  "D": {
+    title: "Same-day repair marketplace",
+    pitch: "Same-day repairs by verified local technicians.",
+    problem: "No one has cracked this since Homejoy failed. The home-services market is $500B.",
+    solution: "We are building a same-day hardware-repair marketplace connecting users with verified local technicians, with upfront pricing and a warranty.",
+    moat: "Our moat is a vetting process and a pricing model built from 10,000 completed repair records.",
+  },
+};
+
+export function studyIdeaInput(key: string): StudyInput {
+  return STUDY_INPUTS[key] || STUDY_INPUTS["A"];
+}
+
+/** Study track, VistaDex condition not done yet: the assigned idea to fill into Screen an idea. */
+export function assignedStudyIdea(): { key: string; sample: string; input: StudyInput; baselineDone: boolean } | null {
+  const p = currentParticipant();
+  if (!p || p.track !== "study" || conditionDone(p, "vistadex")) return null;
+  const key = STUDY_INPUTS[p.ideaKey] ? p.ideaKey : "A";
+  return { key, sample: `study_${key}`, input: STUDY_INPUTS[key], baselineDone: conditionDone(p, "baseline") };
+}
+
 export const ROLES = ["founder", "investor", "student", "researcher", "other"] as const;
 
 export function studyIdeaKeys(): string[] {

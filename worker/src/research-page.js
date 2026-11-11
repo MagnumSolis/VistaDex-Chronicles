@@ -182,6 +182,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <div class="nav-l">Study</div>
     <button class="nav on" data-view="overview"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
     <button class="nav" data-view="participants"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><circle cx="17" cy="9" r="3"/><path d="M22 21v-1a6 6 0 0 0-6-6"/></svg>Participants <span class="cnt" id="cnt-p">–</span></button>
+    <button class="nav" data-view="pairs"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h7M4 12h7M4 18h7M14 6h6M14 12h6M14 18h6"/></svg>Paired study <span class="cnt" id="cnt-pairs">–</span></button>
     <button class="nav" data-view="funnel"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-6 9v7l-6-2v-5z"/></svg>Funnel</button>
     <div class="nav-l">Data</div>
     <button class="nav" data-view="events"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Events <span class="cnt" id="cnt-e">–</span></button>
@@ -206,7 +207,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-participants">
-      <div class="phead"><h1>Participants</h1><span class="sub">one row per visitor (browser session); multiple runs land in the same row — see Runs</span>
+      <div class="phead"><h1>Participants</h1><span class="sub">one row per visitor (browser session), VistaDex measures only; the study track's chatbot vs VistaDex comparison is in Paired study</span>
         <div class="right">
           <select id="roleFilter" class="btn" style="padding:6px 10px"><option value="">all roles</option></select>
           <select id="trackFilter" class="btn" style="padding:6px 10px"><option value="">all tracks</option><option value="study">study</option><option value="field">field</option></select>
@@ -217,6 +218,12 @@ export const RESEARCH_PAGE = `<!doctype html>
         <button class="btn danger" id="purgeBtn">Delete ticked sessions</button>
         <span class="msg" id="purgeMsg"></span>
       </div>
+    </section>
+
+    <section class="view" id="v-pairs">
+      <div class="phead"><h1>Paired study</h1><span class="sub">study track, within subjects: each participant's AI chatbot and VistaDex conditions side by side</span>
+        <div class="right"><button class="btn acc" id="pairsCsvBtn">↓ paired.csv</button></div></div>
+      <div id="pairs-content"><div class="skel" style="height:200px"></div></div>
     </section>
 
     <section class="view" id="v-funnel">
@@ -352,6 +359,8 @@ export const RESEARCH_PAGE = `<!doctype html>
       p.votes = t.votes; p.agrees = t.agrees; p.disagrees = t.disagrees; p.notSure = t.notSure;
       evs.forEach(function (e) {
         var q = e.payload || {};
+        // The AI chatbot condition (study track) is compared in Paired study; here a row shows VistaDex only.
+        if (q.condition === "baseline") return;
         if (e.type === "confidence_pre") { p.confPre = q.value; p.confPreMoved = typeof q.moved === "boolean" ? q.moved : null; }
         else if (e.type === "confidence_post") p.confPost = q.value;
         else if (e.type === "condition_survey") p.survey = q;
@@ -672,6 +681,99 @@ export const RESEARCH_PAGE = `<!doctype html>
     box.innerHTML = html;
   }
 
+  // ── Paired study (study track, within subjects): research-join.js pairedParticipants + wilcoxon ──
+  var SRC_ORD = { "0": 0, "1-2": 1, "3+": 2 };
+  var PAIR_MEASURES = [
+    ["Confidence change (after minus before)", function (c) { return c.delta; }],
+    ["Confidence after", function (c) { return c.post; }],
+    ["Trust in the assessment (1 to 7)", function (c) { return c.trust; }],
+    ["Useful for judging the idea (1 to 7)", function (c) { return c.usefulness; }],
+    ["Helped see what to verify (1 to 7)", function (c) { return c.helpfulness; }],
+    ["Effort (1 to 7)", function (c) { return c.effort; }],
+    ["Sources checked, self-report (0 / 1-2 / 3+ as 0 / 1 / 2)", function (c) { return c.sourcesChecked == null ? null : SRC_ORD[c.sourcesChecked]; }],
+  ];
+  function dash() { return '<span style="color:var(--ink-3)">—</span>'; }
+  function mean(vals) { return vals.length ? Math.round(10 * vals.reduce(function (a, v) { return a + v; }, 0) / vals.length) / 10 : null; }
+  function fmtP(w) {
+    if (w.p == null) return dash();
+    return (w.p < 0.001 ? "&lt; 0.001" : w.p.toFixed(3)) + ' <span style="color:var(--ink-3);font-size:11px">' + esc(w.method) + "</span>";
+  }
+  function prePost(c) {
+    if (c.pre == null && c.post == null) return dash();
+    var d = c.delta;
+    return esc(c.pre == null ? "?" : c.pre) + " → " + esc(c.post == null ? "?" : c.post) +
+      (d == null ? "" : ' <span class="delta ' + (d > 0 ? "up" : d < 0 ? "down" : "zero") + '">' + (d > 0 ? "+" : "") + d + "</span>") +
+      (c.preMoved === false ? ' <span style="color:var(--ink-3);font-size:11px">before untouched</span>' : "");
+  }
+  function both(r, f) {
+    var b = f(r.baseline), v = f(r.vistadex);
+    return (b == null ? "—" : esc(b)) + " / " + (v == null ? "—" : esc(v));
+  }
+  var ORDER_LABEL = { "baseline-first": "chatbot first", "vistadex-first": "VistaDex first" };
+  function renderPairs(ev) {
+    var rows = JOIN.pairedParticipants(ev).sort(function (a, b) { return a.code.localeCompare(b.code, undefined, { numeric: true }); });
+    window.__pairs = rows;
+    var complete = rows.filter(function (r) { return r.complete; });
+    $("cnt-pairs").textContent = complete.length + "/" + rows.length;
+    var count = function (f) { return rows.filter(f).length; };
+    var ideas = {};
+    rows.forEach(function (r) { var k = r.idea || "?"; ideas[k] = (ideas[k] || 0) + 1; });
+    var html = '<div class="kpis">' +
+      '<div class="kpi hl"><div class="label">Complete pairs</div><div class="val">' + complete.length + '</div><div class="note">confidence before and after in both conditions</div></div>' +
+      '<div class="kpi"><div class="label">Participants</div><div class="val">' + rows.length + '</div><div class="note">study-track codes registered</div></div>' +
+      '<div class="kpi"><div class="label">Order</div><div class="val">' + count(function (r) { return r.order === "baseline-first"; }) + " / " + count(function (r) { return r.order === "vistadex-first"; }) + '</div><div class="note">chatbot first / VistaDex first · ' + count(function (r) { return r.orderInferred; }) + " from the code number</div></div>" +
+      '<div class="kpi"><div class="label">Ideas</div><div class="val" style="font-size:18px">' + Object.keys(ideas).sort().map(function (k) { return esc(k) + " " + ideas[k]; }).join(" · ") + '</div><div class="note">participants per assigned idea</div></div>' +
+      "</div>";
+    html += '<div class="tbl-wrap"><table><tr><th>Measure</th><th>Pairs</th><th>Chatbot mean</th><th>VistaDex mean</th><th>Median difference</th><th>W+ / W−</th><th>p (two-sided)</th></tr>';
+    PAIR_MEASURES.forEach(function (m) {
+      var pairs = rows.filter(function (r) { return m[1](r.baseline) != null && m[1](r.vistadex) != null; });
+      var w = JOIN.wilcoxon(pairs.map(function (r) { return m[1](r.vistadex) - m[1](r.baseline); }));
+      html += "<tr><td>" + esc(m[0]) + "</td><td class='num'>" + pairs.length + (w.zeros ? ' <span style="color:var(--ink-3);font-size:11px">' + w.zeros + (w.zeros === 1 ? " tie" : " ties") + " at 0</span>" : "") + "</td>" +
+        "<td class='num'>" + (mean(pairs.map(function (r) { return m[1](r.baseline); })) == null ? dash() : mean(pairs.map(function (r) { return m[1](r.baseline); }))) + "</td>" +
+        "<td class='num'>" + (mean(pairs.map(function (r) { return m[1](r.vistadex); })) == null ? dash() : mean(pairs.map(function (r) { return m[1](r.vistadex); }))) + "</td>" +
+        "<td class='num'>" + (w.median == null ? dash() : (w.median > 0 ? "+" : "") + w.median) + "</td>" +
+        "<td class='num'>" + (w.n ? w.wPlus + " / " + w.wMinus : dash()) + "</td><td class='num'>" + fmtP(w) + "</td></tr>";
+    });
+    html += "</table></div>";
+    html += '<p class="msg" style="margin:8px 0 18px">Differences are VistaDex minus AI chatbot, per participant, over the participants who answered the measure in both conditions. Wilcoxon signed-rank test: zero differences dropped, ties ranked by average, exact p up to 25 pairs. With a small sample, report the median differences and pairs alongside p.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Order</th><th>Chatbot: before → after</th><th>VistaDex: before → after</th><th>Trust C / V</th><th>Useful C / V</th><th>Verify C / V</th><th>Effort C / V</th><th>Sources checked C / V</th><th>Links opened</th><th>Agree %</th><th>Complete</th></tr>';
+    html += rows.length ? rows.map(function (r) {
+      return "<tr><td class='num'>" + esc(r.code) + "</td><td class='num'>" + esc(r.idea || "?") + "</td>" +
+        "<td>" + esc(ORDER_LABEL[r.order] || "?") + (r.orderInferred ? ' <span style="color:var(--ink-3);font-size:11px">from code</span>' : "") + "</td>" +
+        "<td>" + prePost(r.baseline) + "</td><td>" + prePost(r.vistadex) + "</td>" +
+        "<td class='num'>" + both(r, function (c) { return c.trust; }) + "</td><td class='num'>" + both(r, function (c) { return c.usefulness; }) + "</td>" +
+        "<td class='num'>" + both(r, function (c) { return c.helpfulness; }) + "</td><td class='num'>" + both(r, function (c) { return c.effort; }) + "</td>" +
+        "<td class='num'>" + both(r, function (c) { return c.sourcesChecked; }) + "</td>" +
+        "<td class='num'>" + (r.vistadex.clicks == null ? dash() : r.vistadex.clicks) + "</td>" +
+        "<td class='num'>" + (r.vistadex.agreePct == null ? dash() : r.vistadex.agreePct + "% of " + r.vistadex.votes) + "</td>" +
+        "<td>" + (r.complete ? "yes" : "not yet") + "</td></tr>";
+    }).join("") : '<tr><td colspan="13" class="empty">No study-track participants yet: they appear when someone registers a participant code on #/study.</td></tr>';
+    html += "</table></div>";
+    $("pairs-content").innerHTML = html;
+    return rows;
+  }
+  function csvCell(v) {
+    v = v == null ? "" : String(v);
+    var needsQuote = v.indexOf(",") >= 0 || v.indexOf('"') >= 0 || v.indexOf(String.fromCharCode(10)) >= 0;
+    return needsQuote ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function pairedCSV(rows) {
+    var per = ["run_id", "pre", "pre_moved", "post", "delta", "trust", "usefulness", "helpfulness", "effort", "sources_checked", "open_text"];
+    var cols = ["code", "sessions", "idea", "order", "order_inferred", "complete"];
+    ["chatbot", "vistadex"].forEach(function (c) { per.forEach(function (k) { cols.push(c + "_" + k); }); });
+    cols.push("vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct");
+    var out = [cols.join(",")];
+    rows.forEach(function (r) {
+      var line = [r.code, r.sessions.join(";"), r.idea, r.order, r.orderInferred, r.complete];
+      [r.baseline, r.vistadex].forEach(function (c) {
+        line.push(c.runId, c.pre, c.preMoved, c.post, c.delta, c.trust, c.usefulness, c.helpfulness, c.effort, c.sourcesChecked, c.openText);
+      });
+      line.push(r.vistadex.clicks, r.vistadex.votes, r.vistadex.agreePct);
+      out.push(line.map(csvCell).join(","));
+    });
+    return out.join(String.fromCharCode(10));
+  }
+
   function render(d) {
     var ev = d.all_events || [];
     var people = computePeople(ev);
@@ -681,7 +783,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     $("last-sync").textContent = "updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
     var study = people.filter(function (p) { return p.track === "study"; });
-    var complete = study.filter(function (p) { return p.survey && p.confPost != null && p.confPre != null; });
+    var pairs = renderPairs(ev);
+    var complete = pairs.filter(function (r) { return r.complete; });
     var voted = people.filter(function (p) { return p.votes > 0; });
 
     $("kpis").innerHTML =
@@ -689,7 +792,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="kpi"><div class="label">Events</div><div class="val">' + d.totals.events + '</div><div class="note">telemetry records</div></div>' +
       '<div class="kpi"><div class="label">Pipeline traces</div><div class="val">' + d.totals.traces + '</div><div class="note">screens run (any mode)</div></div>' +
       '<div class="kpi hl"><div class="label">Participants</div><div class="val">' + people.length + '</div><div class="note">' + study.length + " study · " + (people.length - study.length) + " field</div></div>" +
-      '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>study track, both surveys in</div></div>" +
+      '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>of " + pairs.length + " study participants: both conditions before and after</div></div>" +
       '<div class="kpi"><div class="label">Items voted</div><div class="val">' + people.reduce(function (a, p) { return a + p.votes; }, 0) + '</div><div class="note">latest vote per item · ' + voted.length + " participants voted</div></div>";
 
     $("recent-participants").innerHTML = HEAD + (people.length
@@ -710,8 +813,9 @@ export const RESEARCH_PAGE = `<!doctype html>
 
     // funnel
     var f = [
-      ["Registered (study track)", study.length],
-      ["Baseline condition surveyed", study.filter(function (p) { return p.survey || p.confPost != null; }).length],
+      ["Registered (study track)", pairs.length],
+      ["AI chatbot part done", pairs.filter(function (r) { return r.baseline.post != null; }).length],
+      ["VistaDex part done", pairs.filter(function (r) { return r.vistadex.post != null; }).length],
       ["Both conditions complete (paired)", complete.length],
       ["Field-track participants", people.length - study.length],
     ];
@@ -784,6 +888,14 @@ export const RESEARCH_PAGE = `<!doctype html>
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "vistadex-participant-metrics.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $("pairsCsvBtn").onclick = function () {
+    var blob = new Blob([pairedCSV(window.__pairs || [])], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "vistadex-paired-study.csv";
     a.click();
     URL.revokeObjectURL(a.href);
   };

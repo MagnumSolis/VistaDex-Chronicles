@@ -95,8 +95,8 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
                   className={`rounded-control border-2 px-3 py-2 text-left text-sm transition-colors ${
                     revealed
                       ? isAnswer
-                        ? "border-green-700 bg-green-50 font-semibold"
-                        : i === picked ? "border-red-400 bg-red-50" : "border-foreground/10 opacity-50"
+                        ? "border-foreground font-semibold"
+                        : i === picked ? "border-dashed border-foreground/60" : "border-foreground/10 opacity-50"
                       : "border-foreground/15 hover:border-foreground"
                   }`}
                 >

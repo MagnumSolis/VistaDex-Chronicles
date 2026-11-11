@@ -103,7 +103,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                 ))}
               </div>
             </div>
-            {err && <p className="text-sm text-red-600">{err}</p>}
+            {err && <p role="alert" className="text-sm font-medium text-foreground">{err}</p>}
             <Button data-control="study_start" onClick={startStudy}>Start part 1 →</Button>
           </div>
         )}

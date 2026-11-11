@@ -89,7 +89,7 @@ function Screen({ route }: { route: Route }) {
     case "baseline": {
       const p = currentParticipant();
       if (!p || p.track !== "study") { navigate("/study"); return null; }
-      return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); navigate("/screen"); }} />;
+      return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); if (!conditionDone(p, "vistadex")) navigate("/screen"); }} />;
     }
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;

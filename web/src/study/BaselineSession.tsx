@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import type { Participant } from "./participant";
-import { studyIdea } from "./participant";
+import { conditionDone, studyIdea } from "./participant";
 import { logConditionStarted, logConfidencePre, logConfidencePost, logConditionSurvey, logConditionEnded } from "./studyEvents";
 
 function Likert({ label, value, onChange, low, high }: { label: string; value: number; onChange: (v: number) => void; low: string; high: string }) {
@@ -31,7 +31,10 @@ function Likert({ label, value, onChange, low, high }: { label: string; value: n
 }
 
 export function BaselineSession({ participant, onDone }: { participant: Participant; onDone: () => void }) {
-  const [step, setStep] = useState<"pre" | "post">("pre");
+  // First part (VistaDex still to do): hands over to VistaDex. Second part: finishes the study.
+  const [first] = useState(() => !conditionDone(participant, "vistadex"));
+  const part = first ? 1 : 2;
+  const [step, setStep] = useState<"pre" | "post" | "finished">("pre");
   const [confPre, setConfPre] = useState(50);
   const [confPost, setConfPost] = useState(50);
   const [tool, setTool] = useState("");
@@ -47,10 +50,10 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
   if (step === "pre") {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
-        <Panel tab="Part A — AI chatbot" as="section">
-          <h1 className="font-display text-3xl">Your first task: an AI chatbot</h1>
+        <Panel tab={`Part ${part}: AI chatbot`} as="section">
+          <h1 className="font-display text-3xl">{first ? "Your first task: an AI chatbot" : "Your second task: an AI chatbot"}</h1>
           <ol className="mt-4 space-y-3 text-sm leading-relaxed">
-            <li><b>1.</b> Copy this idea (also your idea for VistaDex later):
+            <li><b>1.</b> Copy this idea ({first ? "also your idea for VistaDex later" : "the same idea you screened with VistaDex"}):
               <div className="mt-2 rounded-inner border-2 border-foreground/10 bg-card p-3 text-xs leading-relaxed">{idea}</div>
             </li>
             <li><b>2.</b> Open ChatGPT, Claude, Gemini — whichever you normally use.</li>
@@ -85,9 +88,22 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
     );
   }
 
+  if (step === "finished") {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Panel tab={`Part ${part}: done`} as="section">
+          <h1 className="font-display text-3xl">You've finished both parts</h1>
+          <p className="mt-4 text-[0.9375rem] leading-relaxed text-foreground">
+            Thank you. Your answers for both tools are recorded, and there is nothing more to do. You can close this tab.
+          </p>
+        </Panel>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <Panel tab="Part A — rate the AI chatbot" as="section">
+      <Panel tab={`Part ${part}: rate the AI chatbot`} as="section">
         <h1 className="font-display text-3xl">Rate what you just read</h1>
         <div className="mt-5">
           <div className="flex items-baseline justify-between">
@@ -124,10 +140,11 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
             logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open });
             logConditionEnded("baseline", "baseline-" + Date.now(), 0);
             onDone();
+            if (!first) setStep("finished");
           }}
         data-control="baseline_submit"
         >
-          Submit and continue to VistaDex →
+          {first ? "Submit and continue to VistaDex →" : "Submit and finish"}
         </Button>
       </Panel>
     </div>

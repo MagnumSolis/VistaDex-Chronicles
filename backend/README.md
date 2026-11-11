@@ -12,7 +12,7 @@ funding-DB APIs / registries (later)             ──┘         + graveyard_s
 
 **Integrity rule (AGENTS.md #7):** a death is `confirmed` only with ≥2 independent sources (distinct registrable domains). Everything else stays `candidate`. Auto-discovery never auto-publishes.
 
-## Automatic pipeline (every 6 hours)
+## Automatic pipeline (every 2 hours)
 
 `.github/workflows/graveyard-sync.yml` runs these steps against Atlas, then exports and deploys:
 

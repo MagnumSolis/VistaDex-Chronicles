@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-9 (live Market and Legal, Regulatory load in the score: CURRENT)
+## study_version 2026-11-study-10 (stricter claim judging; Home hero card: CURRENT)
+
+Bumped because claim statuses can change and the Home page changed (decision: 2026-11-12). Telemetry is unchanged.
+
+- **Claim judging.** A live report confirmed "No HIPAA-compliant AI medical scribe exists at under $100/month" with quotes listing such scribes at $39 and $49 a month. The judge prompt now spells out negation (a page naming such a product contradicts a non-existence claim), thresholds (the source's own number must meet the claim's) and overreach (a general point is irrelevant to a specific claim). In code, a "support" for a non-existence claim counts only if its sentence states an absence. "No <anything> exists" is typed novelty. **For H3**, statuses from study-10 on are stricter; compare agreement by status within a version.
+- **Home.** The hero card is one straight card: no tilt, the leads on a light inner surface, the source sites named, and the sample's own VistaDex Score in a lime band.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-9 (live Market and Legal, Regulatory load in the score)
 
 Bumped because the report content and the VistaDex Score changed (decision: 2026-11-11). Telemetry is unchanged.
 

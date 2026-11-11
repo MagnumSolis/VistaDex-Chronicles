@@ -1,10 +1,11 @@
 // ── study/studyEvents.ts — the study-track event emitters (all consent-gated
 // by telemetry.js; nothing logs before the Welcome notice).
 import { track } from "@/telemetry";
+import { visitSource } from "@/lib/source";
 import type { Condition } from "./participant";
 
 export function logParticipantRegistered(p: { code: string; role: string | null; track: string }) {
-  track("participant_registered", { code: p.code, role: p.role, track: p.track });
+  track("participant_registered", { code: p.code, role: p.role, track: p.track, source: visitSource() });
 }
 
 /** Study track: a condition begins (the chatbot part when its first step is answered, VistaDex when the
@@ -58,13 +59,7 @@ export function logConditionEnded(condition: Condition, runId: string, verifiedS
 // Per-run measures so calibration change across runs can be analyzed, and
 // verification attention (dwell) captured per claim.
 
-export function logClaimDwell(runId: string, claimIndex: number, ms: number) {
-  track("claim_dwell", { claim_index: claimIndex, ms, run_id: runId });
-}
 
-export function logSourceClickedByClaim(runId: string, claimIndex: number, url: string) {
-  track("source_clicked_by_claim", { claim_index: claimIndex, run_id: runId, url: url.slice(0, 300) });
-}
 
 export function logComprehensionCheck(runId: string, answer: "honest_uncertainty" | "system_failure" | "not_sure" | "other") {
   track("comprehension_check", { answer, run_id: runId });

@@ -173,6 +173,12 @@ function endReport(ended_by: "new_run" | "page_hidden" | "withdrawn") {
     if (ms > 0) track("section_time", { run_id: runId, section, visible_ms: Math.round(ms) });
   }
   sectionMs.clear();
+  claimClocks.forEach((_, key) => stopClaim(key));
+  for (const [key, ms] of claimMs) {
+    const [runId, index] = key.split(":");
+    if (ms > 0) track("claim_dwell", { run_id: runId, claim_index: Number(index), ms: Math.round(ms) });
+  }
+  claimMs.clear();
   track("report_time", { run_id: report_.id, visible_ms: Math.round(report_.visibleMs), ended_by });
   report_ = null;
 }
@@ -192,6 +198,22 @@ export function sectionInView(runId: string, section: string, inView: boolean) {
     if (!sectionClocks.has(key) && visible()) sectionClocks.set(key, performance.now());
   } else stopSection(key);
 }
+// Reading time per claim card (claim_dwell), by the same viewed rule and only while the tab is visible.
+const claimClocks = new Map<string, number>();
+const claimMs = new Map<string, number>();
+export function claimInView(runId: string, claimIndex: number, inView: boolean) {
+  if (!report_ || report_.id !== runId) return;
+  const key = `${runId}:${claimIndex}`;
+  if (inView) { if (!claimClocks.has(key) && visible()) claimClocks.set(key, performance.now()); }
+  else stopClaim(key);
+}
+function stopClaim(key: string) {
+  const since = claimClocks.get(key);
+  if (since === undefined) return;
+  claimClocks.delete(key);
+  claimMs.set(key, (claimMs.get(key) ?? 0) + performance.now() - since);
+}
+
 function stopSection(key: string) {
   const since = sectionClocks.get(key);
   if (since === undefined) return;

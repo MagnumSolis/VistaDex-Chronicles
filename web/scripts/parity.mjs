@@ -22,6 +22,8 @@ const STUB_REPORT = {
 };
 
 const browser = await launch();
+const go = (page, hash) => page.evaluate(h => { location.hash = h; }, hash);
+const pick = (page, control) => page.locator(`label:has([data-control=${control}])`).first().click(); // sr-only radio inside its label
 
 // ── public edition ──
 {
@@ -68,6 +70,28 @@ const browser = await launch();
   await page.locator("[data-control=report_save_pdf]").first().click();
   check(await page.evaluate(() => window.__printed === 1), "Save as PDF did not open the print dialog");
 
+  // 3b. The rating panel under the report: votes, the comprehension check, the sources self-report, submit
+  await pick(page, "study_claim_agree");
+  await pick(page, "study_objection_disagree");
+  await pick(page, "comprehension_check");
+  await pick(page, "study_sources_1_2");
+  await page.locator("[data-control=study_survey_submit]").click();
+  await page.getByText(/your answers are recorded/).waitFor();
+
+  // 3c. The quiz shown while a screening runs (a slow stubbed run, so there is time to play it)
+  const slow = async r => { await new Promise(res => setTimeout(res, 9000)); await r.fallback(); };
+  await page.route(`${STUB}/screen`, slow);
+  await page.locator("[data-control=report_screen_another]").first().click();
+  await fillIdea(page);
+  await page.getByRole("button", { name: /^Run$/ }).click();
+  await page.locator("[data-control=quiz_start]").click();
+  for (let q = 0; q < 3; q++) {
+    await page.locator("[data-control=quiz_answer]").first().click();
+    await page.locator(q === 2 ? "[data-control=quiz_finish]" : "[data-control=quiz_next]").click();
+  }
+  await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
+  await page.unroute(`${STUB}/screen`, slow); // only this handler: the stub proxy's own stays
+
   // 4. Screen another idea (mock) → the first report ends with new_run; then a cancel and a failure
   await setProxy(page, "");
   await page.locator("[data-control=report_screen_another]").first().click();
@@ -101,6 +125,25 @@ const browser = await launch();
   await page.getByLabel("What was wrong or missing?").fill("parity check");
   await page.locator("[data-control=feedback_submit]").click();
   await page.getByText("Your answers are saved.").waitFor();
+
+  // 6. Study track in the same session: register a code, the AI chatbot part, then the VistaDex part
+  await go(page, "#/study");
+  await page.getByRole("button", { name: "I have a participant code" }).click();
+  await page.getByLabel("Participant code").fill("PARITY1");
+  await page.locator("[data-control=study_idea_pick][data-control-value=A]").click();
+  await page.locator("[data-control=study_start]").click();
+  await page.getByRole("button", { name: "Continue to the tool" }).click();
+  await page.locator("[data-control=baseline_start]").click();
+  await page.locator("[data-control=baseline_continue]").click();
+  await pick(page, "study_sources_0");
+  await page.locator("[data-control=baseline_submit]").click();
+  await page.getByText(/Your assigned idea \(Idea A\) is filled in/).waitFor();
+  await page.getByRole("button", { name: /^Run$/ }).click();
+  await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
+  await pick(page, "study_sources_3p");
+  await page.locator("[data-control=study_survey_submit]").click();
+  await page.getByText(/your answers are recorded/).waitFor();
+
   await page.evaluate(() => dispatchEvent(new Event("pagehide")));
   await flush(page);
 

@@ -1,4 +1,5 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useClaimInView } from "@/telemetry/useSectionInView";
 import { ChevronDown, ExternalLink, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CLAIM_TYPE_LABEL, STATUS, StatusTag } from "@/components/status";
@@ -14,6 +15,8 @@ export const sourceCount = (urls: string[]) => independentSourceCount((urls || [
 export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number; runId: string | null }) {
   const [open, setOpen] = useState(false);
   const sourcesId = useId();
+  const ref = useRef<HTMLElement>(null);
+  useClaimInView(ref, index, runId);
   const n = sourceCount(claim.source_urls);
   const s = STATUS[claim.status] ?? STATUS.unverified;
   const quoteFor = (url: string): Evidence | undefined => claim.evidence?.find(e => e.url === url);
@@ -25,7 +28,7 @@ export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number
   };
 
   return (
-    <article className="rounded-card bg-card p-5 md:p-6" aria-label={`Claim ${index + 1}: ${s.label}`} data-tour={index === 0 ? "claim" : undefined}>
+    <article ref={ref} className="rounded-card bg-card p-5 md:p-6" aria-label={`Claim ${index + 1}: ${s.label}`} data-tour={index === 0 ? "claim" : undefined}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CardLabel n={index + 1}>{CLAIM_TYPE_LABEL[claim.type] ?? claim.type} claim</CardLabel>
         <StatusTag status={claim.status} />

@@ -8,7 +8,7 @@ import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { Report } from "@/types";
-import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
+import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
 

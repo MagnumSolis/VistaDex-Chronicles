@@ -177,11 +177,11 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
 
         <ReportSection id="legal" title="Legal" runId={runId}
           intro="Things to look up and rules that may apply in each target market. Never a judgement of whether something is allowed.">
-          <LegalSection legal={report.legal} markets={entry.markets} sample={Boolean(report.sample_fields?.includes("legal"))} />
+          <LegalSection legal={report.legal} markets={entry.markets} sample={Boolean(report.sample_fields?.includes("legal"))} live={report.search?.legal} />
         </ReportSection>
 
-        <ReportSection id="market" title="Market" runId={runId} intro="A ballpark size of the market, with its source and assumptions.">
-          <MarketSection market={report.market} sample={Boolean(report.sample_fields?.includes("market"))} />
+        <ReportSection id="market" title="Market" runId={runId} intro="A ballpark size of the market from figures that sources state, each quoted and linked.">
+          <MarketSection market={report.market} sample={Boolean(report.sample_fields?.includes("market"))} search={report.search?.market} />
         </ReportSection>
 
         {closing && (

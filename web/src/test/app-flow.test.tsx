@@ -221,15 +221,16 @@ describe("refusals and failures show friendly messages on Screen an idea", () =>
   });
 });
 
-describe("live runs never get legal or market data", () => {
-  it("shows the neutral not-available state and says the server runs the stages together", async () => {
+describe("a live report the server sent without market, legal or Big Tech data", () => {
+  it("shows the neutral not-available state, and asks for a target market for legal", async () => {
     stubFetch(url => (url.endsWith("/screen") ? json(PROXY_REPORT, 200, { "X-VistaDex-Mode": "live" }) : json({ stored: 1 })));
     await loadApp({ proxy: true });
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
     fillIdea();
     run();
     await reportShown();
-    expect(screen.getAllByText("Not available in this version yet").length).toBe(3); // Big Tech, legal, market
+    expect(screen.getAllByText("Not available in this version yet").length).toBe(2); // Big Tech, market
+    expect(screen.getByText("No target market was picked for this screening")).toBeTruthy(); // legal
     expect(screen.getByText(/Competitor search: not available in this version yet/)).toBeTruthy();
     expect(screen.queryByText(/Sample data, not real/)).toBeNull();
   });

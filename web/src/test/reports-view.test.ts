@@ -16,7 +16,7 @@ function entry({ title, score = null, novelty = null, band, bigTech, contradicte
       idea_text: title, claims: allClaims.map(([type, status]) => ({ claim: "c", type, status, reasoning: "", source_urls: [] })), graveyard_matches: [], objections: [],
       overlap_band: band, ...(bigTech ? { big_tech_risk: { level: bigTech, companies: [], unconfirmed: [], summary: "", companies_checked: [], queries: [], sources_checked: 0 } } : {}),
       input: { title, pitch: "", problem: "", solution: "", moat: "", industries, role, markets: [] },
-      scores: { vistadex: { value: score, sample: false, used: [], excluded: [] }, axes: { novelty: axis(novelty), market: axis(null), defensibility: axis(null), graveyard: axis(null), evidence: axis(null), big_tech: axis(null) } },
+      scores: { vistadex: { value: score, sample: false, used: [], excluded: [] }, axes: { novelty: axis(novelty), market: axis(null), defensibility: axis(null), graveyard: axis(null), evidence: axis(null), legal: axis(null), big_tech: axis(null) } },
     },
   };
 }

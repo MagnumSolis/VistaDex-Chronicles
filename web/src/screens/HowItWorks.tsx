@@ -1,34 +1,21 @@
 // ── How it works — the method, the statuses, the evidence rule, data sources and honest limitations ──
 import type { ReactNode } from "react";
-import { ClipboardList, ExternalLink, Ghost, Hourglass, Link2, MessageSquareWarning, ScanText } from "lucide-react";
+import { ClipboardList, ExternalLink, Ghost, Landmark, Link2, MessageSquareWarning, ScanText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTitle, Panel, Tile } from "@/components/ui-vd";
 import { STATUS, STATUS_ORDER, StatusTag } from "@/components/status";
 import { GRAVEYARD_DB, liveMode } from "@/proto";
-import { BIG_TECH_COMPANIES, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE, NOVELTY, DEFENSIBILITY, OVERLAP, WEIGHTS } from "@proto/core/scoring-config.js";
+import { BIG_TECH_COMPANIES, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE, NOVELTY, DEFENSIBILITY, LEGAL, OVERLAP, WEIGHTS } from "@proto/core/scoring-config.js";
+import { MARKET_NAME, REGISTRIES } from "@proto/core/stages/legal.js";
 import { navigate, PATHS } from "@/router";
 
 const SEED = GRAVEYARD_DB as { source_verified?: boolean }[];
 
-// Official registries and rule sources the Legal section is designed to cite (it is not produced yet).
-// TODO(team): confirm this list before the Legal section ships.
-const REGISTRIES: { market: string; items: { name: string; what: string; url: string }[] }[] = [
-  { market: "European Union", items: [
-    { name: "EUIPO", what: "EU trade marks and designs", url: "https://euipo.europa.eu/" },
-    { name: "Espacenet (European Patent Office)", what: "Patents", url: "https://worldwide.espacenet.com/" },
-    { name: "EUR-Lex", what: "EU law and regulations", url: "https://eur-lex.europa.eu/" },
-  ] },
-  { market: "United States", items: [
-    { name: "USPTO", what: "Patents and trademarks", url: "https://www.uspto.gov/" },
-    { name: "FDA", what: "Product approvals and clearances", url: "https://www.fda.gov/" },
-    { name: "eCFR", what: "Federal regulations", url: "https://www.ecfr.gov/" },
-  ] },
-  { market: "India", items: [
-    { name: "IP India", what: "Patents, trade marks and designs", url: "https://ipindia.gov.in/" },
-    { name: "CDSCO", what: "Drug and medical device approvals", url: "https://cdsco.gov.in/" },
-    { name: "India Code", what: "Central acts and rules", url: "https://www.indiacode.nic.in/" },
-  ] },
-];
+// The registries every report's Legal section links, per market (prototype/core/stages/legal.js).
+const REGISTRY_LIST = (Object.keys(REGISTRIES) as (keyof typeof REGISTRIES)[]).map(m => ({
+  market: MARKET_NAME[m],
+  items: [{ ...REGISTRIES[m].trademark, what: "Trade marks" }, { ...REGISTRIES[m].patent, what: "Patents" }],
+}));
 
 export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
   const verified = SEED.filter(e => e.source_verified === true).length;
@@ -48,8 +35,8 @@ VistaDex shows what the evidence says about each claim, who already does somethi
             <li><Tile icon={MessageSquareWarning} label="4 · Argue against it" className="bg-lime text-on-lime">Writes objections using what was found. They get the same space as the claims. Then the score is computed in code from all of it.</Tile></li>
             <li className="sm:col-span-2">
               <div className="flex items-start gap-3 rounded-card border-2 border-dashed border-border-strong p-5 text-[0.9375rem] leading-relaxed">
-                <Hourglass aria-hidden className="mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
-                <p><span className="font-semibold">Partly built: legal and market.</span> The total market size (TAM) is read from a verified source quote when a market-size claim is confirmed. Registries, rules, SAM and SOM are not produced in this version; reports say so.</p>
+                <Landmark aria-hidden className="mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
+                <p><span className="font-semibold">Market and legal.</span> A market-size search reads pages for figures they state; each is kept only if the sentence that states it is on the page, and the TAM is the median of figures from independent sources. For each target market, a search lists the rules pages name for this kind of product (counted when 2 independent sources name one) and links the official trademark and patent registries. SAM and SOM need your own assumptions, so they are not produced.</p>
               </div>
             </li>
           </ol>
@@ -81,13 +68,14 @@ VistaDex shows what the evidence says about each claim, who already does somethi
 
       <Panel as="section" tab="The VistaDex Score" tabId="how-score" aria-labelledby="how-score">
         <p className="max-w-[70ch] text-[1.0625rem] leading-relaxed">
-          Five axes, each out of 100 and computed in code from the report, never by a model. Each one shows its inputs and what was searched in the report's “How this was calculated”. An axis without enough data says so and is left out, never guessed.
+          Six axes, each out of 100 and computed in code from the report, never by a model. Each one shows its inputs and what was searched in the report's “How this was calculated”. An axis without enough data says so and is left out, never guessed.
         </p>
         <ul className="mt-5 grid gap-3 md:grid-cols-2">
           <Axis name="Novelty" weight={WEIGHTS.novelty}>Starts at 100. Each distinct competitor found on a fetched page costs {NOVELTY.perCompetitor} (at most {NOVELTY.maxCompetitorsCounted} counted); each disputed novelty claim costs {NOVELTY.disputed}; each confirmed one adds {NOVELTY.confirmed}. A contradicted novelty claim costs {NOVELTY.contradicted} and caps the axis at {NOVELTY.contradictedCap}. Finding no competitors caps it at {NOVELTY.noCompetitorsCap}: not finding any is not proof there are none.</Axis>
-          <Axis name="Market" weight={WEIGHTS.market}>The total market size (TAM) on a log scale: $10M or less is 0, $1B or more is 100. The TAM must come from a verified quote on a source page, never from the idea text. No TAM, no value.</Axis>
+          <Axis name="Market" weight={WEIGHTS.market}>The total market size (TAM) on a log scale: $10M or less is 0, $1B or more is 100. The TAM is the median of market-size figures quoted on pages from at least 2 independent sources, never from the idea text. One source alone is shown but not counted. No TAM, no value.</Axis>
           <Axis name="Defensibility" weight={WEIGHTS.defensibility}>Starts at {DEFENSIBILITY.base}; a stated moat adds at most {DEFENSIBILITY.moatBonus}. Each confirmed defensibility claim adds {DEFENSIBILITY.confirmed}, a disputed one costs {DEFENSIBILITY.disputed}, a contradicted one {DEFENSIBILITY.contradicted}. Objections about the moat cost {DEFENSIBILITY.moatObjection.high} / {DEFENSIBILITY.moatObjection.medium} / {DEFENSIBILITY.moatObjection.low} by severity. A stated moat alone is not data.</Axis>
           <Axis name="Graveyard distance" weight={WEIGHTS.graveyard}>100 × (1 − the strongest word overlap with a shut-down startup). No match at all gives 100. Shown with the number of entries checked and whether the seed was verified.</Axis>
+          <Axis name="Regulatory load" weight={WEIGHTS.legal}>Higher means fewer rules found. Starts at {LEGAL.start}; each rule that 2 independent sources name for your target markets costs {LEGAL.perRule} (at most {LEGAL.maxRulesCounted} counted). Finding none caps it at {LEGAL.noneFoundCap}: not finding a rule is not proof there is none. No target market, no value. It never says whether something is allowed.</Axis>
           <Axis name="Evidence quality" weight={WEIGHTS.evidence}>The share of claims that got a status (not unverified) backed by at least 2 independent sources.</Axis>
           <Axis name="Big Tech safety" weight={WEIGHTS.big_tech}>Low risk 100, medium 50, high 0. Shown, but not counted in this version: what evidence a low risk needs is still being defined, and “unverified” is never counted.</Axis>
         </ul>
@@ -131,12 +119,12 @@ VistaDex shows what the evidence says about each claim, who already does somethi
             </p>
           </div>
           <div className="rounded-card bg-card p-5">
-            <p className="font-semibold">Legal (planned)</p>
-            <p className="mt-2 text-[0.9375rem] leading-relaxed">Official registries and rule sources for each market, listed below. The report will link the records it finds there.</p>
+            <p className="font-semibold">Legal (inside reports)</p>
+            <p className="mt-2 text-[0.9375rem] leading-relaxed">For each target market, the official registries below to search yourself, and the rules that web pages name for your kind of product, each linked to where it is named. Not legal advice.</p>
           </div>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {REGISTRIES.map(r => (
+          {REGISTRY_LIST.map(r => (
             <div key={r.market}>
               <p className="eyebrow text-muted-foreground">{r.market}</p>
               <ul className="mt-2 space-y-2">
@@ -160,9 +148,10 @@ VistaDex shows what the evidence says about each claim, who already does somethi
           <li>Reports can be wrong. Open the sources before you rely on anything.</li>
           <li>Graveyard matching is currently <span className="font-semibold">word overlap</span>: two ideas worded alike match even if the businesses differ, and a real lookalike worded differently can be missed.</li>
           <li>The graveyard is small ({SEED.length} startups) and {verified === 0 ? "none" : `only ${verified}`} of its closure sources {verified === 1 ? "has" : "have"} been checked by the team so far.</li>
-          <li>Market size: SAM and SOM are estimates built on assumptions. They are listed so you can disagree with them.</li>
+          <li>Market size: sources measure a market in different ways (global or regional, different years). The TAM is their median; read each figure before you rely on it. SAM and SOM need your own assumptions.</li>
+          <li>Legal: a rule is listed because pages name it for this kind of product, not because it applies to yours. Ask a lawyer before you act on it.</li>
           <li>The score is a summary of what was found, built on simple formulas and provisional weights. Read the breakdown before trusting the number.</li>
-          <li>Legal output, SAM and SOM are not produced yet. In mock mode, competitors, Big Tech risk, market and legal show sample placeholders, clearly marked, and so do the scores built on them.</li>
+          <li>In mock mode (no web search), competitors, Big Tech risk, market and legal show sample placeholders, clearly marked, and so do the scores built on them.</li>
           <li>On the live server the steps run together, so the progress screen can&apos;t show each one as it happens.</li>
         </ul>
       </Panel>

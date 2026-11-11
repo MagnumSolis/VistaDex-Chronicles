@@ -30,7 +30,7 @@ export const NOTICE = {
 // ── Feedback form (public edition) ──
 // TODO(team): final question wording. Set signedOff to true once the team has approved it.
 export const FEEDBACK = {
-  signedOff: false,
+  signedOff: true,
   role: { question: "What best describes you?", options: [["founder", "Founder"], ["investor", "Investor"], ["accelerator", "Accelerator / incubator"], ["student", "Student"], ["other", "Other"]] },
   useful: { question: "Was the report useful?", options: [["yes", "Yes"], ["partly", "Partly"], ["no", "No"], ["no_report", "I didn't run one"]] },
   section: { question: "Which section mattered most to you?", options: [["claims", "Claims"], ["graveyard", "Graveyard leads"], ["objections", "Objections"], ["legal", "Legal"], ["market", "Market"], ["none", "None of them"]] },
@@ -85,7 +85,7 @@ export const CLAIM_RATING = {
 // 1–7 agreement items (1 = strongly disagree, 7 = strongly agree).
 // TODO(team): items are drafts — set signedOff to true once the team has approved them.
 export const SURVEY = {
-  signedOff: false,
+  signedOff: true,
   title: "A few last questions",
   likert: [
     { id: "useful", text: "The report was useful for judging this idea." },

@@ -6,6 +6,7 @@
 
 import { parseWrapped, NoProviderAvailable } from "../providers/llm.js";
 import { SEVERITIES } from "../contract.js";
+import { registrableDomain } from "../evidence.js";
 
 export const MAX_OBJECTIONS = 5;
 export const HIGH_SIMILARITY = 0.35; // lexical scale; see graveyard.js
@@ -98,8 +99,14 @@ export function deterministicObjections(claims, matches, competitors = []) {
   return out;
 }
 
+// Independent sources (distinct registrable domains) on each side of a claim, as the status was computed.
+function sideCounts(claim) {
+  const side = stance => new Set((claim.evidence || []).filter(e => e.stance === stance).map(e => registrableDomain(e.url) || e.url)).size;
+  return `(independent sources: ${side("supports")} support, ${side("contradicts")} contradict)`;
+}
+
 function summarizeDraft(claims, matches, competitors = []) {
-  const lines = claims.map((c, i) => `${i + 1}. [${c.type}] [${c.status}] ${c.claim}`);
+  const lines = claims.map((c, i) => `${i + 1}. [${c.type}] [${c.status}] ${sideCounts(c)} ${c.claim}`);
   const leads = matches.map(m => `- ${m.company_name} (${m.year_closed}), similarity ${m.similarity}: ${m.cause_of_death}`);
   const comps = competitors.map(c => `- ${c.name}: ${c.why_similar}`);
   return `Claims:\n${lines.join("\n") || "(none)"}\n\nGraveyard leads:\n${leads.join("\n") || "(none)"}\n\nExisting products named on fetched pages:\n${comps.join("\n") || "(none)"}`;

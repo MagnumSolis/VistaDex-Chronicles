@@ -27,6 +27,7 @@ import { withIds } from "./graveyard-live.js";
 import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
+import { createBudget } from "../../prototype/core/providers/http.js";
 
 const MAX_BODY_BYTES = 256 * 1024;
 const MAX_EVENTS_PER_BATCH = 200;
@@ -104,12 +105,14 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
     }
   }
 
-  const llmRoutes = routesFromEnv(env, fetchImpl);
-  const retrieval = retrievalFromEnv(env, fetchImpl);
+  // One call budget per run, shared by every provider (prototype/core/providers/http.js).
+  const budget = createBudget(Number(env.CALL_BUDGET) || undefined);
+  const llmRoutes = routesFromEnv(env, fetchImpl, { budget });
+  const retrieval = retrievalFromEnv(env, fetchImpl, { budget });
   const live = Object.values(llmRoutes).some(chain => chain.length) || retrieval.name !== "mock";
   // No samples here: the server never fills fields with placeholder data.
   const graveyard = graveyardSnapshot.count > 0 ? withIds(graveyardSnapshot.entries) : GRAVEYARD_DB;
-  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard });
+  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard, budget: live ? budget : null });
   await store.saveTrace(trace.trace_id, trace.mode, trace, now());
   return json(report, 200, {
     ...cors,

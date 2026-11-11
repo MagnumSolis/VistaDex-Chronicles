@@ -55,7 +55,7 @@ export interface Market {
 }
 
 // ── Round 2 ──
-export type Role = "founder" | "investor" | "accelerator";
+export type Role = "founder" | "investor" | "accelerator" | "student" | "other";
 export interface IdeaInput { title: string; pitch: string; problem: string; solution: string; moat: string; industries: string[]; role: Role | null; markets: Jurisdiction[] }
 export interface Competitor { name: string; url: string; why_similar: string; quote: string }
 export type BigTechLevel = "low" | "medium" | "high" | "none_found" | "unverified";

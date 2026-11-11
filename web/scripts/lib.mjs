@@ -1,5 +1,5 @@
 // ── lib.mjs — Shared helpers for the browser scripts (parity, a11y, access-e2e, shots) ──
-// They drive the Vite dev server (default :5173, or VD_BASE=<url>) in an installed Chrome.
+// They drive the Vite dev server (default :5173, or VD_BASE=<url>) in Chrome or Playwright's Chromium.
 import { chromium } from "playwright-core";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -19,15 +19,23 @@ const telPath = fileURLToPath(new URL("../../prototype/ui/telemetry.js", import.
 export const STUB = "http://stub-proxy.test";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access", "Access-Control-Expose-Headers": "X-VistaDex-Trace-Id, X-VistaDex-Mode" };
 
-export const launch = () => chromium.launch({ channel: "chrome", headless: true });
+// An installed Chrome when there is one, else Playwright's own Chromium (npx playwright-core install chromium).
+export async function launch() {
+  try { return await chromium.launch({ channel: "chrome", headless: true }); }
+  catch { return await chromium.launch({ headless: true }); }
+}
 
 /** A fresh context (empty storage). Default: the public LinkedIn link (#/screen → Welcome first). */
 export async function openApp(browser, { viewport = { width: 1280, height: 900 }, hash = "#/screen", isMobile = false } = {}) {
   const ctx = await browser.newContext({ viewport, isMobile, hasTouch: isMobile, deviceScaleFactor: isMobile ? 2 : 1 });
+  // These scripts never reach the deployed Worker: the dev site's prototype/config.js points at it, and a
+  // run or a consented session there would spend provider quota and add test data to the study.
+  await ctx.route(/^https:\/\/[^/]*workers\.dev\//, r => r.abort("blockedbyclient"));
   const page = await ctx.newPage();
   page.on("pageerror", e => console.error("page error:", e.message));
   await page.addInitScript(() => { window.print = () => { window.__printed = (window.__printed || 0) + 1; }; });
   await page.goto(BASE + hash);
+  await setProxy(page, ""); // the key-free in-browser mock unless a script stubs a proxy (useStubProxy)
   return { ctx, page };
 }
 
@@ -48,9 +56,13 @@ export async function useStubProxy(page, { screen = () => ({ status: 200, body: 
   await setProxy(page, STUB);
   return seen;
 }
-export const setProxy = (page, url) => page.evaluate(async ([p, u]) => { (await import("/@fs/" + p)).CONFIG.PROXY_URL = u; }, [cfgPath, url]);
-export const flush = page => page.evaluate(async p => (await import("/@fs/" + p)).flush(), telPath);
-export const events = page => page.evaluate(() => JSON.parse(localStorage.getItem("vistadex.study.v1") || "{}").events || []);
+// Vite serves files outside the web root at /@fs/<absolute path>; an absolute POSIX path already starts with
+// "/", and "/@fs//home/..." would load a second copy of the module that the app never reads.
+const fsUrl = p => "/@fs/" + p.replace(/^\/+/, "");
+export const setProxy = (page, url) => page.evaluate(async ([p, u]) => { (await import(p)).CONFIG.PROXY_URL = u; }, [fsUrl(cfgPath), url]);
+export const flush = page => page.evaluate(async p => (await import(p)).flush(), fsUrl(telPath));
+// Every event this tab logged (the shared storage queue holds only the unsent ones since 2026-11-study-4).
+export const events = page => page.evaluate(async p => (await import(p)).events(), fsUrl(telPath));
 
 export async function fillIdea(page, fields = IDEA_FIELDS) {
   for (const [k, v] of Object.entries(fields)) await page.locator(`#field-${k}`).fill(v);

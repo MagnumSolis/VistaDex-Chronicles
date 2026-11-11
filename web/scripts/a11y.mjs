@@ -181,8 +181,10 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
 // ── 4: reduced motion ──
 {
   const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
+  await ctx.route(/^https:\/\/[^/]*workers\.dev\//, r => r.abort("blockedbyclient")); // never the deployed Worker
   const page = await ctx.newPage();
   await page.goto(BASE + "#/screen");
+  await setProxy(page, "");
   await page.getByRole("button", { name: "Skip to the tool" }).click();
   await fillIdea(page);
   await page.getByRole("button", { name: /^Run$/ }).click();

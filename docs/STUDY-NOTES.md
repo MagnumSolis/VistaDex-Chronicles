@@ -50,6 +50,7 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 Bumped because claim statuses can change and the Home page changed (decision: 2026-11-12). Telemetry is unchanged.
 
 - **Claim judging.** A live report confirmed "No HIPAA-compliant AI medical scribe exists at under $100/month" with quotes listing such scribes at $39 and $49 a month. The judge prompt now spells out negation (a page naming such a product contradicts a non-existence claim), thresholds (the source's own number must meet the claim's) and overreach (a general point is irrelevant to a specific claim). In code, a "support" for a non-existence claim counts only if its sentence states an absence. "No <anything> exists" is typed novelty. **For H3**, statuses from study-10 on are stricter; compare agreement by status within a version.
+- **Market and legal recall** (same version, 12 Nov): searches use the one-line pitch instead of the invented product name, and the market reader may give the broader market an idea belongs to (it named which). Before, the same idea got a TAM in one run and none in the next. The trace records how many figures and rules the reader returned and how many were kept.
 - **Home.** The hero card is one straight card: no tilt, the leads on a light inner surface, the source sites named, and the sample's own VistaDex Score in a lime band.
 - **The bump resets consent**, as every bump does.
 

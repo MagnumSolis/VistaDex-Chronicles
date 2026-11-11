@@ -54,15 +54,15 @@ test("market: the TAM is the median of one figure per independent site; one site
   assert.equal(marketAxis({ market: two, claims: [], graveyard_matches: [], objections: [] }).value > 0, true);
 });
 
-test("market: a dedicated search runs on the title and industry; no search in the key-free mock path", async () => {
+test("market: a dedicated search runs on the pitch; no search in the key-free mock path", async () => {
   const r = retrievalOf(MARKET_PAGES);
   const llm = readerOf(sys => sys.includes("market-size figures") ? JSON.stringify({ figures: [
     { source: 1, figure: "USD 2.4 billion", quote: "The global AI medical scribe market was valued at USD 2.4 billion in 2024 and keeps growing." },
     { source: 2, figure: "$3.1 billion", quote: "Analysts put the AI scribe market at $3.1 billion this year." }] }) : "{}");
   const m = await searchMarket({ ideaText: "x", input, claims: [] }, { llm, retrieval: r, trace: T() });
-  assert.deepEqual(r.searches, ["ScribeAI Healthtech market size"]);
+  assert.deepEqual(r.searches, ["AI medical scribe for solo practices market size"], "the pitch, not the invented product name");
   assert.equal(m.tam.value_usd, 2.75e9);
-  assert.deepEqual(m.search, { queries: ["ScribeAI Healthtech market size"], sources_checked: 3 });
+  assert.deepEqual(m.search, { queries: ["AI medical scribe for solo practices market size"], sources_checked: 3 });
   const mock = await searchMarket({ ideaText: "x", input, claims: [] }, { llm, retrieval: mockRetrieval(), trace: T() });
   assert.equal(mock, null, "nothing searched, nothing claimed");
 });
@@ -93,7 +93,7 @@ test("legal: one search per target market, official registries listed, nothing w
   const legal = await searchLegal({ ideaText: "x", input }, { llm, retrieval: r, trace: T() });
   assert.deepEqual(legal.jurisdictions.map(j => j.jurisdiction), ["USA", "India"]);
   assert.equal(r.searches.length, 2);
-  assert.match(r.searches[0], /ScribeAI Healthtech regulations licensing requirements United States/);
+  assert.match(r.searches[0], /^AI medical scribe for solo practices Healthtech regulations United States$/);
   assert.deepEqual(legal.jurisdictions[0].facts.map(f => f.registry.url), [REGISTRIES.USA.trademark.url, REGISTRIES.USA.patent.url]);
   for (const j of legal.jurisdictions) for (const f of j.facts) assert.match(f.registry.url, /^https:\/\//);
   assert.equal(await searchLegal({ ideaText: "x", input: { ...input, markets: [] } }, { llm, retrieval: r, trace: T() }), null);
@@ -168,4 +168,17 @@ test("competitors: a reply cut off by the length limit keeps its complete entrie
   assert.deepEqual(out.list.map(c => c.name), ["Harvey"], "the complete entry is kept; the cut-off one is dropped");
   assert.ok(request.maxTokens >= 3000, "the call asks for room for the list");
   assert.match(request.messages[0].content, /at most 8/, "the prompt caps the list");
+});
+
+test("market: the reader may give the broader market a product belongs to, and the trace says what it returned and kept", async () => {
+  const { searchMarket: sm } = await import("../prototype/core/stages/market.js");
+  let prompt = "";
+  const llm = readerOf((sys) => { if (sys.includes("market-size figures")) { prompt = sys; return JSON.stringify({ figures: [
+    { source: 1, figure: "USD 2.4 billion", quote: "The global AI medical scribe market was valued at USD 2.4 billion in 2024 and keeps growing." },
+    { source: 2, figure: "$5 billion", quote: "A sentence that is not on the page at all, $5 billion." }] }); } return "{}"; });
+  const trace = T();
+  await sm({ ideaText: "x", input, claims: [] }, { llm, retrieval: retrievalOf(MARKET_PAGES), trace });
+  assert.match(prompt, /broader market/);
+  const ev = trace.finish().events.find(e => e.kind === "market_figures");
+  assert.deepEqual({ returned: ev.returned, kept: ev.kept }, { returned: 2, kept: 1 });
 });

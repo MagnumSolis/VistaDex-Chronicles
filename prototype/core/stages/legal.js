@@ -11,7 +11,7 @@ import { registrableDomain, MIN_INDEPENDENT } from "../evidence.js";
 import { isVerbatim, namedIn, norm } from "../quotes.js";
 import { NoProviderAvailable } from "../providers/llm.js";
 import { PAGE_CHARS, gatherEvidence } from "./classify.js";
-import { completeWrapped } from "./market.js";
+import { completeWrapped, searchSubject } from "./market.js";
 
 export const LEGAL_MARKETS = ["EU", "USA", "India"];
 export const MARKET_NAME = { EU: "European Union", USA: "United States", India: "India" };
@@ -52,8 +52,8 @@ export function legalFacts(market, input) {
 }
 
 export function legalQuery(market, ideaText, input) {
-  const what = [input?.title, (input?.industries || []).join(" ")].filter(Boolean).join(" ").trim() || ideaText.slice(0, 120);
-  return `${what} regulations licensing requirements ${MARKET_NAME[market]}`.slice(0, 200);
+  const what = [searchSubject(ideaText, input), (input?.industries || []).join(" ")].filter(Boolean).join(" ");
+  return `${what} regulations ${MARKET_NAME[market]}`.slice(0, 200);
 }
 
 const ruleKey = r => norm(r).replace(/[^a-z0-9 ]/g, " ").replace(/\b(the|of|and|act|regulation|regulations|rules?)\b/g, " ").replace(/\s+/g, " ").trim();
@@ -102,7 +102,7 @@ export async function searchLegal({ ideaText, input }, { llm, retrieval, trace }
       ];
       try {
         const raw = await completeWrapped(llm, messages, "rules");
-        if (raw) requirements = keepRules(raw, pages);
+        if (raw) { requirements = keepRules(raw, pages); trace.log("legal_rules", { market, returned: raw.length, kept: requirements.length }); }
         else trace.log("legal", { market, router: "llm", error: "malformed output" });
       } catch (err) {
         if (!(err instanceof NoProviderAvailable)) throw err;

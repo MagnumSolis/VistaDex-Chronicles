@@ -8,7 +8,7 @@
 import { independentSourceCount } from "./evidence.js";
 import {
   WEIGHTS, BIG_TECH_IN_SCORE, BIG_TECH_SAFETY, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE,
-  NOVELTY, DEFENSIBILITY, MARKET, LEGAL, OVERLAP,
+  NOVELTY, DEFENSIBILITY, MARKET, LEGAL, GRAVEYARD, OVERLAP,
 } from "./scoring-config.js";
 
 export const AXES = ["novelty", "market", "defensibility", "graveyard", "evidence", "legal", "big_tech"];
@@ -71,8 +71,12 @@ export function graveyardAxis(report) {
   const top = Math.max(0, ...report.graveyard_matches.map(m => m.similarity));
   const inputs = { strongest_similarity: report.graveyard_matches.length ? top : null, matches: report.graveyard_matches.length, entries_checked: g?.entries_checked ?? null, verified_entries: g?.verified_entries ?? null };
   const boundary = g ? `Checked against ${plural(g.entries_checked, "entry", "entries")} (${g.verified_entries === g.entries_checked ? "verified seed" : g.verified_entries ? `${g.verified_entries} verified` : "unverified seed"})` : "Graveyard size not recorded";
-  // TODO(team): whether this axis needs a minimum seed size before it counts.
-  return { value: clamp(100 * (1 - top)), inputs, boundary, sample: false, note: report.graveyard_matches.length ? undefined : "No match above the matching threshold." };
+  if (!report.graveyard_matches.length) {
+    const n = g?.entries_checked;
+    return { value: GRAVEYARD.noMatchCap, inputs, boundary, sample: false,
+      note: `No close match${n ? ` among ${n} entries` : ""} (capped at ${GRAVEYARD.noMatchCap}: not finding a lookalike is not proof nobody tried).` };
+  }
+  return { value: clamp(100 * (1 - top)), inputs, boundary, sample: false };
 }
 
 export function marketAxis(report) {

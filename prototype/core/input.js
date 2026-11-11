@@ -12,7 +12,7 @@ export const INDUSTRIES = [
   "AI/ML", "SaaS/B2B", "Fintech", "Healthtech", "Edtech", "Consumer", "E-commerce",
   "Climate/Energy", "Mobility", "Agritech", "Deeptech/Hardware", "Media/Creator", "Other",
 ];
-export const ROLES = ["founder", "investor", "accelerator"];
+export const ROLES = ["founder", "investor", "accelerator", "student", "other"];
 export const MARKETS = ["EU", "USA", "India"];
 
 // Coerce anything into the input shape; unknown list values are dropped, text is trimmed and cut to its limit.

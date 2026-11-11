@@ -98,13 +98,16 @@ test("money amounts are read from quotes", () => {
   assert.deepEqual(moneyAmounts("no amounts here, 40%"), []);
 });
 
-test("TAM comes only from a verified quote supporting a CONFIRMED market-size claim", () => {
+test("TAM comes only from verified quotes: the median of figures from independent sources", () => {
   const confirmed = { claim: "The legal-tech market is worth $27B globally", type: "market_size", status: "confirmed",
     evidence: [{ url: "https://a.example/r", stance: "supports", quote: "Analysts value the global legal tech market at $25.6 billion." }, { url: "https://b.example/r", stance: "supports", quote: "Legal tech spending reached USD 28 billion in 2024." }] };
   const tam = tamFromEvidence([confirmed]);
-  assert.equal(tam.tam.value_usd, 28e9);
-  assert.equal(tam.tam.citation.url, "https://b.example/r");
+  assert.equal(tam.tam.value_usd, 26.8e9, "median of 25.6 and 28 billion");
+  assert.equal(tam.tam.corroborated, true);
+  assert.equal(tam.tam.independent_sources, 2);
+  assert.equal(tam.tam.citation.url, "https://b.example/r", "cited to the figure closest to the median");
   assert.match(tam.tam.quote, /USD 28 billion/);
+  assert.deepEqual(tam.figures.map(f => f.value_usd), [25.6e9, 28e9]);
   // The founder's own figure ($27B in the claim text) is never used.
   assert.equal(tamFromEvidence([{ ...confirmed, evidence: [{ url: "https://a.example", stance: "supports", quote: "The legal tech market keeps growing quickly." }] }]), null);
   assert.equal(tamFromEvidence([{ ...confirmed, status: "disputed" }]), null);

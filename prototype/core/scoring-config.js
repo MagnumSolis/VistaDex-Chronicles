@@ -3,7 +3,8 @@
 // How it works, and record it in docs/STUDY-NOTES.md). Scores are computed in code (scoring.js), never by a model.
 
 // Weights of the VistaDex Score (re-normalised over the axes that have enough data).
-export const WEIGHTS = Object.freeze({ novelty: 25, market: 20, defensibility: 20, graveyard: 15, evidence: 10, big_tech: 10 });
+// legal (regulatory load) added 2026-11 (study-9): the counted weights now add up to 100.
+export const WEIGHTS = Object.freeze({ novelty: 25, market: 20, defensibility: 20, graveyard: 15, evidence: 10, legal: 10, big_tech: 10 });
 
 // TODO(team): define what a "low" Big Tech risk needs as evidence. Until then the live pipeline never
 // outputs "low" and the Big Tech axis is shown but NOT counted in the VistaDex Score.
@@ -34,8 +35,14 @@ export const DEFENSIBILITY = Object.freeze({
   moatObjection: Object.freeze({ high: 15, medium: 10, low: 5 }),
 });
 
-// Market: TAM on a log scale, $10M → 0, $1B or more → 100.
+// Market: TAM on a log scale, $10M → 0, $1B or more → 100. Counted only when ≥ 2 independent sources
+// quoted a figure (or the figure supports a confirmed market-size claim).
 export const MARKET = Object.freeze({ tamFloorUsd: 1e7, tamCapUsd: 1e9 });
+
+// Regulatory load (higher = lighter): rules that ≥ 2 independent sources name for the idea's target markets.
+// A rule named by one source is shown but not counted. Finding none is not proof there are none.
+// TODO(team): tune.
+export const LEGAL = Object.freeze({ start: 100, perRule: 15, maxRulesCounted: 5, noneFoundCap: 70 });
 
 // Overlap band. TODO(team): tune.
 export const OVERLAP = Object.freeze({ caution: 0.3, high: 0.5, highCompetitors: 3 });

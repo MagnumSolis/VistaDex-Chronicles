@@ -99,7 +99,7 @@ test("VistaDex Score: weighted mean re-normalised over available axes; Big Tech 
   assert.deepEqual([axes.novelty.value, axes.defensibility.value, axes.graveyard.value, axes.evidence.value, axes.market.value], [88, 65, 60, 100, null]);
   // weights 25, 20, 15, 10 → (25·88 + 20·65 + 15·60 + 10·100) / 70
   assert.equal(vistadex.value, Math.round((25 * 88 + 20 * 65 + 15 * 60 + 10 * 100) / 70));
-  assert.deepEqual(vistadex.excluded.map(e => e.axis).sort(), ["big_tech", "market"]);
+  assert.deepEqual(vistadex.excluded.map(e => e.axis).sort(), ["big_tech", "legal", "market"]);
   assert.equal(vistadex.used.reduce((s, u) => s + u.share, 0).toFixed(2), "1.00");
 });
 

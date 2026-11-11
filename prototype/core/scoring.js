@@ -8,10 +8,10 @@
 import { independentSourceCount } from "./evidence.js";
 import {
   WEIGHTS, BIG_TECH_IN_SCORE, BIG_TECH_SAFETY, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE,
-  NOVELTY, DEFENSIBILITY, MARKET, OVERLAP,
+  NOVELTY, DEFENSIBILITY, MARKET, LEGAL, OVERLAP,
 } from "./scoring-config.js";
 
-export const AXES = ["novelty", "market", "defensibility", "graveyard", "evidence", "big_tech"];
+export const AXES = ["novelty", "market", "defensibility", "graveyard", "evidence", "legal", "big_tech"];
 const clamp = x => Math.max(0, Math.min(100, Math.round(x)));
 const withScheme = u => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
 const sources = c => independentSourceCount((c.source_urls || []).map(withScheme));
@@ -79,17 +79,53 @@ export function marketAxis(report) {
   const tam = report.market?.tam;
   const usd = Number(tam?.value_usd);
   const sample = isSample(report, "market");
+  const search = report.search?.market;
+  const boundary0 = search ? `Market-size search: ${plural(search.sources_checked, "source")} read; figures kept only when quoted verbatim` : "TAM taken only from a verified source quote";
   if (!tam || !(usd > 0)) {
-    return { value: null, inputs: { tam_usd: null }, boundary: "TAM taken only from a verified source quote", sample, reason: "No total market size (TAM) was found in a verified source quote." };
+    return { value: null, inputs: { tam_usd: null, sources_checked: search?.sources_checked ?? 0 }, boundary: boundary0, sample, reason: search ? `No market-size figure was quoted in ${plural(search.sources_checked, "source")} read.` : "No total market size (TAM) was found in a verified source quote." };
+  }
+  if (tam.corroborated === false) {
+    return { value: null, inputs: { tam_usd: usd, independent_sources: 1, citation: tam.citation?.url ?? null }, boundary: boundary0, sample, reason: "Only one source quoted a market size; a second independent source is needed before it counts." };
   }
   const lo = Math.log10(MARKET.tamFloorUsd), hi = Math.log10(MARKET.tamCapUsd);
   return {
     value: clamp((100 * (Math.log10(usd) - lo)) / (hi - lo)),
     inputs: { tam_usd: usd, citation: tam.citation?.url ?? null },
-    boundary: `TAM from ${tam.citation?.name ?? "a cited source"}`,
+    boundary: tam.independent_sources ? `TAM: median of figures quoted by ${plural(tam.independent_sources, "independent source")}` : `TAM from ${tam.citation?.name ?? "a cited source"}`,
     note: usd >= MARKET.tamCapUsd ? "Capped: $1B or more scores 100." : undefined,
     sample,
   };
+}
+
+export function legalAxis(report) {
+  const legal = report.legal;
+  const sample = isSample(report, "legal");
+  const markets = report.input?.markets ?? [];
+  const search = report.search?.legal;
+  const js = legal?.jurisdictions ?? [];
+  // Distinct rules across markets; a rule counts when ≥ 2 independent sources name it.
+  const keys = new Map();
+  for (const j of js) for (const r of j.requirements || []) {
+    const k = String(r.rule).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const n = Number(r.independent_sources ?? (r.sources?.length ?? 1));
+    keys.set(k, Math.max(keys.get(k) ?? 0, n));
+  }
+  const counted = [...keys.values()].filter(n => n >= 2).length;
+  const single = [...keys.values()].filter(n => n < 2).length;
+  const read = search?.sources_checked ?? js.reduce((s, j) => s + (j.sources_checked ?? 0), 0);
+  const inputs = { markets: js.map(j => j.jurisdiction), rules_corroborated: counted, rules_one_source: single, sources_checked: read };
+  const boundary = js.length ? `${plural(js.length, "target market")} searched, ${plural(read, "source")} read` : "No legal search ran";
+  if (!legal || !js.length) {
+    return { value: null, inputs, boundary, sample, reason: markets.length ? "No legal search ran for the target markets." : "No target market was picked, so no legal search ran." };
+  }
+  if (!sample && read === 0) return { value: null, inputs, boundary, sample, reason: "The legal search found no pages to read." };
+  let v = LEGAL.start - LEGAL.perRule * Math.min(counted, LEGAL.maxRulesCounted);
+  let note;
+  if (counted === 0) {
+    v = Math.min(v, LEGAL.noneFoundCap);
+    note = `No rule named by 2 independent sources in ${plural(read, "source")} read (capped at ${LEGAL.noneFoundCap}: not finding one is not proof there is none).`;
+  }
+  return { value: clamp(v), inputs, boundary, note, sample };
 }
 
 export function evidenceAxis(report) {
@@ -124,7 +160,7 @@ export function overlapBand(report) {
 export function scoreReport(report) {
   const axes = {
     novelty: noveltyAxis(report), market: marketAxis(report), defensibility: defensibilityAxis(report),
-    graveyard: graveyardAxis(report), evidence: evidenceAxis(report), big_tech: bigTechAxis(report),
+    graveyard: graveyardAxis(report), evidence: evidenceAxis(report), legal: legalAxis(report), big_tech: bigTechAxis(report),
   };
   const counted = AXES.filter(a => a !== "big_tech" || BIG_TECH_IN_SCORE);
   const excluded = [];

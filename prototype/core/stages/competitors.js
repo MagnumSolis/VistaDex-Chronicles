@@ -5,7 +5,8 @@
 // the model) assigns the URL. Returns null when no search could run (no retrieval or no reader), so
 // "nothing found" is never reported when nothing was looked at.
 
-import { parseWrapped, NoProviderAvailable } from "../providers/llm.js";
+import { NoProviderAvailable } from "../providers/llm.js";
+import { completeWrapped } from "./market.js";
 import { isVerbatim, namedIn } from "../quotes.js";
 import { PAGE_CHARS, gatherEvidence } from "./classify.js";
 
@@ -41,14 +42,11 @@ export async function findCompetitors({ ideaText, input, novelPages = [] }, { ll
 
   let raw;
   try {
-    const { content } = await llm.complete("classify", {
-      json: true,
-      messages: [
-        { role: "system", content: PROMPT },
-        { role: "user", content: `Idea: ${ideaText.slice(0, 1200)}\n\n${pages.map((p, k) => `[${k + 1}] ${p.url}\n${p.title || ""}\n${p.text.slice(0, PAGE_CHARS)}`).join("\n\n")}` },
-      ],
-    });
-    raw = parseWrapped(content, "competitors");
+    // One retry when the reply is not the expected object (a live run lost its competitors to this once).
+    raw = await completeWrapped(llm, [
+      { role: "system", content: PROMPT },
+      { role: "user", content: `Idea: ${ideaText.slice(0, 1200)}\n\n${pages.map((p, k) => `[${k + 1}] ${p.url}\n${p.title || ""}\n${p.text.slice(0, PAGE_CHARS)}`).join("\n\n")}` },
+    ], "competitors");
   } catch (err) {
     if (!(err instanceof NoProviderAvailable)) throw err;
     trace.log("competitors", { router: "skipped", reason: "reader unavailable" });

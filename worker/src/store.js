@@ -4,10 +4,34 @@
 //   saveTrace(traceId, mode, trace, now)
 //   deleteSession(sessionId, now)           → { events, traces }
 //   exportEvents() / exportTraces()         → rows
+//   getCached(key) / putCached(key, row) / listCached(n) / setFrozen(key, frozen)   report cache (P0-7)
 //   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
 
 export function d1Store(db) {
+  // The cache table is created on first use, so no manual migration is needed on the production database.
+  let cacheReady = null;
+  const cache = () => (cacheReady ??= db.prepare("CREATE TABLE IF NOT EXISTS report_cache (key TEXT PRIMARY KEY, title TEXT, created_at TEXT NOT NULL, frozen INTEGER NOT NULL DEFAULT 0, trace_id TEXT, report TEXT NOT NULL)").run());
   return {
+    async getCached(key) {
+      await cache();
+      return await db.prepare("SELECT key, title, created_at, frozen, trace_id, report FROM report_cache WHERE key = ?").bind(key).first();
+    },
+    async putCached(key, row) {
+      await cache();
+      // A frozen entry is never overwritten.
+      await db.prepare("INSERT INTO report_cache (key, title, created_at, frozen, trace_id, report) VALUES (?, ?, ?, 0, ?, ?) ON CONFLICT(key) DO UPDATE SET title = excluded.title, created_at = excluded.created_at, trace_id = excluded.trace_id, report = excluded.report WHERE report_cache.frozen = 0")
+        .bind(key, row.title, row.created_at, row.trace_id, row.report).run();
+    },
+    async listCached(n) {
+      await cache();
+      const { results } = await db.prepare("SELECT key, title, created_at, frozen, trace_id FROM report_cache ORDER BY frozen DESC, created_at DESC LIMIT ?").bind(n).all();
+      return results.map(r => ({ ...r, frozen: Boolean(r.frozen) }));
+    },
+    async setFrozen(key, frozen) {
+      await cache();
+      const r = await db.prepare("UPDATE report_cache SET frozen = ? WHERE key = ?").bind(frozen ? 1 : 0, key).run();
+      return (r.meta?.changes || 0) > 0;
+    },
     async isWithdrawn(id) {
       return Boolean(await db.prepare("SELECT 1 FROM withdrawals WHERE session_id = ?").bind(id).first());
     },
@@ -56,12 +80,17 @@ export function d1Store(db) {
 }
 
 export function memoryStore() {
+  const cached = new Map();
   const events = new Map(); // `${id}:${seq}` → row
   const traces = new Map();
   const withdrawn = new Set();
   const daily = new Map();
   return {
     _events: events, _traces: traces,
+    async getCached(key) { return cached.get(key) || null; },
+    async putCached(key, row) { if (!cached.get(key)?.frozen) cached.set(key, { key, frozen: false, ...row }); },
+    async listCached(n) { return [...cached.values()].sort((a, b) => b.frozen - a.frozen || b.created_at.localeCompare(a.created_at)).slice(0, n).map(({ report, ...r }) => r); },
+    async setFrozen(key, frozen) { const r = cached.get(key); if (!r) return false; r.frozen = frozen; return true; },
     async isWithdrawn(id) { return withdrawn.has(id); },
     async saveEvents(id, list, now) {
       let n = 0;

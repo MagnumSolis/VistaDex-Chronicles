@@ -22,6 +22,9 @@ import { searchLegal } from "./stages/legal.js";
 // deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode, samples }
 //   samples: mock-mode placeholders (prototype/data/samples.js) — passed by the browser mock path only.
 const stripSearch = ({ search, ...rest }) => rest;
+// Bump when the pipeline's output for the same input would change (prompts, rules, stages): cached reports
+// from an older version are not reused (worker/src/index.js cacheKey).
+export const PIPELINE_VERSION = "2026-11-12a";
 
 export async function runScreen(ideaOrInput, deps = {}) {
   const input = typeof ideaOrInput === "string" ? null : normalizeInput(ideaOrInput);

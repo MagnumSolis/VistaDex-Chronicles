@@ -88,6 +88,8 @@ export interface Report {
   overlap_band?: OverlapBand;
   scores?: Scores;
   sample_fields?: SampleField[];
+  /** When the server gathered the evidence (a cached or frozen report keeps its own time). */
+  generated_at?: string;
 }
 
 export interface SearchBoundary { queries: string[]; sources_checked: number }

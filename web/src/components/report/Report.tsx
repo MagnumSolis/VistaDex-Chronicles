@@ -99,7 +99,7 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
               )}
             </div>
             <dl className="grid gap-x-4 gap-y-1 text-sm">
-              <div><dt className="sr-only">Date</dt><dd>{entry.checkedOn ? `Sources checked ${checkedLabel(entry.checkedOn)}` : dateLabel(entry.createdAt)}</dd></div>
+              <div><dt className="sr-only">Date</dt><dd>{entry.checkedOn ? `Sources checked ${checkedLabel(entry.checkedOn)}` : report.generated_at ? `Evidence gathered ${dateLabel(new Date(report.generated_at))}` : dateLabel(entry.createdAt)}</dd></div>
               <div><dt className="sr-only">Mode</dt><dd className="text-muted-foreground">{MODE_LABEL[entry.mode]}</dd></div>
               {entry.markets.length > 0 && <div><dt className="sr-only">Target markets</dt><dd className="text-muted-foreground">Markets: {entry.markets.join(", ")}</dd></div>}
             </dl>

@@ -109,7 +109,9 @@ test("daily cap → 429 'study is paused for today'; resets the next UTC day", a
   const store = memoryStore();
   let clock = "2026-10-20T09:00:00.000Z";
   const env = { ...LOCKED, SCREEN_DAILY_CAP: "2" };
-  const run = () => screen(env, store, { "X-VistaDex-Access": CODE }, { handle: { now: () => clock } });
+  // A different idea each time: the same idea would be served from the report cache without using the cap.
+  let n = 0;
+  const run = () => handle(req("POST", "/screen", { body: { idea_text: "The legal-tech market is worth " + (27 + ++n) + " billion dollars globally." }, headers: { "X-VistaDex-Access": CODE } }), env, { store, now: () => clock });
   assert.equal((await run()).status, 200);
   assert.equal((await run()).status, 200);
   const paused = await run();

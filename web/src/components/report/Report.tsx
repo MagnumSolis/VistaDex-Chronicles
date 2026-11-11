@@ -46,7 +46,10 @@ export function Report({ entry }: { entry: ReportEntry }) {
     document.getElementById(`section-${id}-title`)?.focus({ preventScroll: true });
   };
   const another = () => { clearDraft(); navigate(PATHS.screen); };
-  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: report.graveyard_matches.length + (report.competitors?.length ?? 0), objections: report.objections.length };
+  // "Leads to check" = products already doing something similar + startups that shut down (same count everywhere).
+  const productCount = report.competitors?.length ?? 0;
+  const leadCount = report.graveyard_matches.length + productCount;
+  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: leadCount, objections: report.objections.length };
 
   return (
     <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8 print:block">
@@ -120,7 +123,8 @@ export function Report({ entry }: { entry: ReportEntry }) {
           </dl>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             <span className="font-mono text-foreground">{sources}</span> independent source{sources === 1 ? "" : "s"} across {report.claims.length} claim{report.claims.length === 1 ? "" : "s"}.
-            A status needs at least two. Also in this report: <span className="font-mono text-foreground">{report.graveyard_matches.length}</span> lead{report.graveyard_matches.length === 1 ? "" : "s"} to check
+            A status needs at least two. Also in this report: <span className="font-mono text-foreground">{leadCount}</span> lead{leadCount === 1 ? "" : "s"} to check
+            ({productCount} similar product{productCount === 1 ? "" : "s"}, {report.graveyard_matches.length} shut-down startup{report.graveyard_matches.length === 1 ? "" : "s"})
             and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
           <Actions onAnother={another} />
@@ -142,7 +146,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
           )}
         </ReportSection>
 
-        <ReportSection id="graveyard" title="Leads to check" count={report.graveyard_matches.length + (report.competitors?.length ?? 0)} runId={runId}
+        <ReportSection id="graveyard" title="Leads to check" count={leadCount} runId={runId}
           intro="Products already doing something similar, and startups that shut down after trying it. A resemblance is a lead to verify, not a verdict.">
           <Competitors report={report} />
           <h3 className="mb-3 font-display text-[1.375rem] leading-tight">Startups that shut down</h3>

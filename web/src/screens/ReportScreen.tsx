@@ -10,12 +10,16 @@ import { features } from "@/edition";
 import { findEntry, latestSessionReport, useSessionReports } from "@/lib/reports";
 import { navigate, PATHS } from "@/router";
 import { conditionDone, currentParticipant, markConditionDone } from "@/study/participant";
+import { logConditionEnded } from "@/study/studyEvents";
+import { sourceClicksIn } from "@/telemetry";
 
-// Study track: the ratings under a VistaDex report finish the VistaDex condition. A participant who has
-// not done the AI chatbot part yet goes on to it (as the chatbot part hands over to VistaDex).
-function finishVistaDexCondition() {
+// Study track: the ratings under a VistaDex report finish the VistaDex condition (logged with the evidence
+// links opened in that report). A participant who has not done the AI chatbot part yet goes on to it (as
+// the chatbot part hands over to VistaDex).
+function finishVistaDexCondition(runId: string) {
   const p = currentParticipant();
   if (!p || p.track !== "study" || conditionDone(p, "vistadex")) return;
+  logConditionEnded("vistadex", runId, sourceClicksIn(runId));
   markConditionDone("vistadex");
   if (!conditionDone(p, "baseline")) navigate(PATHS.baseline);
 }

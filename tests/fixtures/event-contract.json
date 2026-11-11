@@ -149,6 +149,7 @@
       "effort",
       "helpfulness",
       "open_text",
+      "sources_checked",
       "trust",
       "usefulness"
     ],
@@ -176,6 +177,7 @@
       "helpfulness",
       "open_text",
       "run_id",
+      "sources_checked",
       "trust",
       "usefulness"
     ],
@@ -407,6 +409,18 @@
       "system_failure",
       "not_sure",
       "other"
+    ],
+    "condition_survey.sources_checked": [
+      "0",
+      "1-2",
+      "3+",
+      null
+    ],
+    "run_scoped_survey.sources_checked": [
+      "0",
+      "1-2",
+      "3+",
+      null
     ]
   },
   "controls": [
@@ -509,6 +523,7 @@
     "study_start",
     "study_continue_field",
     "baseline_conf_pre",
+    "baseline_start",
     "baseline_tool_field",
     "baseline_conf_post",
     "baseline_continue",

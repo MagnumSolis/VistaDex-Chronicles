@@ -203,9 +203,15 @@ function stopSection(key: string) {
 export function claimExpanded(runId: string | null, claimIndex: number, expanded: boolean) {
   if (runId && runId === report_?.id) track("claim_expanded", { run_id: runId, claim_index: claimIndex, expanded });
 }
+const clicksByRun = new Map<string, number>();
 export function sourceClicked(runId: string | null, claimIndex: number, url: string) {
-  if (runId && runId === report_?.id) track("source_clicked", { run_id: runId, claim_index: claimIndex, url });
+  if (runId && runId === report_?.id) {
+    track("source_clicked", { run_id: runId, claim_index: claimIndex, url });
+    clicksByRun.set(runId, (clicksByRun.get(runId) ?? 0) + 1);
+  }
 }
+/** Evidence links opened in a run's report in this page load (condition_ended.verified_sources). */
+export const sourceClicksIn = (runId: string) => clicksByRun.get(runId) ?? 0;
 
 // ── walkthrough ──
 let stepClock: { step: string; since: number | null; ms: number } | null = null;

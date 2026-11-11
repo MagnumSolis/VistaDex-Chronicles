@@ -14,6 +14,7 @@ import { clearRunError, errorCopy, reportPath, startRun, useRun } from "@/lib/ru
 import { features } from "@/edition";
 import { Slider } from "@/components/ui/slider";
 import { assignedStudyIdea } from "@/study/participant";
+import { logConditionStarted } from "@/study/studyEvents";
 import { JURISDICTIONS, type IdeaInput, type Jurisdiction, type Role } from "@/types";
 
 type TextField = "title" | "pitch" | "problem" | "solution" | "moat";
@@ -88,6 +89,8 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
     const sample = draft.sample && same(sampleInput(draft.sample), current) ? draft.sample : null;
     // Only where the slider is shown; untouched = its starting 50, moved: false.
     const pre = features.telemetry && !preview ? { value: confPre ?? 50, moved: confPre !== null } : null;
+    // Study track: running the assigned idea starts the VistaDex condition (second if the chatbot part is done).
+    if (assigned) logConditionStarted("vistadex", assigned.key, assigned.baselineDone ? 2 : 1);
     void startRun({ input: current, sample, confPre: pre });
   }
 

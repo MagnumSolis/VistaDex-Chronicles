@@ -17,6 +17,7 @@ async function openBaseline() {
   return screen.findByRole("heading", { level: 1 });
 }
 const rateAndSubmit = (name: RegExp) => {
+  fireEvent.click(screen.getByRole("button", { name: /Next: ask the chatbot/ }));
   fireEvent.click(screen.getByRole("button", { name: /I've read the AI's answer/ }));
   fireEvent.click(screen.getByRole("button", { name }));
 };

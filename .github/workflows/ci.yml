@@ -1,0 +1,33 @@
+# .github/workflows/ci.yml — every pull request and every push to main runs the checks a merge needs.
+name: ci
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install web and backend dependencies
+        run: npm ci --prefix web && npm ci --prefix backend
+      - name: Node tests (pipeline, proxy, telemetry, analysis)
+        run: npm test
+      - name: Graveyard fleet smoke (key-free)
+        run: npm --prefix backend run smoke
+      - name: Web typecheck
+        run: npm --prefix web run typecheck
+      - name: Web tests
+        run: npm run test:web
+      - name: Build
+        run: npm run build

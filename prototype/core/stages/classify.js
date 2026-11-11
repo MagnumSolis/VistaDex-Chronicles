@@ -11,11 +11,18 @@ import { isVerbatim } from "../quotes.js";
 export const SOURCES_PER_CLAIM = 5;
 export const PAGE_CHARS = 2500;
 
-const JUDGE_PROMPT = `You check one factual claim against numbered web sources.
+export const JUDGE_PROMPT = `You check one factual claim against numbered web sources.
 For EACH source decide its stance toward the claim:
 - "supports": the source states something that makes the claim true
-- "contradicts": the source states something that makes the claim false (e.g. names an existing product when the claim says none exists)
+- "contradicts": the source states something that makes the claim false
 - "irrelevant": anything else, including when you are unsure
+Read the claim's exact wording:
+- If the claim says something does not exist, or that nobody offers it, a source that names a product or company
+  offering it contradicts the claim. Such a source never supports it, however closely it matches the topic.
+- If the claim has a number or a threshold ("more than 3 hours", "under $100"), the source supports it only if its own
+  number meets that threshold. A number that does not ("one to three hours", "$150") contradicts it.
+- A general point on the same topic does not support a specific claim: "integration is hard" does not show that
+  "large vendors are prevented from competing". Mark it irrelevant.
 Quote the exact sentence from the source that justifies a supports/contradicts stance.
 Do not use outside knowledge. Do not judge the claim overall.
 Return a JSON object: {"judgments": [{"source": 1, "stance": "supports|contradicts|irrelevant", "quote": "..."}]}. Never return a bare array.`;
@@ -64,12 +71,19 @@ async function judge(claim, index, pages, { llm, trace }) {
   }
 
   const kept = [];
+  const nonExistence = isNonExistenceClaim(claim.claim);
   for (const j of judgments) {
     const page = pages[Number(j?.source) - 1];
     const stance = STANCES.includes(j?.stance) ? j.stance : null;
     const quote = String(j?.quote ?? "").trim();
     const verbatim = Boolean(page) && isVerbatim(page.text, quote);
     trace.log("judgment", { claim_index: index, source: page?.url ?? null, stance, quote_verified: Boolean(verbatim) });
+    // "Nothing like this exists" can only be supported by a sentence that states an absence; a page that
+    // lists products on the topic is not support (a live report confirmed such a claim with price lists).
+    if (page && stance === "supports" && verbatim && nonExistence && !statesAbsence(quote)) {
+      trace.log("judgment_dropped", { claim_index: index, source: page.url, reason: "support without an absence" });
+      continue;
+    }
     if (page && stance && stance !== "irrelevant" && verbatim) kept.push({ url: page.url, stance, quote });
   }
 
@@ -86,6 +100,13 @@ async function judge(claim, index, pages, { llm, trace }) {
   }
   return { ...claim, status: result.status, reasoning: explain(result, kept), source_urls: result.source_urls, evidence };
 }
+
+// A claim that something does not exist / nobody offers it.
+const NON_EXISTENCE = /\b(no (one|body)|nobody|none|no\b[^.]{0,80}\b(exists?|available|offers?|on the market|does this|provides?)|(does not|doesn't|do not|don't) (yet )?exist|there (is|are) no)\b/i;
+export const isNonExistenceClaim = text => NON_EXISTENCE.test(String(text));
+// A sentence that states an absence or a gap.
+const ABSENCE = /\b(no|not|none|nobody|never|lacks?|lacking|absence|absent|without|missing|gap|unavailable|unmet|few|rarely|only)\b|n't\b/i;
+export const statesAbsence = text => ABSENCE.test(String(text));
 
 export async function gatherEvidence(claim, index, { retrieval, trace }) {
   let hits = [];

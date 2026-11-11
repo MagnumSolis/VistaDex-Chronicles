@@ -17,6 +17,8 @@ const RULES = [
   { type: "novelty", w: 2, re: /\bno (such |other |existing |current |direct |comparable )?(tool|product|app|company|startup|platform|solution|service|competitor|one)s?\b/i, why: "nothing-exists claim" },
   { type: "novelty", w: 2, re: /\b(nobody|no one|none of|none)\b/i, why: "nobody/none" },
   { type: "novelty", w: 2, re: /\b(does not|doesn't|do not|don't) (yet )?exist\b/i, why: "does not exist" },
+  // "No HIPAA-compliant AI medical scribe exists at under $100/month": whatever the thing is called.
+  { type: "novelty", w: 4, re: /\bno\b[^.]{0,80}\b(exists?|is available|are available|is on the market|are on the market)\b/i, why: "no X exists" },
   { type: "novelty", w: 1, re: /\b(currently exists?|first|only|unique|unlike|novel|unprecedented|never been)\b/i, why: "uniqueness word" },
 
   // defensibility — moats and barriers

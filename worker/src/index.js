@@ -96,6 +96,7 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
 
   // Global daily cap, counted after validation so malformed requests don't use it up.
   const cap = Number(env.SCREEN_DAILY_CAP || 0);
+  let slotDay = null;
   if (cap > 0) {
     const stamp = now();
     const { allowed } = await store.takeDailyScreen(stamp.slice(0, 10), cap);
@@ -103,7 +104,18 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
       return json({ error: "daily_cap", message: "The study is paused for today. Please try again tomorrow." }, 429,
         { ...cors, "Retry-After": String(secondsUntilUtcMidnight(stamp)) });
     }
+    slotDay = stamp.slice(0, 10);
   }
+  try {
+    return await runAndStore(idea, env, { store, fetchImpl, now, cors });
+  } catch (err) {
+    // A run that failed gives its daily-cap slot back, so errors never eat the day's budget.
+    if (slotDay) await store.releaseDailyScreen(slotDay).catch(() => {});
+    throw err;
+  }
+}
+
+async function runAndStore(idea, env, { store, fetchImpl, now, cors }) {
 
   // One call budget per run, shared by every provider (prototype/core/providers/http.js).
   const budget = createBudget(Number(env.CALL_BUDGET) || undefined);

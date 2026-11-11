@@ -129,3 +129,19 @@ test("malformed requests do not use up the daily cap", async () => {
   assert.equal(bad.status, 400);
   assert.equal((await screen(env, store, { "X-VistaDex-Access": CODE })).status, 200);
 });
+
+test("a screening that fails gives its daily-cap slot back", async () => {
+  const store = memoryStore();
+  const env = { ...LOCKED, SCREEN_DAILY_CAP: "1" };
+  const broken = { saveTrace: async () => { throw new Error("storage down"); } };
+  const failing = await handle(req("POST", "/screen", { body: { idea_text: "The legal-tech market is worth $27B globally." }, headers: { "X-VistaDex-Access": CODE } }), env, { store: { ...store, ...broken } });
+  assert.equal(failing.status, 500);
+  assert.equal((await screen(env, store, { "X-VistaDex-Access": CODE })).status, 200, "the failed run did not use the only slot");
+});
+
+test("wrangler.toml limits one visitor to a few screenings a minute", async () => {
+  const { readFileSync } = await import("node:fs");
+  const toml = readFileSync(new URL("../worker/wrangler.toml", import.meta.url), "utf8");
+  const limit = Number(/name = "SCREEN_LIMITER"[^[]*limit = (\d+)/.exec(toml)[1]);
+  assert.ok(limit <= 5, `SCREEN_LIMITER allows ${limit} a minute`);
+});

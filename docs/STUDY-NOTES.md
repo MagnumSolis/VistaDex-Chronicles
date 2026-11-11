@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-4 (seq unique across tabs, assigned idea filled in: CURRENT)
+## study_version 2026-11-study-5 (study flow: both parts reachable and finished: CURRENT)
+
+Same events, payload keys and control ids as 2026-11-study-4. Bumped because the visitor-facing study flow changed (decision: 2026-11-11, found by testing the live study-4 site the day data window 2 opens).
+
+- **The VistaDex condition is now finished by its ratings.** Until study-4 nothing ever marked it done. Participants who started with VistaDex (even codes) could not reach the AI chatbot part: after the report there was no way on, and the gate kept sending them back to Screen an idea. Participants who did the chatbot first completed both parts but were never recorded as finished in the browser. Now "Submit" under a VistaDex report marks the condition done for a study-track participant and, if the chatbot part is still to do, goes on to it. Field-track ratings leave study progress alone.
+- **The AI chatbot part follows the participant's order.** It said "Your first task" and "also your idea for VistaDex later" to everyone, and always sent the participant to VistaDex afterwards. Done second, it now says "Your second task", the button reads "Submit and finish", and the page ends with "You've finished both parts". Panel tabs read "Part 1" / "Part 2".
+- **The assigned idea replaces a draft typed before registering.** In study-4 the form was filled in only when empty, so a visitor who used the form and then registered in the same page load kept the old text under a note saying the assigned idea was filled in. Edits made after it is filled in are kept; when the form no longer matches the assigned idea the note says so.
+- **No Tailwind green or red outside the status palette**: the ratings "Thank you" line, the graveyard quiz's right and wrong answers and the study registration error are ink.
+- **Analysis.** In study-4 data (live from 2026-11-11), even-code participants have no baseline condition events unless they typed the address themselves; their VistaDex data is usable. Field-track data is unaffected.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-4 (seq unique across tabs, assigned idea filled in)
 
 Same events and payload keys as 2026-10-study-3; `run_started.sample` gains four values. Bumped because what `seq` means changed and the study-track VistaDex form changed, so data from before and after can be told apart (decision: 2026-11-09, before data window 2 opens on 2026-11-11).
 

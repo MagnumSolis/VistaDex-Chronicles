@@ -64,7 +64,7 @@ participants joined with confidence deltas, agreeableness rates, verification
 counts, survey scores, funnel, session purge, CSV/JSON export.
 
 Telemetry contract: `tests/fixtures/event-contract.json` (study_version
-`2026-11-study-4`). No idea text, no report content, no PII in events; traces
+`2026-11-study-5`). No idea text, no report content, no PII in events; traces
 hold pipeline detail and are deleted on session withdraw.
 
 ## Pipeline
@@ -173,7 +173,7 @@ docs/BACKEND-HANDOFF.md     endpoints, contract, mock vs live, telemetry, secret
 - Batched uploads to `/events` (at most one request per 10 s, 200 events each). Visitors can delete their session (local + server, including linked traces). Feedback is sent under a separate random id.
 - The pitch edition sends **zero** events (`telemetry.js` is disabled at startup); tests and `npm run parity` check this.
 - Links carry a shared access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen` — see `docs/DEPLOY.md` §3b.
-- Every event carries `study_version` (`2026-11-study-4`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
+- Every event carries `study_version` (`2026-11-study-5`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
 
 ---
 

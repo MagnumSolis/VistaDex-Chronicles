@@ -42,7 +42,7 @@ export interface LegalFact { kind: "patent" | "trademark" | "approval" | "licenc
 /** (b) A rule that may apply, naming the rule and where it comes from. Never "allowed / not allowed". */
 export interface LegalRequirement { rule: string; summary: string; source: Link; sources?: (Link & { quote: string })[]; independent_sources?: number; corroborated?: boolean }
 export interface LegalJurisdiction { jurisdiction: Jurisdiction; facts: LegalFact[]; requirements: LegalRequirement[]; sources_checked?: number }
-export interface Legal { jurisdictions: LegalJurisdiction[] }
+export interface Legal { jurisdictions: LegalJurisdiction[]; not_searched?: Jurisdiction[] }
 
 // ── Market: TAM from figures quoted by independent sources (median); SAM/SOM need the founder's assumptions ──
 export interface MarketQuote { value: string; value_usd: number | null; market: string; year: number | null; citation: Link | null; quote: string }

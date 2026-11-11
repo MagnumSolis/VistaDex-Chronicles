@@ -65,7 +65,8 @@ The report contract (`prototype/core/contract.js`, shape at lines 1–17, checks
     "evidence": [{ "url": "…", "stance": "supports|contradicts", "quote": "…" }]   // optional
   }],
   "graveyard_matches": [{ "company_name": "…", "what_they_tried": "…", "cause_of_death": "…",
-                          "year_closed": 2020 | null, "similarity": 0.0–1.0 }],   // required; similarity 0–1, not 0–100
+                          "year_closed": 2020 | null, "similarity": 0.0–1.0,
+                          "source_urls": ["…"] }],   // required; similarity 0–1, not 0–100; source_urls optional (closure pages, live graveyard only)
   "objections": [{ "objection": "…", "severity": "high|medium|low" }],            // required
 
   // optional (round 2); absent = "not available", never guessed

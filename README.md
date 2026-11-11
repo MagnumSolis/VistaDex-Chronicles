@@ -121,7 +121,8 @@ If a provider errors or rate-limits, the next one is tried; every call, fallback
   ],
   "graveyard_matches": [
     { "company_name": "...", "what_they_tried": "...",
-      "cause_of_death": "...", "year_closed": 2020, "similarity": 0.87 }
+      "cause_of_death": "...", "year_closed": 2020, "similarity": 0.87,
+      "source_urls": ["https://..."] }
   ],
   "objections": [
     { "objection": "...", "severity": "high|medium|low" }

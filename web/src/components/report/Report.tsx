@@ -146,7 +146,7 @@ export function Report({ entry }: { entry: ReportEntry }) {
           intro="Products already doing something similar, and startups that shut down after trying it. A resemblance is a lead to verify, not a verdict.">
           <Competitors report={report} />
           <h3 className="mb-3 font-display text-[1.375rem] leading-tight">Startups that shut down</h3>
-          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} checks={entry.leadChecks} />
+          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} checks={entry.leadChecks} entriesChecked={report.search?.graveyard?.entries_checked} />
         </ReportSection>
 
         <ReportSection id="objections" title="Objections" count={report.objections.length} runId={runId}

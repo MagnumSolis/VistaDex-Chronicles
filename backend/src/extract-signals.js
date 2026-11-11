@@ -6,10 +6,13 @@
 // (sources.js). New companies land as "candidate" citing the page; a company already
 // in staging gains the page as a source. Nothing is confirmed here: the Death
 // Watcher confirms only with 2 good sources.
+// Signals are taken oldest first. Before any fetch or LLM call, a signal whose title
+// and snippet put no proper noun next to a shutdown phrase is skipped
+// (leadSkipReason, sources.js), so `limit` LLM calls go to pages likely to name one.
 
 import { createLLM, routesFromEnv, parseWrapped } from "../../prototype/core/providers/llm.js";
 import { newGraveyardEntry, validateEntry, validateExtraction, companyKey, registrableDomain } from "./schemas.js";
-import { sourceBlockReason, checkSourceText } from "./sources.js";
+import { sourceBlockReason, checkSourceText, leadSkipReason } from "./sources.js";
 
 const PAGE_CHARS = 8000; // ~2k tokens: keeps each call inside free-tier per-minute limits
 const MAX_PER_PAGE = 8;
@@ -64,16 +67,22 @@ export function parseExtraction(content, pageText, url) {
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export async function runSignalExtraction({ signals, staging, tf, llm, limit = 10, delayMs = 0 }) {
+export async function runSignalExtraction({ signals, staging, tf, llm, limit = 10, delayMs = 0, budgetMs = Infinity, now = Date.now }) {
   if (!llm?.available("extract")) return { skipped: "no-llm" };
-  const counts = { signals: 0, created: 0, added_source: 0, rejected: 0, blocked: 0, fetch_failed: 0 };
-  const todo = await signals.find({ extraction_status: { $exists: false } }).sort({ first_seen: 1, _id: 1 }).limit(limit).toArray();
+  const counts = { signals: 0, created: 0, added_source: 0, rejected: 0, blocked: 0, prefiltered: 0, fetch_failed: 0, stopped: null };
+  const started = now();
   const mark = (s, status, extra = {}) => signals.updateOne({ _id: s._id }, { $set: { extraction_status: status, extracted_at: new Date(), ...extra } });
 
+  // Oldest first; blocked and pre-filtered signals are settled here and do not use up `limit`.
+  const todo = await signals.find({ extraction_status: { $exists: false } }).sort({ first_seen: 1, _id: 1 }).limit(Math.max(limit * 20, 200)).toArray();
   const open = [];
   for (const s of todo) {
+    if (open.length >= limit) break;
     const blocked = sourceBlockReason(s.url);
-    if (blocked) { counts.blocked++; await mark(s, `blocked:${blocked}`); } else open.push(s);
+    if (blocked) { counts.blocked++; await mark(s, `blocked:${blocked}`); continue; }
+    const skip = leadSkipReason(s.signal_title, s.snippet);
+    if (skip) { counts.prefiltered++; await mark(s, `skipped:${skip}`); continue; }
+    open.push(s);
   }
   for (let i = 0; i < open.length; i += 10) {
     const batch = open.slice(i, i + 10);
@@ -81,6 +90,11 @@ export async function runSignalExtraction({ signals, staging, tf, llm, limit = 1
     for (const s of batch) {
       const text = pages[s.url]?.content;
       if (!text || pages[s.url].error) { counts.fetch_failed++; await mark(s, "fetch-failed"); continue; }
+      if (now() - started > budgetMs) {
+        counts.stopped = "time-budget";
+        console.log(`  [extractor] time budget used; ${open.length - counts.signals - counts.fetch_failed} signal(s) wait for the next run`);
+        return counts;
+      }
       let content;
       try {
         ({ content } = await llm.complete("extract", {
@@ -89,6 +103,7 @@ export async function runSignalExtraction({ signals, staging, tf, llm, limit = 1
         }));
       } catch (e) {
         console.error(`  [extractor] LLM unavailable (${e.message.slice(0, 120)}); stopping, signals retried next run`);
+        counts.stopped = "llm-unavailable";
         return counts;
       }
       counts.signals++;

@@ -4,11 +4,12 @@
 
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
-import { sourceBlockReason, checkSourceText } from "./sources.js";
-import { verifyEntry, pickQueries, DISCOVERY_QUERIES } from "./fleet.js";
+import { sourceBlockReason, checkSourceText, leadSkipReason, shutdownLeads } from "./sources.js";
+import { runFleet, verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
 import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
 import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
+import { mergeRun, formatReport, runId, KEEP_RUNS } from "./fleet-metrics.js";
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.error(`✗ ${name}`); } };
@@ -153,22 +154,49 @@ check("malformed LLM output -> nothing", parseExtraction("not json", page, "http
 
 const memColl = (docs = []) => ({ docs,
   find(q) { const m = docs.filter(d => Object.entries(q).every(([k, v]) => (v && v.$exists === false) ? !(k in d) : d[k] === v));
-    return { sort() { return this; }, limit(n) { return { toArray: async () => m.slice(0, n) }; } }; },
+    return { sort(spec) { const ks = Object.entries(spec); m.sort((a, b) => { for (const [k, dir] of ks) { if (a[k] < b[k]) return -dir; if (a[k] > b[k]) return dir; } return 0; }); return this; },
+      limit(n) { return { toArray: async () => m.slice(0, n) }; } }; },
   async findOne(q) { const key = q.$or?.[0].company_key; return docs.find(d => d.company_key === key) || null; },
   async insertOne(d) { docs.push(d); },
   async updateOne(q, u) { const d = docs.find(x => (q._id !== undefined ? x._id === q._id : x.url === q.url)); if (!d) return; Object.assign(d, u.$set || {}); for (const [k, v] of Object.entries(u.$push || {})) (d[k] ||= []).push(v); },
 });
-const sig = memColl([{ _id: 1, url: "https://techcrunch.com/x" }, { _id: 2, url: "https://www.reddit.com/r/x" }]);
+const sig = memColl([{ _id: 1, url: "https://techcrunch.com/x", signal_title: "Vreal shuts down" }, { _id: 2, url: "https://www.reddit.com/r/x", signal_title: "Vreal shuts down" }]);
 const stg = memColl([{ _id: 9, company_name: "Zoomo", company_key: "zoomo", death_status: "candidate", source_urls: ["https://www.loot-drop.io/startup/1-zoomo"] }]);
 const fakeLLM = { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [item] }) }) };
 const res = await runSignalExtraction({ signals: sig, staging: stg, tf: fakeTf({ "https://techcrunch.com/x": page }), llm: fakeLLM, limit: 5 });
 check("signal page -> one new candidate", res.created === 1 && stg.docs.some(d => d.company_name === "Vreal" && d.death_status === "candidate"));
 check("forum signal skipped without an LLM call", sig.docs.find(d => d._id === 2).extraction_status === "blocked:forum");
 check("processed signal is marked done", sig.docs.find(d => d._id === 1).extraction_status === "done");
-const sig2 = memColl([{ _id: 3, url: "https://variety.com/y" }]);
+const sig2 = memColl([{ _id: 3, url: "https://variety.com/y", signal_title: "Zoomo is shutting down" }]);
 await runSignalExtraction({ signals: sig2, staging: stg, tf: fakeTf({ "https://variety.com/y": page.replace("Vreal", "Zoomo").replace("Vreal", "Zoomo") }), llm: { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [{ ...item, company_name: "Zoomo", evidence_quote: item.evidence_quote.replace("Vreal", "Zoomo") }] }) }) }, limit: 5 });
 const zoomo = stg.docs.find(d => d.company_name === "Zoomo");
 check("known company: page added as a source, no duplicate", stg.docs.filter(d => d.company_key === "zoomo").length === 1 && zoomo.source_urls.includes("https://variety.com/y"));
+// Pre-filter: hits whose title/snippet name no company next to a shutdown phrase skip the fetch and the LLM.
+const hits = JSON.parse(readFileSync(new URL("../fixtures/discovery-hits.json", import.meta.url), "utf8")).hits;
+const wrong = hits.filter(h => (leadSkipReason(h.title, h.snippet) === null) !== (h.expect === "lead"));
+check(`pre-filter labels the fixture hits (${hits.length}); wrong: ${wrong.map(h => h.title).join(" / ")}`, wrong.length === 0);
+check("the 2026-11-11 run's advice pages would all have been skipped", hits.filter(h => h.from === "2026-11-11 run").every(h => leadSkipReason(h.title, h.snippet)));
+check("names come from the words next to the phrase", JSON.stringify(shutdownLeads("Exclusive: Synapse, the banking-as-a-service startup, files for bankruptcy")) === '["Synapse"]');
+check("a capitalised common word or state code is not a name", shutdownLeads("But in the startup world, CA founders shut down.").length === 0);
+let llmCalls = 0;
+const countingLLM = { available: () => true, complete: async () => { llmCalls++; return { content: JSON.stringify({ startups: [item] }) }; } };
+const sig3 = memColl([
+  { _id: 13, url: "https://techcrunch.com/new", signal_title: "Vreal shuts down", first_seen: 3 },
+  { _id: 11, url: "https://blog.example/advice", signal_title: "When to Shut Down Your Startup", snippet: "Shutting down is hard.", first_seen: 1 },
+  { _id: 12, url: "https://techcrunch.com/old", signal_title: "Vreal shuts down", first_seen: 2 },
+]);
+const res3 = await runSignalExtraction({ signals: sig3, staging: memColl([]), tf: fakeTf({ "https://techcrunch.com/old": page, "https://techcrunch.com/new": page }), llm: countingLLM, limit: 1 });
+check("advice hit skipped and counted, no fetch or LLM call", res3.prefiltered === 1 && sig3.docs.find(d => d._id === 11).extraction_status === "skipped:no-named-shutdown");
+check("pre-filtered signals do not use up the LLM limit", llmCalls === 1 && res3.signals === 1);
+check("backlog drains oldest first", sig3.docs.find(d => d._id === 12).extraction_status === "done" && !("extraction_status" in sig3.docs.find(d => d._id === 13)));
+let clock = 0;
+const sig4 = memColl([1, 2, 3].map(n => ({ _id: 20 + n, url: `https://techcrunch.com/b${n}`, signal_title: "Vreal shuts down", first_seen: n })));
+const res4 = await runSignalExtraction({ signals: sig4, staging: memColl([]), tf: fakeTf(Object.fromEntries([1, 2, 3].map(n => [`https://techcrunch.com/b${n}`, page]))),
+  llm: { available: () => true, complete: async () => { clock += 60_000; return { content: JSON.stringify({ startups: [item] }) }; } }, limit: 10, budgetMs: 90_000, now: () => clock });
+check("time budget stops the run cleanly; the rest wait unmarked", res4.stopped === "time-budget" && res4.signals === 2 && !("extraction_status" in sig4.docs[2]));
+const res5 = await runSignalExtraction({ signals: memColl([{ _id: 30, url: "https://techcrunch.com/c", signal_title: "Vreal shuts down", first_seen: 1 }]), staging: memColl([]), tf: fakeTf({ "https://techcrunch.com/c": page }),
+  llm: { available: () => true, complete: async () => { throw new Error("429 rate limit"); } }, limit: 5 });
+check("rate-limited LLM stops the run and says why", res5.stopped === "llm-unavailable" && res5.signals === 0);
 check("no LLM key -> extraction skipped, nothing written", (await runSignalExtraction({ signals: memColl([{ _id: 4, url: "https://a.com/z" }]), staging: stg, tf: fakeTf({}), llm: { available: () => false } })).skipped === "no-llm");
 
 // 8. Discovery rotation is deterministic (AGENTS.md rule 3: no Math.random in production paths)
@@ -176,12 +204,74 @@ const nov = new Date("2026-11-11T00:00:00Z");
 const r1 = pickQueries(0, 4, nov), r1b = pickQueries(0, 4, nov);
 check("same cursor + date -> same queries", JSON.stringify(r1) === JSON.stringify(r1b));
 check("next run starts where this one stopped", pickQueries(r1.next, 4, nov).queries[0].query !== r1.queries[0].query && r1.next === 4);
-check("month and year filled from the run date", r1.queries[0].query === "startup shutting down November 2026");
+check("month and year filled from the run date", r1.queries[0].query === 'startup "shuts down" November 2026');
+check("{prev} is the month before, across a year end", fillQuery("{prev}", new Date("2026-01-05T00:00:00Z")) === "December 2025" && fillQuery("{prev}", nov) === "October 2026");
+const pairs = new Set(DISCOVERY_QUERIES.filter(e => e.agent === "news-scout" && !e.q.includes("{company}")).map(e => e.q));
+check("every phrasing is paired with every sector/region subject", pairs.size === PHRASES.length * SUBJECTS.length);
+check("lists and {company} templates are interleaved", DISCOVERY_QUERIES.length === PHRASES.length * SUBJECTS.length + Math.floor(PHRASES.length * SUBJECTS.length / 8) && EXTRAS.every(x => DISCOVERY_QUERIES.includes(x)));
+check("news queries use shutdown phrasing that names a company", PHRASES.every(p => /shut|wind|cease|bankrupt|acquihire/i.test(p)));
+check("bank lengths must be coprime", (() => { try { buildQueryBank(["a {subject}", "b {subject}"], ["x", "y"]); return false; } catch { return true; } })());
 let cur = 0; const covered = new Set();
-for (let k = 0; k < 10; k++) { const r = pickQueries(cur, 4, nov); r.queries.forEach(q => covered.add(q.query)); cur = r.next; }
-check("rotation covers the whole bank (minus {company} templates)", covered.size === DISCOVERY_QUERIES.filter(q => !q.q.includes("{company}")).length);
+for (let k = 0; k < Math.ceil(DISCOVERY_QUERIES.length / 4); k++) { const r = pickQueries(cur, 4, nov); r.queries.forEach(q => covered.add(q.query)); cur = r.next; }
+check("rotation covers the whole bank (minus {company} templates)", covered.size === new Set(DISCOVERY_QUERIES.filter(q => !q.q.includes("{company}")).map(q => fillQuery(q.q, nov))).size);
 check("{company} templates skipped without KNOWN_COMPANIES", [...covered].every(q => !q.includes("{company}") && !q.includes("undefined")));
-check("{company} templates use KNOWN_COMPANIES when given", pickQueries(17, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+const companyAt = DISCOVERY_QUERIES.findIndex(e => e.q === "{company} shutting down");
+check("{company} templates use KNOWN_COMPANIES when given", pickQueries(companyAt, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+// 9. Per-run metrics in fleet_state: one record per GitHub run, totals over all runs
+let mdoc = mergeRun(null, "r1", { queries: 4, signals: 25, prefiltered: 18, extracted: 7, new_candidates: 2, sources_added: 1, stopped: null });
+mdoc = mergeRun(mdoc, "r1", { confirmed: 14, watched: 50 });
+check("discovery and watcher steps of one run share a record", mdoc.runs.length === 1 && mdoc.runs[0].new_candidates === 2 && mdoc.runs[0].confirmed === 14);
+mdoc = mergeRun(mdoc, "r2", { queries: 4, signals: 30, new_candidates: 5, confirmed: 3 });
+check("totals sum the runs", mdoc.totals.runs === 2 && mdoc.totals.signals === 55 && mdoc.totals.new_candidates === 7 && mdoc.totals.confirmed === 17);
+check("a re-reported field replaces, not doubles, its total", mergeRun(mdoc, "r2", { confirmed: 4 }).totals.confirmed === 18);
+let many = null; for (let k = 0; k < KEEP_RUNS + 5; k++) many = mergeRun(many, `m${k}`, { signals: 1 });
+check("only the last KEEP_RUNS run records are kept; totals keep everything", many.runs.length === KEEP_RUNS && many.runs[0].run_id === "m5" && many.totals.signals === KEEP_RUNS + 5);
+const md = formatReport(mdoc, "r2");
+check("report names every number for this run", ["queries 4", "signals 30", "pre-filtered –", "new candidates 5", "confirmed 3"].every(t => md.includes(t)));
+const rows = md.split("\n").filter(l => /^\| (\*\*this run|\d{4}-)/.test(l));
+check("report shows the trend, newest first, times in IST", rows.length === 2 && rows[0].startsWith("| **this run**") && rows[1].includes(" IST |"));
+check("IST is UTC+5:30", mergeRun && formatReport(mergeRun(null, "z", { signals: 1 }, new Date("2026-11-11T15:46:00Z")), "z").includes("2026-11-11 21:16 IST"));
+check("signals waiting is a level, not summed", mergeRun(mergeRun(null, "a", { backlog: 60 }), "b", { backlog: 50 }).totals.backlog === undefined);
+check("run id comes from GITHUB_RUN_ID", runId({ GITHUB_RUN_ID: "43047343056" }) === "43047343056" && runId({}, nov).startsWith("local-2026-11-11"));
+
+// 10. One whole run (discovery, then the Death Watcher as a second step) on fakes: no network
+const matches = (d, q) => Object.entries(q).every(([k, v]) => {
+  if (k === "$or") return v.some(sub => matches(d, sub));
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    if ("$exists" in v) return (k in d) === v.$exists;
+    if ("$ne" in v) return d[k] !== v.$ne;
+    if ("$regex" in v) return new RegExp(v.$regex, v.$options).test(d[k] || "");
+  }
+  return d[k] === v;
+});
+const memDb = () => { const cols = {}; return { cols, collection(name) { const docs = (cols[name] ||= []); let n = 0; return {
+  find(q = {}) { const m = docs.filter(d => matches(d, q)); return { sort(spec) { const ks = Object.entries(spec); m.sort((a, b) => { for (const [k, dir] of ks) { if ((a[k] ?? 0) < (b[k] ?? 0)) return -dir; if ((a[k] ?? 0) > (b[k] ?? 0)) return dir; } return 0; }); return this; }, limit(l) { return { toArray: async () => m.slice(0, l) }; } }; },
+  async findOne(q) { return docs.find(d => matches(d, q)) || null; },
+  async countDocuments(q = {}) { return docs.filter(d => matches(d, q)).length; },
+  async insertOne(d) { docs.push({ _id: `${name}-${++n}`, ...d }); },
+  async replaceOne(q, d, o) { const i = docs.findIndex(x => matches(x, q)); if (i >= 0) docs[i] = d; else if (o?.upsert) docs.push(d); },
+  async updateOne(q, u, o) { let d = docs.find(x => matches(x, q)); let upsertedCount = 0;
+    if (!d) { if (!o?.upsert) return { matchedCount: 0 }; d = { _id: `${name}-${++n}`, ...Object.fromEntries(Object.entries(q).filter(([k]) => !k.startsWith("$"))), ...(u.$setOnInsert || {}) }; docs.push(d); upsertedCount = 1; }
+    Object.assign(d, u.$set || {}); for (const [k, v] of Object.entries(u.$push || {})) (d[k] ||= []).push(v); return { matchedCount: 1, upsertedCount }; },
+}; } }; };
+const fdb = memDb();
+const news = "Vreal, a VR game streaming platform, shut down in 2019 after it failed to raise a new round.";
+const fleetTf = {
+  search: async q => q.startsWith('"Vreal"') ? [{ url: "https://variety.com/vreal", title: "Vreal shuts down", snippet: news }]
+    : [{ url: "https://techcrunch.com/vreal", title: "Vreal shuts down", snippet: news }, { url: "https://advice.example/when", title: "When to Shut Down Your Startup", snippet: "Shutting down is hard." }],
+  fetchPages: async urls => Object.fromEntries(urls.map(u => [u, { content: u.includes("vreal") ? page : "Shutting down is hard." }])),
+};
+const fenv = { FLEET_MODE: "discovery", DISCOVERY_QUERIES: "2", SIGNAL_LIMIT: "5", EXTRACT_DELAY_MS: "0", SEARCH_DELAY_MS: "0", WATCH_DELAY_MS: "0", GITHUB_RUN_ID: "777" };
+const d1 = await runFleet({ env: fenv, deps: { db: fdb, tf: fleetTf, llm: fakeLLM } });
+check("discovery run: queries, signals, pre-filtered, extracted, new candidates", d1.discovery.queries === 2 && d1.discovery.signals === 4 && d1.discovery.new_signals === 2
+  && d1.discovery.prefiltered === 1 && d1.discovery.extracted === 1 && d1.discovery.new_candidates === 1 && d1.discovery.backlog === 0);
+check("a new candidate is never confirmed by discovery", fdb.cols.graveyard_staging.every(e => e.death_status === "candidate"));
+const w1 = await runFleet({ env: { ...fenv, FLEET_MODE: "watcher" }, deps: { db: fdb, tf: fleetTf, llm: fakeLLM } });
+check("watcher confirms only with a 2nd fetched page on another domain", w1.watcher.confirmed === 1 && fdb.cols.graveyard_staging[0].death_status === "confirmed" && new Set(fdb.cols.graveyard_staging[0].source_urls.map(registrableDomain)).size === 2);
+const m1 = fdb.cols.fleet_state.find(d => d._id === "metrics");
+check("fleet_state holds one record for the run with every number", m1.runs.length === 1 && m1.runs[0].run_id === "777" && m1.runs[0].new_candidates === 1 && m1.runs[0].confirmed === 1 && m1.totals.prefiltered === 1);
+check("the query cursor still advances", fdb.cols.fleet_state.find(d => d._id === "discovery").cursor === 2);
+
 const srcDir = new URL(".", import.meta.url);
 check("no Math.random in backend/src", readdirSync(srcDir).filter(f => f.endsWith(".js") && f !== "smoke.js").every(f => !readFileSync(new URL(f, srcDir), "utf8").includes("Math.random")));
 

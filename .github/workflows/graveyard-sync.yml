@@ -3,11 +3,19 @@
 # → graveyard_signals → LLM extraction → staging candidates), then the Death Watcher
 # (a candidate is confirmed only with 2 fetched pages on distinct domains that name
 # the company and state its death), then export confirmed entries and commit+deploy
-# the snapshot. Nothing is published without 2 good sources.
+# the snapshot. Nothing is published without 2 good sources. Each run's numbers
+# (queries, signals, pre-filtered, extracted, new candidates, sources added,
+# confirmed) go to fleet_state {_id: "metrics"} and the job summary.
 #
 # Per-run limits (repo variables, defaults below) keep each run inside free tiers:
-#   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 10 LLM calls, 30 s apart
-#   (~35k tokens) · WATCHER_LIMIT candidates, ~3 TinyFish calls each.
+#   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 30 LLM calls (~2.5k tokens
+#   each), EXTRACT_DELAY_MS 10 s apart, stopping after EXTRACT_BUDGET_MS 20 min.
+#   Extraction calls Mistral small first (free tier ~1 request/s) and Groq on failure
+#   (gpt-oss-120b free tier: 8k tokens/min, 200k/day; re-check if GROQ_MODEL changes).
+#   If both refuse, the run stops cleanly and the rest wait for the next run.
+#   Search hits that name no company are skipped before the LLM and do not count
+#   towards SIGNAL_LIMIT; the backlog drains oldest first.
+#   WATCHER_LIMIT candidates, ~3 TinyFish calls each.
 # Secrets: MONGODB_URI, TINYFISH_API_KEY, GROQ_API_KEY and/or MISTRAL_API_KEY
 # (without an LLM key extraction skips and signals wait), CLOUDFLARE_*.
 
@@ -54,7 +62,9 @@ jobs:
           GROQ_MODEL: ${{ vars.GROQ_MODEL }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           DISCOVERY_QUERIES: ${{ vars.DISCOVERY_QUERIES || '4' }}
-          SIGNAL_LIMIT: ${{ vars.SIGNAL_LIMIT || '10' }}
+          SIGNAL_LIMIT: ${{ vars.SIGNAL_LIMIT || '30' }}
+          EXTRACT_DELAY_MS: ${{ vars.EXTRACT_DELAY_MS || '10000' }}
+          EXTRACT_BUDGET_MS: ${{ vars.EXTRACT_BUDGET_MS || '1200000' }}
           FLEET_MODE: discovery
         run: node src/tinyfish-fleet.js
 
@@ -79,6 +89,13 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: npm run db:stats
 
+      - name: "Run report: queries, signals, pre-filtered, extracted, new candidates, sources added, confirmed"
+        if: always()
+        working-directory: backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: node src/fleet-report.js
+
       - name: Commit + push snapshot (if changed)
         id: snapshot
         run: |
@@ -90,9 +107,11 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip graveyard-sync]"
-            # Integrate any commits pushed to main while this run was in flight,
-            # then push. Rebase keeps our snapshot commit on top.
-            git pull --rebase --autostash origin main
+            # Integrate any commits pushed to the branch this run checked out
+            # (main on schedule; the chosen ref on a manual run) while it was in
+            # flight, then push. Rebasing onto main from another branch fails in
+            # this shallow checkout. Rebase keeps our snapshot commit on top.
+            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             if git push; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
             else

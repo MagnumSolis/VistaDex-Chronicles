@@ -21,7 +21,7 @@ pages say: no outside knowledge, no estimates of your own. For each figure give 
 exactly as written on the page, the market it measures in the page's words, the year it refers to if the page
 gives one, and the exact sentence from the page that contains the figure.
 Return a JSON object: {"figures": [{"source": 1, "figure": "$4.2 billion", "market": "...", "year": 2024, "quote": "..."}]}.
-Never return a bare array. If no page states a market size, return {"figures": []}.`;
+List at most 8. Never return a bare array. If no page states a market size, return {"figures": []}.`;
 
 /** "$4.2B", "$850M", "$1.3T": a short, rounded form of a USD amount. */
 export function formatUsd(usd) {
@@ -131,11 +131,28 @@ export async function searchMarket({ ideaText, input, claims }, { llm, retrieval
 }
 
 // One retry when the reply is not the expected JSON object (a model sometimes answers in another shape).
+// A reply cut off by the length limit keeps its complete entries (every entry is still checked against its
+// page by the caller, so nothing unverified gets through).
+export const LIST_MAX_TOKENS = 3000;
 export async function completeWrapped(llm, messages, key) {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { content } = await llm.complete("classify", { json: true, messages: attempt ? [...messages, { role: "user", content: `Reply with the JSON object {"${key}": [...]} only.` }] : messages });
-    const raw = parseWrapped(content, key);
+    const { content } = await llm.complete("classify", { json: true, maxTokens: LIST_MAX_TOKENS, messages: attempt ? [...messages, { role: "user", content: `Reply with the JSON object {"${key}": [...]} only.` }] : messages });
+    const raw = parseWrapped(content, key) ?? salvageList(content, key);
     if (raw) return raw;
+  }
+  return null;
+}
+
+// {"key": [{...}, {...}, {...cut off  →  the complete objects before the cut, or null.
+export function salvageList(content, key) {
+  const s = String(content ?? "");
+  const start = s.indexOf("[", s.indexOf(`"${key}"`));
+  if (s.indexOf(`"${key}"`) < 0 || start < 0) return null;
+  for (let end = s.lastIndexOf("}"); end > start; end = s.lastIndexOf("}", end - 1)) {
+    try {
+      const arr = JSON.parse(s.slice(start, end + 1) + "]");
+      if (Array.isArray(arr) && arr.length) return arr;
+    } catch { /* try the previous closing brace */ }
   }
   return null;
 }

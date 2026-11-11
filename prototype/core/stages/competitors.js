@@ -17,6 +17,7 @@ const PROMPT = `You read numbered web pages for an idea-screening tool. List pro
 NAMES as already offering something similar to the idea below. Use only what the pages say: no outside
 knowledge, no guesses. For each one give the source number, the name exactly as written on the page,
 one short sentence on why it is similar, and the exact sentence from the page that contains the name.
+List at most 8, the most similar first.
 Return a JSON object: {"competitors": [{"source": 1, "name": "...", "why_similar": "...", "quote": "..."}]}. Never return a bare array.`;
 
 export function competitorQueries(ideaText, input) {

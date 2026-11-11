@@ -43,7 +43,7 @@ export const RESEARCH_PAGE = `<!doctype html>
   a { color: var(--link); }
 
   /* ── layout: sidebar + main ── */
-  .app { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+  .app { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100vh; }
   .side { padding: 20px 12px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 2px; background: var(--page); color: var(--on-page); }
   .side .brand { display: flex; align-items: center; gap: 8px; padding: 4px 10px 18px; }
   .side .brand .mark { width: 26px; height: 26px; border-radius: 7px; background: var(--lime); display: grid; place-items: center; color: var(--on-lime); font-family: var(--serif); font-size: 16px; }
@@ -59,7 +59,7 @@ export const RESEARCH_PAGE = `<!doctype html>
   .side .foot { margin-top: auto; padding: 10px; color: var(--on-page-muted); font-size: 11.5px; line-height: 1.6; }
   .side .foot a { color: var(--on-page); } .side .foot a:hover { color: var(--lime); }
 
-  .main { padding: 28px 32px 60px; max-width: 1180px; }
+  .main { padding: 28px 32px 60px; max-width: 1180px; min-width: 0; }
   .view { display: none; } .view.on { display: block; }
 
 
@@ -106,12 +106,16 @@ export const RESEARCH_PAGE = `<!doctype html>
 
 
   /* funnel */
-  .funnel { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-  .fstep { display: grid; grid-template-columns: 200px 1fr auto; gap: 14px; align-items: center; }
-  .fstep .fl { font-size: 12.5px; color: var(--ink-2); }
-  .fstep .fb { height: 22px; border-radius: 5px; background: var(--accent); position: relative; min-width: 2px; }
-  .fstep .fb span { position: absolute; left: 8px; top: 3px; font-size: 11px; font-weight: 600; color: var(--lime); }
-  .fstep .fv { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  .panel { background: var(--panel); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .panel .hint { font-size: 12px; color: var(--ink-2); margin-bottom: 14px; }
+  .funnel { display: flex; flex-direction: column; gap: 10px; }
+  .fstep { display: grid; grid-template-columns: 220px minmax(0, 1fr) 92px; gap: 14px; align-items: center; }
+  .fstep .fl { font-size: 12.5px; color: var(--ink); }
+  .fstep .track { height: 22px; border-radius: 5px; background: var(--panel-3); overflow: hidden; }
+  .fstep .fb { height: 100%; border-radius: 5px; background: var(--accent); max-width: 100%; }
+  .fstep .fv { font-family: var(--mono); font-size: 11.5px; color: var(--ink); text-align: right; }
+  .fstep .fv small { color: var(--ink-2); font-size: 10.5px; }
 
   /* feed */
   .feed { font-family: var(--mono); font-size: 11.5px; line-height: 2; max-height: 420px; overflow: auto; padding: 4px 0; }
@@ -148,6 +152,10 @@ export const RESEARCH_PAGE = `<!doctype html>
 
   /* feedback analytics */
   .fb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin: 16px 0; }
+  .fb-grid.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+  .fb-grid.cols4 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
+  @media (max-width: 1100px) { .fb-grid.cols4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .fb-grid.cols2, .fb-grid.cols4 { grid-template-columns: 1fr; } }
   .fb-card { background: var(--panel); border-radius: var(--radius); padding: 18px; }
   .fb-card h3 { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
   .fb-card h3 .n { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-left: 8px; font-weight: 400; }
@@ -155,11 +163,13 @@ export const RESEARCH_PAGE = `<!doctype html>
   .fb-opt .lbl { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fb-bar { height: 18px; border-radius: 4px; background: var(--accent); min-width: 2px; position: relative; }
   .fb-bar span { position: absolute; left: 6px; top: 2px; font-size: 10.5px; font-weight: 600; color: var(--lime); }
-  .fb-likert { display: flex; gap: 4px; align-items: flex-end; height: 90px; margin-top: 6px; }
-  .fb-likert .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .fb-likert .col .v { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
-  .fb-likert .col .b { width: 100%; border-radius: 4px 4px 0 0; background: var(--accent-dim); border-top: 2px solid var(--accent); min-height: 2px; }
-  .fb-likert .col .c { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); }
+  .hist, .hlab { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 4px; }
+  .hist { height: 104px; align-items: end; margin-top: 8px; }
+  .hist .hcol { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; min-width: 0; }
+  .hist .v { font-family: var(--mono); font-size: 10.5px; color: var(--ink); line-height: 1; }
+  .hist .b { width: 100%; border-radius: 4px 4px 0 0; background: var(--accent-dim); border-top: 2px solid var(--accent); }
+  .hlab { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 4px; }
+  .hlab span { font-family: var(--mono); font-size: 10px; color: var(--ink-2); text-align: center; white-space: nowrap; overflow: hidden; }
   .fb-avg { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 8px; }
   .fb-quote { background: var(--panel); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin: 8px 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
   .fb-quote .who { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 6px; }
@@ -167,6 +177,17 @@ export const RESEARCH_PAGE = `<!doctype html>
   details.raw summary { cursor: pointer; color: var(--ink-3); font-size: 12px; padding: 4px 0; }
   details.raw summary:hover { color: var(--ink-2); }
 
+  .finds { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; margin-bottom: 26px; }
+  .find { background: var(--panel); border-radius: var(--radius); padding: 18px; }
+  .find h3 { font-size: 13.5px; font-weight: 700; line-height: 1.35; }
+  .find .meta { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); margin: 4px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .find .tag { border: 1px dashed var(--ink); border-radius: 5px; padding: 0 6px; color: var(--ink); }
+  .find p { font-size: 13px; line-height: 1.6; color: var(--ink); }
+  .find.thin p { color: var(--ink-2); }
+  h2.sec { font-size: 15px; font-weight: 700; margin: 26px 0 4px; }
+  p.sec-sub { font-size: 12px; color: var(--ink-2); margin-bottom: 10px; max-width: 80ch; }
+  .exp-h { font-size: 13px; font-weight: 700; margin: 22px 0 10px; }
+  .exp-h .note { font-weight: 400; font-size: 12px; color: var(--ink-2); margin-left: 6px; }
   input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
 
   /* full session ids: monospace, copy-on-click, never truncated */
@@ -192,6 +213,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <div class="brand"><span class="mark">V</span><b>Research</b><span>console</span></div>
     <div class="nav-l">Study</div>
     <button class="nav on" data-view="overview"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
+    <button class="nav" data-view="insights"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Insights</button>
     <button class="nav" data-view="participants"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><circle cx="17" cy="9" r="3"/><path d="M22 21v-1a6 6 0 0 0-6-6"/></svg>Participants <span class="cnt" id="cnt-p">–</span></button>
     <button class="nav" data-view="pairs"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h7M4 12h7M4 18h7M14 6h6M14 12h6M14 18h6"/></svg>Paired study <span class="cnt" id="cnt-pairs">–</span></button>
     <button class="nav" data-view="funnel"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-6 9v7l-6-2v-5z"/></svg>Funnel</button>
@@ -217,8 +239,14 @@ export const RESEARCH_PAGE = `<!doctype html>
       <div class="tbl-wrap"><table id="recent-participants"></table></div>
     </section>
 
+    <section class="view" id="v-insights">
+      <div class="phead"><h1>Insights</h1><span class="sub">what the data shows so far, each finding with its n; the same numbers as analysis/study_analysis.mjs</span>
+        <div class="right"><label class="msg" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="incTest"> include TEST codes</label></div></div>
+      <div id="insights-content"><div class="skel" style="height:200px"></div></div>
+    </section>
+
     <section class="view" id="v-participants">
-      <div class="phead"><h1>Participants</h1><span class="sub">one row per visitor (browser session), VistaDex measures only; the study track's chatbot vs VistaDex comparison is in Paired study</span>
+      <div class="phead"><h1>Participants</h1><span class="sub">one row per browser session, VistaDex measures only (the chatbot vs VistaDex comparison is in Paired study). Evidence opened counts claim sources plus graveyard, competitor, Big Tech, legal and market links.</span>
         <div class="right">
           <select id="roleFilter" class="btn" style="padding:6px 10px"><option value="">all roles</option></select>
           <select id="trackFilter" class="btn" style="padding:6px 10px"><option value="">all tracks</option><option value="study">study</option><option value="field">field</option></select>
@@ -238,8 +266,9 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-funnel">
-      <div class="phead"><h1>Study funnel</h1><span class="sub">recruited-track progress toward a complete paired dataset</span></div>
-      <div class="panel" style="background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:20px;"><div class="funnel" id="funnel"></div></div>
+      <div class="phead"><h1>Funnel</h1><span class="sub">where people drop out, per track; each bar is a share of the track's first step</span></div>
+      <div class="panel"><h2>Study track</h2><p class="hint">Participants (codes) on the way to a complete pair: both parts, confidence before and after in each.</p><div class="funnel" id="funnel-study"></div></div>
+      <div class="panel"><h2>Field track</h2><p class="hint">Sessions that started a screening (LinkedIn, X, investors, direct), step by step through the report.</p><div class="funnel" id="funnel-field"></div></div>
     </section>
 
     <section class="view" id="v-events">
@@ -250,12 +279,12 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-feedback">
-      <div class="phead"><h1>Feedback</h1><span class="sub">what visitors told you — form answers, ratings and confidence, summarised</span></div>
+      <div class="phead"><h1>Feedback</h1><span class="sub">what visitors told you: confidence, report ratings and the feedback form</span></div>
       <div id="feedback-content"><div class="tbl-wrap" style="padding:28px;text-align:center;color:var(--ink-3);font-style:italic">No feedback yet.</div></div>
     </section>
 
     <section class="view" id="v-research">
-      <div class="phead"><h1>Research analysis</h1><span class="sub">per-run measures · H4 learning stratification · qualitative store</span></div>
+      <div class="phead"><h1>Research analysis</h1><span class="sub">one row per screening run · H4 split by evidence opened · every open answer</span></div>
       <div id="research-content" style="margin-bottom:28px"><div class="skel" style="height:200px"></div></div>
       <h2 style="font-size:14px;margin:26px 0 4px;font-weight:700">Qualitative store <span class="sub" id="qualitative-meta" style="font-size:12px;color:var(--ink-3);font-weight:400">every survey, feedback and comprehension answer, verbatim</span></h2>
       <div id="qualitative-content"><div class="skel" style="height:120px"></div></div>
@@ -268,7 +297,11 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-export">
-      <div class="phead"><h1>Export</h1><span class="sub">for Excel / R / Python — CSV; JSON for scripts</span></div>
+      <div class="phead"><h1>Export</h1><span class="sub">analysis-ready tables for Excel, R or Python, and the raw data</span>
+        <div class="right"><button class="btn acc" id="allCsvBtn">↓ Download all tables</button></div></div>
+      <p class="exp-h">Analysis-ready tables <span class="note">built in this browser from the live data, TEST codes left out; the same files as <span class="num">node analysis/study_analysis.mjs events.json --out &lt;folder&gt;</span></span></p>
+      <div class="exports" id="tableExports"></div>
+      <p class="exp-h">Raw data <span class="note">every event and every pipeline trace, from the database</span></p>
       <div class="exports">
         <a class="exp" href="/export?table=events&format=csv"><span class="ic">↓</span><div><b>events.csv</b><span>one row per telemetry event</span></div></a>
         <a class="exp" href="/export?table=traces&format=csv"><span class="ic">↓</span><div><b>traces.csv</b><span>one row per pipeline run (full trace)</span></div></a>
@@ -364,7 +397,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       if (!reg && !ran) return;
       var pl = (reg && reg.payload) || {};
       var p = { sid: sid, code: pl.code || "", role: pl.role || null, roleFrom: reg ? "registered" : null, track: pl.track || (reg ? "field" : "field"), source: pl.source || null,
-        confPre: null, confPreMoved: null, confPost: null, survey: null, clicks: 0,
+        confPre: null, confPreMoved: null, confPost: null, survey: null, clicks: 0, links: 0, completed: 0,
         runs: 0, n: evs.length, last: evs[evs.length - 1].ts, industries: null, markets: null };
       var t = JOIN.voteTotals(votesBySid[sid] || []);
       p.votes = t.votes; p.agrees = t.agrees; p.disagrees = t.disagrees; p.notSure = t.notSure;
@@ -376,6 +409,8 @@ export const RESEARCH_PAGE = `<!doctype html>
         else if (e.type === "confidence_post") p.confPost = q.value;
         else if (e.type === "condition_survey") p.survey = q;
         else if (e.type === "source_clicked") p.clicks++;
+        else if (e.type === "control_pressed" && JOIN.EVIDENCE_CONTROLS[q.control]) p.links++;
+        else if (e.type === "run_completed") p.completed++;
         else if (e.type === "run_started") {
           p.runs++;
           // role from the screening form ("I am a…" chip) — a field visitor's
@@ -405,8 +440,12 @@ export const RESEARCH_PAGE = `<!doctype html>
     var sv = p.survey ? '<span class="num">T' + p.survey.trust + " · U" + p.survey.usefulness + " · E" + p.survey.effort + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var from = p.roleFrom ? '<span style="color:var(--ink-3);font-size:11px">' + esc(p.roleFrom) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
     var src = p.source ? '<span class="num" style="color:var(--accent)">' + esc(p.source) + "</span>" : '<span style="color:var(--ink-3)">—</span>';
+    // Evidence opened: 0 is a real answer once a report was shown; a dash means no report to open links in.
+    var evid = p.completed || p.clicks || p.links
+      ? '<span class="num" title="claim sources ' + p.clicks + " · other evidence links " + p.links + '">' + (p.clicks + p.links) + (p.clicks + p.links ? ' <span style="color:var(--ink-3)">(' + p.clicks + " + " + p.links + ")</span>" : "") + "</span>"
+      : '<span style="color:var(--ink-3)" title="no finished report in this session">—</span>';
     return "<tr>" + "<td>" + track + "</td>" + sidCell(p.sid) + "<td class='num'>" + esc(p.code || "·") + "</td><td>" + esc(p.role) + "</td><td>" + from + "</td><td>" + src + "</td>" +
-      "<td>" + conf + "</td><td>" + ag + "</td><td>" + (p.clicks || '<span style="color:var(--ink-3)">—</span>') + "</td>" +
+      "<td>" + conf + "</td><td>" + ag + "</td><td>" + evid + "</td>" +
       "<td>" + sv + "</td><td class='num' style='color:var(--ink-3)'>" + esc(p.industries || "—") + "</td>" +
       "<td class='num'>" + p.runs + "</td><td class='num'>" + p.n + "</td>" +
       "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
@@ -416,9 +455,9 @@ export const RESEARCH_PAGE = `<!doctype html>
   function sidCell(sid) {
     return '<td><button class="sid num" title="click to copy" data-sid="' + esc(sid) + '">' + esc(sid) + '</button></td>';
   }
-  var HEAD = "<tr><th>Track</th><th>Session ID</th><th>Code</th><th>Role</th><th>Where from</th><th>Channel</th><th>Confidence pre→post</th><th>Agreeableness</th><th>Sources</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
+  var HEAD = "<tr><th>Track</th><th>Session ID</th><th>Code</th><th>Role</th><th>Role from</th><th>Channel</th><th>Confidence before → after</th><th>Agree rate</th><th>Evidence opened</th><th>Survey</th><th>Industries</th><th>Runs</th><th>Events</th><th>Del</th></tr>";
   function metricsCSV(people) {
-    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_pre_moved","conf_post","conf_delta","votes","agree_rate_pct","votes_agree","votes_disagree","votes_not_sure","source_clicks","trust","usefulness","helpfulness","effort","open_text","runs","events"];
+    var cols = ["session_id","track","code","role","role_source","channel","industries","markets","conf_pre","conf_pre_moved","conf_post","conf_delta","votes","agree_rate_pct","votes_agree","votes_disagree","votes_not_sure","claim_links_opened","other_links_opened","evidence_opened","trust","usefulness","helpfulness","effort","open_text","runs","events"];
     var rows = [cols.join(",")];
     people.forEach(function (p) {
       var delta = p.confPre != null && p.confPost != null ? p.confPost - p.confPre : "";
@@ -427,7 +466,7 @@ export const RESEARCH_PAGE = `<!doctype html>
         p.source || "", p.industries || "", p.markets || "",
         p.confPre == null ? "" : p.confPre, p.confPreMoved == null ? "" : p.confPreMoved, p.confPost == null ? "" : p.confPost, delta,
         p.votes, p.votes ? JOIN.agreePct(p) : "", p.agrees, p.disagrees, p.notSure,
-        p.clicks,
+        p.clicks, p.links, p.clicks + p.links,
         p.survey ? p.survey.trust : "", p.survey ? p.survey.usefulness : "", p.survey ? p.survey.helpfulness : "", p.survey ? p.survey.effort : "",
         p.survey && p.survey.open_text ? String(p.survey.open_text) : "",
         p.runs, p.n
@@ -454,23 +493,28 @@ export const RESEARCH_PAGE = `<!doctype html>
           '<span class="num" style="color:var(--ink-3)">' + Math.round(100 * x[1] / total) + '%</span></div>';
       }).join("") + "</div>";
   }
-  function likertCard(title, values, min, max, unit) {
+  function median(vals) {
+    if (!vals.length) return null;
+    var x = vals.slice().sort(function (a, b) { return a - b; }), m = x.length >> 1;
+    return x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2;
+  }
+  // A histogram card: counts per bin, the bin labels under a baseline, the count over each bar.
+  function histCard(title, nLabel, counts, labels, foot) {
+    var max = Math.max.apply(null, counts.concat([1]));
+    var cols = counts.map(function (c) {
+      return '<div class="hcol"><span class="v">' + (c || "") + '</span><div class="b" style="height:' + (c ? Math.max(3, Math.round(80 * c / max)) : 0) + 'px"></div></div>';
+    }).join("");
+    var labs = labels.map(function (l) { return "<span>" + esc(l) + "</span>"; }).join("");
+    return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + esc(nLabel) + "</span></h3>" +
+      '<div class="hist" style="--cols:' + counts.length + '">' + cols + '</div><div class="hlab" style="--cols:' + counts.length + '">' + labs + "</div>" +
+      '<div class="fb-avg">' + esc(foot) + "</div></div>";
+  }
+  function likertCard(title, values, min, max) {
     var vals = values.filter(function (v) { return typeof v === "number" && !isNaN(v); });
     if (!vals.length) return "";
-    var avg = vals.reduce(function (a, v) { return a + v; }, 0) / vals.length;
-    var hist = {};
-    vals.forEach(function (v) { hist[v] = (hist[v] || 0) + 1; });
-    var maxCount = Math.max.apply(null, Object.keys(hist).map(function (k) { return hist[k]; }));
-    var cols = "";
-    for (var i = min; i <= max; i++) {
-      var c = hist[i] || 0;
-      cols += '<div class="col"><span class="v">' + (c || "") + '</span>' +
-        '<div class="b" style="height:' + Math.max(2, 70 * c / maxCount) + 'px"></div>' +
-        '<span class="c">' + i + (unit || "") + "</span></div>";
-    }
-    return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + vals.length + ' ratings</span></h3>' +
-      '<div class="fb-likert">' + cols + "</div>" +
-      '<div class="fb-avg">mean ' + (Math.round(avg * 10) / 10) + (unit || "") + "</div></div>";
+    var counts = [], labels = [];
+    for (var i = min; i <= max; i++) { counts.push(vals.filter(function (v) { return v === i; }).length); labels.push(String(i)); }
+    return histCard(title, vals.length + " ratings", counts, labels, "mean " + mean(vals) + " · median " + median(vals));
   }
 
   // Run join: worker/src/research-join.js, embedded verbatim. In the deployed Worker that source comes from
@@ -484,8 +528,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     $("cnt-r").textContent = runs.length;
 
     // H4 stratification: clickers vs non-clickers
-    var clickers = runs.filter(function (r) { return r.clicks > 0; });
-    var nonClickers = runs.filter(function (r) { return r.clicks === 0; });
+    var clickers = runs.filter(function (r) { return r.clicks + r.links > 0; });
+    var nonClickers = runs.filter(function (r) { return r.clicks + r.links === 0; });
     function cal(r) { return r.pre != null && r.post != null ? r.post - r.pre : null; }
     function meanCal(arr) {
       var vals = arr.map(cal).filter(function (v) { return v != null; });
@@ -496,10 +540,10 @@ export const RESEARCH_PAGE = `<!doctype html>
     // stratification cards
     html += '<div class="kpis">' +
       '<div class="kpi"><div class="label">Runs recorded</div><div class="val">' + runs.length + '</div><div class="note">screenings with telemetry</div></div>' +
-      '<div class="kpi hl"><div class="label">Verified (clicked sources)</div><div class="val">' + clickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(clickers) == null ? "—" : (meanCal(clickers) > 0 ? "+" : "") + meanCal(clickers)) + '</div></div>' +
-      '<div class="kpi"><div class="label">Explanation-only</div><div class="val">' + nonClickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(nonClickers) == null ? "—" : (meanCal(nonClickers) > 0 ? "+" : "") + meanCal(nonClickers)) + '</div></div>' +
+      '<div class="kpi hl"><div class="label">Opened evidence</div><div class="val">' + clickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(clickers) == null ? "—" : (meanCal(clickers) > 0 ? "+" : "") + meanCal(clickers)) + '</div></div>' +
+      '<div class="kpi"><div class="label">Read only</div><div class="val">' + nonClickers.length + '</div><div class="note">mean confidence delta ' + (meanCal(nonClickers) == null ? "—" : (meanCal(nonClickers) > 0 ? "+" : "") + meanCal(nonClickers)) + '</div></div>' +
       '</div>';
-    html += '<p class="msg" style="margin:6px 0 14px">H4 (Berger et al.): if verification produces learning, clickers should show different calibration deltas than explanation-only users. Both groups computed per run; pair with Track-A for the causal version.</p>';
+    html += '<p class="msg" style="margin:6px 0 14px">H4: runs where any evidence link was opened vs runs where none was. People choose to open links, so a difference is an association; the study track is the controlled comparison. The test is in Insights.</p>';
 
     // per-run table. Legacy run ids ("r1"…) restarted on every page load, so their measures are matched to
     // the run that started before them and flagged; new ids ("r_" + 12 hex) join exactly.
@@ -508,7 +552,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += '<p class="msg" style="margin:0 0 8px">' + (inferredN
       ? inferredN + " measure" + (inferredN === 1 ? "" : "s") + " on " + inferredRuns.length + " run" + (inferredRuns.length === 1 ? "" : "s") + " matched by start order (legacy run ids that repeat after a reload, or missing / unmatched ids). Exact for new r_ ids."
       : "Every measure matched its run exactly.") + "</p>";
-    html += '<div class="tbl-wrap"><table><tr><th>Session</th><th>Run (' + inferredN + ' inferred)</th><th>Role</th><th>Conf Δ</th><th>Votes</th><th>Agree %</th><th>Sources</th><th>Survey</th><th>Comprehension</th></tr>';
+    html += '<div class="tbl-wrap"><table><tr><th>Session</th><th>Run (' + inferredN + ' inferred)</th><th>Role</th><th>Conf Δ</th><th>Votes</th><th>Agree %</th><th>Evidence (claims + other)</th><th>Survey</th><th>Comprehension</th></tr>';
     if (runs.length) {
       runs.forEach(function (r) {
         var c = cal(r);
@@ -521,7 +565,7 @@ export const RESEARCH_PAGE = `<!doctype html>
         // "run N of M" in the session; the raw run id shows on hover and copies on click
         var runCell = '<button class="sid num" data-sid="' + esc(r.runId || "") + '" title="' + esc((r.runId || "no run id") + " — click to copy") + '">' + esc(r.label) + "</button>" +
           (r.inferred ? '<div style="color:var(--ink-3);font-size:11px">matched by start order</div>' : "");
-        html += "<tr>" + sidCell(r.sid) + "<td>" + runCell + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + r.clicks + "</td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
+        html += "<tr>" + sidCell(r.sid) + "<td>" + runCell + "</td><td>" + esc(r.role || "—") + "</td><td>" + delta + "</td><td class='num'>" + r.votes + "</td><td class='num'>" + ag + "</td><td class='num'>" + (r.clicks + r.links) + ' <span style="color:var(--ink-3)">(' + r.clicks + " + " + r.links + ")</span></td><td>" + sv + "</td><td class='num'>" + comp + "</td></tr>";
       });
     } else {
       html += '<tr><td colspan="9" class="empty">No runs with telemetry yet.</td></tr>';
@@ -580,6 +624,9 @@ export const RESEARCH_PAGE = `<!doctype html>
     }).catch(function () { /* cosmetic note only */ });
   }
 
+  var CONDS = [["vistadex", "VistaDex report"], ["baseline", "AI chatbot (study track)"]];
+  // Older confidence events had no condition: they were all VistaDex.
+  function condOf(e) { return (e.payload && e.payload.condition) || "vistadex"; }
   function renderFeedback(ev) {
     var box = $("feedback-content");
     var fbForms = ev.filter(function (e) { return e.type === "feedback_submitted"; });
@@ -596,47 +643,41 @@ export const RESEARCH_PAGE = `<!doctype html>
 
     // Confidence sliders (H1) — pre vs post side by side
     if (confPre.length || confPost.length) {
-      html += '<h2 style="font-size:15px;margin:20px 0 4px">Confidence in the idea <span class="sub" style="font-size:12px;color:var(--ink-3)">(sliders, 0-100% — the calibration measure)</span></h2>';
-      html += '<div class="fb-grid">';
-      // Real 0-100 slider values, binned by 10 with the bin labelled as a %.
+      html += '<h2 class="sec">Confidence in the idea</h2><p class="sec-sub">Sliders from 0 to 100 in bins of 10, before and after, per condition. This is confidence change, not calibration: no idea here has a known right answer.</p>';
+      // Real 0-100 slider values, binned by 10.
       function confCard(title, list) {
         var vals = list.map(function (e) { return e.payload && e.payload.value; })
           .filter(function (v) { return typeof v === "number" && !isNaN(v); });
         if (!vals.length) return "";
-        var hist = {};
-        vals.forEach(function (v) { var b = Math.min(9, Math.floor(v / 10)); hist[b] = (hist[b] || 0) + 1; });
-        var maxCount = Math.max.apply(null, Object.keys(hist).map(function (k) { return hist[k]; }));
-        var cols = "";
-        for (var b = 0; b <= 9; b++) {
-          var c = hist[b] || 0;
-          cols += '<div class="col"><span class="v">' + (c || "") + '</div>' +
-            '<div class="b" style="height:' + Math.max(2, 70 * c / maxCount) + 'px"></div>' +
-            '<span class="c">' + (b * 10) + "+</span></div>";
-        }
-        var mean = Math.round(10 * vals.reduce(function (a, v) { return a + v; }, 0) / vals.length) / 10;
-        return '<div class="fb-card"><h3>' + esc(title) + '<span class="n">' + vals.length + ' ratings</span></h3>' +
-          '<div class="fb-likert">' + cols + "</div>" +
-          '<div class="fb-avg">mean ' + mean + "%</div></div>";
+        var counts = [], labels = [];
+        for (var b = 0; b <= 9; b++) { counts.push(0); labels.push(b === 9 ? "90+" : String(b * 10)); }
+        vals.forEach(function (v) { counts[Math.min(9, Math.floor(v / 10))]++; });
+        return histCard(title, vals.length + " answers", counts, labels, "mean " + mean(vals) + " · median " + median(vals));
       }
-      html += confCard("Before the report", confPre);
-      html += confCard("After the report", confPost);
-      html += "</div>";
+      // One pair of charts per condition: the study track's AI chatbot part is never pooled with VistaDex.
+      CONDS.forEach(function (c) {
+        var pre = confPre.filter(function (e) { return condOf(e) === c[0]; }), post = confPost.filter(function (e) { return condOf(e) === c[0]; });
+        if (!pre.length && !post.length) return;
+        html += '<p class="exp-h">' + esc(c[1]) + '</p><div class="fb-grid cols2">' + confCard("Before", pre) + confCard("After", post) + "</div>";
+      });
     }
 
     // Study-panel likerts
     if (surveys.length) {
-      html += '<h2 style="font-size:15px;margin:20px 0 4px">Report ratings <span class="sub" style="font-size:12px;color:var(--ink-3)">(1-7 likerts from the study panel under each report)</span></h2>';
-      html += '<div class="fb-grid">';
-      html += likertCard("I trust this report\u2019s assessment", surveys.map(function (e) { return e.payload && e.payload.trust; }), 1, 7);
-      html += likertCard("The report was useful for judging the idea", surveys.map(function (e) { return e.payload && e.payload.usefulness; }), 1, 7);
-      html += likertCard("Helped me see what to verify next", surveys.map(function (e) { return e.payload && e.payload.helpfulness; }), 1, 7);
-      html += likertCard("Getting a good read took effort", surveys.map(function (e) { return e.payload && e.payload.effort; }), 1, 7);
-      html += "</div>";
+      html += '<h2 class="sec">Report ratings</h2><p class="sec-sub">1 to 7, one answer per submission, per condition: "Your read" under a VistaDex report, and the study track\u2019s AI chatbot part.</p>';
+      CONDS.forEach(function (c) {
+        var list = surveys.filter(function (e) { return condOf(e) === c[0]; });
+        if (!list.length) return;
+        var v = function (k) { return list.map(function (e) { return e.payload && e.payload[k]; }); };
+        html += '<p class="exp-h">' + esc(c[1]) + "</p>" + '<div class="fb-grid cols4">' +
+          likertCard("Trust in the assessment", v("trust"), 1, 7) + likertCard("Useful for judging the idea", v("usefulness"), 1, 7) +
+          likertCard("Helped me see what to verify next", v("helpfulness"), 1, 7) + likertCard("Getting a good read took effort", v("effort"), 1, 7) + "</div>";
+      });
     }
 
     // Feedback form answers
     if (fbForms.length) {
-      html += '<h2 style="font-size:15px;margin:20px 0 4px">Feedback form <span class="sub" style="font-size:12px;color:var(--ink-3)">(sent unlinked — not tied to a usage session)</span></h2>';
+      html += '<h2 class="sec">Feedback form</h2><p class="sec-sub">Sent under its own id, never linked to a usage session.</p>';
       var defs = [["role", "What best describes you?"], ["useful", "Was the report useful?"], ["section", "Which section mattered most?"], ["would_use", "Would you use this?"]];
       html += '<div class="fb-grid">';
       for (var i = 0; i < defs.length; i++) {
@@ -785,9 +826,84 @@ export const RESEARCH_PAGE = `<!doctype html>
     return out.join(String.fromCharCode(10));
   }
 
+  // ── Insights (shared analysis: research-join.js analyzeStudy) ──
+  function fmtD(v) { return v == null ? "n/a" : (v > 0 ? "+" : "") + v; }
+  function cell(v, suffix) { return v == null ? dash() : esc(v) + (suffix || ""); }
+  function renderInsights(ev) {
+    var A = JOIN.analyzeStudy(ev, { includeTest: $("incTest").checked });
+    var clean = $("incTest").checked ? JOIN.analyzeStudy(ev, {}) : A;
+    window.__analysis = A; window.__events = ev;
+    var html = '<div class="finds">' + A.findings.map(function (f) {
+      var n = f.n === Infinity ? 0 : f.n;
+      return '<div class="find' + (f.enough ? "" : " thin") + '"><h3>' + esc(f.title) + "</h3>" +
+        '<div class="meta"><span>n = ' + n + " " + esc(f.unit) + "</span>" + (f.enough ? "" : '<span class="tag">not enough data yet: needs ' + f.min + "</span>") + "</div>" +
+        "<p>" + esc(f.text) + "</p></div>";
+    }).join("") + "</div>";
+
+    html += '<h2 class="sec">Agreement with the report, by claim status</h2><p class="sec-sub">Latest vote per item. H3 asks whether people agree with every verdict alike or tell the statuses apart.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>Claim status</th><th>Votes</th><th>Agree</th><th>Disagree</th><th>Not sure</th><th>Agree %</th></tr>';
+    var st = A.h3.byClaimStatus, keys = Object.keys(st);
+    html += keys.length ? keys.map(function (k) { var t = st[k]; return "<tr><td>" + esc(k) + "</td><td class='num'>" + t.votes + "</td><td class='num'>" + t.agree + "</td><td class='num'>" + t.disagree + "</td><td class='num'>" + t.notSure + "</td><td class='num'>" + cell(t.agreePct, "%") + "</td></tr>"; }).join("")
+      : '<tr><td colspan="6" class="empty">No claim votes yet.</td></tr>';
+    html += "</table></div>";
+
+    html += '<h2 class="sec">What people read</h2><p class="sec-sub">Share of finished runs that showed each report section (at least half of it, or half the screen), and the median time it was in view.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>Section</th><th>Runs</th><th>Share</th><th>Median seconds</th></tr>' + A.attention.map(function (a) {
+      return "<tr><td>" + esc(a.section.replace("_", " ")) + "</td><td class='num'>" + a.runs + "</td><td class='num'>" + cell(a.reachPct, "%") + "</td><td class='num'>" + cell(a.medianSec) + "</td></tr>";
+    }).join("") + "</table></div>";
+
+    [["role", "By role"], ["channel", "By channel"], ["track", "By track"]].forEach(function (g) {
+      html += '<h2 class="sec">' + g[1] + '</h2><p class="sec-sub">Finished runs. Confidence change is after minus before; trust is the 1 to 7 rating.</p>';
+      html += '<div class="tbl-wrap"><table><tr><th>Group</th><th>Runs</th><th>Confidence change</th><th>Evidence opened</th><th>Trust</th><th>Useful</th><th>Agree %</th></tr>';
+      html += A.segments[g[0]].length ? A.segments[g[0]].map(function (x) {
+        return "<tr><td>" + esc(x.group) + "</td><td class='num'>" + x.runs + "</td><td class='num'>" + esc(fmtD(x.meanDelta)) + ' <span style="color:var(--ink-3)">n ' + x.confN + "</span></td><td class='num'>" + cell(x.evidencePct, "%") +
+          "</td><td class='num'>" + cell(x.trust) + ' <span style="color:var(--ink-3)">n ' + x.surveyN + "</span></td><td class='num'>" + cell(x.usefulness) + "</td><td class='num'>" + cell(x.agreePct, "%") + ' <span style="color:var(--ink-3)">n ' + x.votes + "</span></td></tr>";
+      }).join("") : '<tr><td colspan="7" class="empty">No finished runs yet.</td></tr>';
+      html += "</table></div>";
+    });
+    html += '<p class="msg" style="margin-top:18px">How to run the study and read these numbers: docs/STUDY-PROTOCOL.md in the repository. The paired test per measure is in Paired study.</p>';
+    $("insights-content").innerHTML = html;
+    renderExports(clean, ev);
+  }
+  var TABLE_NOTES = {
+    "paired.csv": "study track: one row per code, both parts side by side",
+    "runs.csv": "one row per screening run: confidence, evidence, votes, ratings, time",
+    "attention.csv": "seconds each report section was in view, per finished run",
+    "votes.csv": "each item's latest vote, with the claim's status or the objection's severity",
+    "open-answers.csv": "every written answer, verbatim",
+    "segments.csv": "the Insights tables by role, channel and track",
+    "participants.csv": "one row per session, as in Participants",
+    "insights.json": "every number in Insights, for scripts"
+  };
+  var exportFiles = {};
+  function renderExports(A, ev) {
+    exportFiles = JOIN.exportTables(A, ev);
+    exportFiles["participants.csv"] = metricsCSV(window.__people || []);
+    var lean = {};
+    Object.keys(A).forEach(function (k) { if (k !== "runs" && k !== "votes" && k !== "pairs") lean[k] = A[k]; });
+    exportFiles["insights.json"] = JSON.stringify(lean, null, 2);
+    $("tableExports").innerHTML = Object.keys(TABLE_NOTES).map(function (name) {
+      return '<button class="exp" data-file="' + esc(name) + '" style="border:none;cursor:pointer;text-align:left;font-family:var(--sans)"><span class="ic">↓</span><div><b>' + esc(name) + "</b><span>" + esc(TABLE_NOTES[name]) + "</span></div></button>";
+    }).join("");
+  }
+  function download(name) {
+    var text = exportFiles[name];
+    if (text == null) return;
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: name.slice(-5) === ".json" ? "application/json" : "text/csv" }));
+    a.download = "vistadex-" + name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-file]") : null;
+    if (b) download(b.dataset.file);
+  });
+
   function render(d) {
     var ev = d.all_events || [];
     var people = computePeople(ev);
+    window.__people = people; // participants.csv in Export
     $("cnt-p").textContent = people.length;
     $("cnt-e").textContent = d.totals.events;
     $("cnt-s").textContent = d.totals.sessions;
@@ -795,6 +911,7 @@ export const RESEARCH_PAGE = `<!doctype html>
 
     var study = people.filter(function (p) { return p.track === "study"; });
     var pairs = renderPairs(ev);
+    renderInsights(ev);
     var complete = pairs.filter(function (r) { return r.complete; });
     var voted = people.filter(function (p) { return p.votes > 0; });
 
@@ -802,8 +919,8 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="kpi"><div class="label">Sessions</div><div class="val">' + d.totals.sessions + '</div><div class="note">consented visitors</div></div>' +
       '<div class="kpi"><div class="label">Events</div><div class="val">' + d.totals.events + '</div><div class="note">telemetry records</div></div>' +
       '<div class="kpi"><div class="label">Pipeline traces</div><div class="val">' + d.totals.traces + '</div><div class="note">screens run (any mode)</div></div>' +
-      '<div class="kpi hl"><div class="label">Participants</div><div class="val">' + people.length + '</div><div class="note">' + study.length + " study · " + (people.length - study.length) + " field</div></div>" +
-      '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>of " + pairs.length + " study participants: both conditions before and after</div></div>" +
+      '<div class="kpi hl"><div class="label">Sessions with data</div><div class="val">' + people.length + '</div><div class="note">' + (people.length - study.length) + " field sessions · " + study.length + " study sessions (" + pairs.length + (pairs.length === 1 ? " code" : " codes") + ")</div></div>" +
+      '<div class="kpi"><div class="label">Paired-complete</div><div class="val">' + complete.length + "</div><div class='note'>of " + pairs.length + (pairs.length === 1 ? " study code" : " study codes") + ": both parts, before and after</div></div>" +
       '<div class="kpi"><div class="label">Items voted</div><div class="val">' + people.reduce(function (a, p) { return a + p.votes; }, 0) + '</div><div class="note">latest vote per item · ' + voted.length + " participants voted</div></div>";
 
     $("recent-participants").innerHTML = HEAD + (people.length
@@ -822,20 +939,18 @@ export const RESEARCH_PAGE = `<!doctype html>
       : '<tr><td colspan="14" class="empty">No participants match the filters.</td></tr>');
     window.__people = people; // for CSV export
 
-    // funnel
-    var f = [
-      ["Registered (study track)", pairs.length],
-      ["AI chatbot part done", pairs.filter(function (r) { return r.baseline.post != null; }).length],
-      ["VistaDex part done", pairs.filter(function (r) { return r.vistadex.post != null; }).length],
-      ["Both conditions complete (paired)", complete.length],
-      ["Field-track participants", people.length - study.length],
-    ];
-    var max = Math.max(1, f[0][1]);
-    $("funnel").innerHTML = f.map(function (s) {
-      return '<div class="fstep"><span class="fl">' + esc(s[0]) + '</span>' +
-        '<div class="fb" style="width:' + Math.max(2, 100 * s[1] / max) + '%"><span>' + s[1] + "</span></div>" +
-        '<span class="fv">' + s[1] + "</span></div>";
-    }).join("");
+    // funnels (shared analysis): bars are a share of the track's first step, never wider than the track
+    var A = window.__analysis;
+    function funnelHTML(steps) {
+      var top = Math.max(1, steps[0][1]);
+      return steps.map(function (st) {
+        var w = Math.min(100, Math.round(100 * st[1] / top));
+        return '<div class="fstep"><span class="fl">' + esc(st[0]) + '</span><div class="track"><div class="fb" style="width:' + w + '%"></div></div>' +
+          '<span class="fv">' + st[1] + " <small>" + (steps[0][1] ? Math.round(100 * st[1] / steps[0][1]) + "%" : "") + "</small></span></div>";
+      }).join("");
+    }
+    $("funnel-study").innerHTML = funnelHTML(A.funnel.study);
+    $("funnel-field").innerHTML = funnelHTML(A.funnel.field);
 
     // event types
     var types = Object.keys(d.events_by_type).sort(function (a, b) { return d.events_by_type[b] - d.events_by_type[a]; });
@@ -890,6 +1005,10 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
 
   $("refreshBtn").onclick = load;
+  $("incTest").onchange = function () { if (window.__events) renderInsights(window.__events); };
+  $("allCsvBtn").onclick = function () {
+    Object.keys(TABLE_NOTES).forEach(function (name, i) { setTimeout(function () { download(name); }, i * 300); });
+  };
   $("roleFilter").onchange = $("trackFilter").onchange = function () { load(); };
   $("csvBtn").onclick = function () {
     var people = window.__people || [];

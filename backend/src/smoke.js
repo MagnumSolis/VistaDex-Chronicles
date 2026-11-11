@@ -188,6 +188,14 @@ const res3 = await runSignalExtraction({ signals: sig3, staging: memColl([]), tf
 check("advice hit skipped and counted, no fetch or LLM call", res3.prefiltered === 1 && sig3.docs.find(d => d._id === 11).extraction_status === "skipped:no-named-shutdown");
 check("pre-filtered signals do not use up the LLM limit", llmCalls === 1 && res3.signals === 1);
 check("backlog drains oldest first", sig3.docs.find(d => d._id === 12).extraction_status === "done" && !("extraction_status" in sig3.docs.find(d => d._id === 13)));
+let clock = 0;
+const sig4 = memColl([1, 2, 3].map(n => ({ _id: 20 + n, url: `https://techcrunch.com/b${n}`, signal_title: "Vreal shuts down", first_seen: n })));
+const res4 = await runSignalExtraction({ signals: sig4, staging: memColl([]), tf: fakeTf(Object.fromEntries([1, 2, 3].map(n => [`https://techcrunch.com/b${n}`, page]))),
+  llm: { available: () => true, complete: async () => { clock += 60_000; return { content: JSON.stringify({ startups: [item] }) }; } }, limit: 10, budgetMs: 90_000, now: () => clock });
+check("time budget stops the run cleanly; the rest wait unmarked", res4.stopped === "time-budget" && res4.signals === 2 && !("extraction_status" in sig4.docs[2]));
+const res5 = await runSignalExtraction({ signals: memColl([{ _id: 30, url: "https://techcrunch.com/c", signal_title: "Vreal shuts down", first_seen: 1 }]), staging: memColl([]), tf: fakeTf({ "https://techcrunch.com/c": page }),
+  llm: { available: () => true, complete: async () => { throw new Error("429 rate limit"); } }, limit: 5 });
+check("rate-limited LLM stops the run and says why", res5.stopped === "llm-unavailable" && res5.signals === 0);
 check("no LLM key -> extraction skipped, nothing written", (await runSignalExtraction({ signals: memColl([{ _id: 4, url: "https://a.com/z" }]), staging: stg, tf: fakeTf({}), llm: { available: () => false } })).skipped === "no-llm");
 
 // 8. Discovery rotation is deterministic (AGENTS.md rule 3: no Math.random in production paths)

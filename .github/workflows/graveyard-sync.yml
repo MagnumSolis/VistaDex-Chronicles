@@ -6,8 +6,15 @@
 # the snapshot. Nothing is published without 2 good sources.
 #
 # Per-run limits (repo variables, defaults below) keep each run inside free tiers:
-#   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 10 LLM calls, 30 s apart
-#   (~35k tokens) · WATCHER_LIMIT candidates, ~3 TinyFish calls each.
+#   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 20 LLM calls (~2.5k tokens
+#   each), EXTRACT_DELAY_MS 25 s apart, stopping after EXTRACT_BUDGET_MS 20 min.
+#   Groq's free tier for the default gpt-oss-120b (8k tokens/min, 200k/day; re-check
+#   if GROQ_MODEL changes) allows ~3 calls a minute and ~80 a day, i.e. 20 per run at
+#   4 runs a day; on a 429 the pipeline falls back to Mistral, and if both refuse the
+#   rest wait for the next run.
+#   Search hits that name no company are skipped before the LLM and do not count
+#   towards SIGNAL_LIMIT; the backlog drains oldest first.
+#   WATCHER_LIMIT candidates, ~3 TinyFish calls each.
 # Secrets: MONGODB_URI, TINYFISH_API_KEY, GROQ_API_KEY and/or MISTRAL_API_KEY
 # (without an LLM key extraction skips and signals wait), CLOUDFLARE_*.
 
@@ -54,7 +61,9 @@ jobs:
           GROQ_MODEL: ${{ vars.GROQ_MODEL }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           DISCOVERY_QUERIES: ${{ vars.DISCOVERY_QUERIES || '4' }}
-          SIGNAL_LIMIT: ${{ vars.SIGNAL_LIMIT || '10' }}
+          SIGNAL_LIMIT: ${{ vars.SIGNAL_LIMIT || '20' }}
+          EXTRACT_DELAY_MS: ${{ vars.EXTRACT_DELAY_MS || '25000' }}
+          EXTRACT_BUDGET_MS: ${{ vars.EXTRACT_BUDGET_MS || '1200000' }}
           FLEET_MODE: discovery
         run: node src/tinyfish-fleet.js
 

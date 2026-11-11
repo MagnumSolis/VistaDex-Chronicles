@@ -128,7 +128,8 @@ export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCom
       result.extraction = await runSignalExtraction({
         signals, staging, tf, llm,
         limit: Number(env.SIGNAL_LIMIT || 10),
-        delayMs: Number(env.EXTRACT_DELAY_MS ?? 30000),
+        delayMs: Number(env.EXTRACT_DELAY_MS || 30000),
+        budgetMs: Number(env.EXTRACT_BUDGET_MS || 20 * 60 * 1000),
       });
       if (result.extraction.skipped) console.log("  [extractor] no GROQ_API_KEY / MISTRAL_API_KEY: signals wait for the next run with a key");
     }

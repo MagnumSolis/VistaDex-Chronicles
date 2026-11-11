@@ -67,9 +67,10 @@ export function parseExtraction(content, pageText, url) {
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export async function runSignalExtraction({ signals, staging, tf, llm, limit = 10, delayMs = 0 }) {
+export async function runSignalExtraction({ signals, staging, tf, llm, limit = 10, delayMs = 0, budgetMs = Infinity, now = Date.now }) {
   if (!llm?.available("extract")) return { skipped: "no-llm" };
-  const counts = { signals: 0, created: 0, added_source: 0, rejected: 0, blocked: 0, prefiltered: 0, fetch_failed: 0 };
+  const counts = { signals: 0, created: 0, added_source: 0, rejected: 0, blocked: 0, prefiltered: 0, fetch_failed: 0, stopped: null };
+  const started = now();
   const mark = (s, status, extra = {}) => signals.updateOne({ _id: s._id }, { $set: { extraction_status: status, extracted_at: new Date(), ...extra } });
 
   // Oldest first; blocked and pre-filtered signals are settled here and do not use up `limit`.
@@ -89,6 +90,11 @@ export async function runSignalExtraction({ signals, staging, tf, llm, limit = 1
     for (const s of batch) {
       const text = pages[s.url]?.content;
       if (!text || pages[s.url].error) { counts.fetch_failed++; await mark(s, "fetch-failed"); continue; }
+      if (now() - started > budgetMs) {
+        counts.stopped = "time-budget";
+        console.log(`  [extractor] time budget used; ${open.length - counts.signals - counts.fetch_failed} signal(s) wait for the next run`);
+        return counts;
+      }
       let content;
       try {
         ({ content } = await llm.complete("extract", {
@@ -97,6 +103,7 @@ export async function runSignalExtraction({ signals, staging, tf, llm, limit = 1
         }));
       } catch (e) {
         console.error(`  [extractor] LLM unavailable (${e.message.slice(0, 120)}); stopping, signals retried next run`);
+        counts.stopped = "llm-unavailable";
         return counts;
       }
       counts.signals++;

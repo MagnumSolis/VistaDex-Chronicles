@@ -107,9 +107,11 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "data: graveyard auto-sync ($(date -u +%Y-%m-%dT%H:%MZ)) [skip graveyard-sync]"
-            # Integrate any commits pushed to main while this run was in flight,
-            # then push. Rebase keeps our snapshot commit on top.
-            git pull --rebase --autostash origin main
+            # Integrate any commits pushed to the branch this run checked out
+            # (main on schedule; the chosen ref on a manual run) while it was in
+            # flight, then push. Rebasing onto main from another branch fails in
+            # this shallow checkout. Rebase keeps our snapshot commit on top.
+            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             if git push; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
             else

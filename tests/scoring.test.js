@@ -55,11 +55,11 @@ test("defensibility: a stated moat alone is not evidence → Not enough data", (
   assert.equal(defensibilityAxis(r).value, null);
 });
 
-test("graveyard distance = 100 × (1 − strongest similarity); no matches → 100; shows the seed checked", () => {
+test("graveyard distance = 100 × (1 − strongest similarity); no matches → capped; shows the seed checked", () => {
   const r = base({ search: searched(), graveyard_matches: [{ similarity: 0.37 }, { similarity: 0.2 }] });
   assert.equal(graveyardAxis(r).value, 63);
   const none = graveyardAxis(base({ search: searched() }));
-  assert.equal(none.value, 100);
+  assert.equal(none.value, 70);
   assert.equal(none.boundary, "Checked against 18 entries (unverified seed)");
 });
 
@@ -139,4 +139,12 @@ test("mock pipeline with samples marks the sample-based axes; without samples, n
   for (const k of ["competitors", "big_tech_risk", "market", "legal", "sample_fields"]) assert.equal(plain[k], undefined, k);
   assert.equal(plain.scores.axes.market.value, null);
   assert.equal(plain.scores.axes.novelty.value, null);
+});
+
+test("graveyard: no match is capped (absence never scores as a good result)", async () => {
+  const { GRAVEYARD } = await import("../prototype/core/scoring-config.js");
+  const none = graveyardAxis(base({ search: { graveyard: { entries_checked: 636, verified_entries: 636 } } }));
+  assert.equal(none.value, GRAVEYARD.noMatchCap);
+  assert.match(none.note, /636 entries.*not proof/);
+  assert.equal(graveyardAxis(base({ graveyard_matches: [{ similarity: 0.4 }] })).value, 60, "a match still scores by distance");
 });

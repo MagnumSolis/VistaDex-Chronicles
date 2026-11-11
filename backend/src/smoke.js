@@ -6,6 +6,8 @@ import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomai
 import { parseStartupPage } from "./ingest-lootdrop.js";
 import { sourceBlockReason, checkSourceText } from "./sources.js";
 import { verifyEntry } from "./fleet.js";
+import { validateExtraction } from "./schemas.js";
+import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.error(`✗ ${name}`); } };
@@ -128,6 +130,45 @@ v = await verifyEntry(fakeTf({ "https://variety.com/q": "Quibi is a video app." 
 check("page that names but does not state the death -> still candidate", v.death_status === "candidate");
 const down = { search: async () => { throw new Error("rate limited"); }, fetchPages: async () => { throw new Error("rate limited"); } };
 check("TinyFish failure throws, so the caller leaves the entry unchanged", await verifyEntry(down, lootEntry()).then(() => false, () => true));
+
+// 7. Signal -> candidate extraction (LLM output is untrusted: schema + page checks, no network)
+const page = "Startups that shut down this year.\nVreal, a VR game streaming platform, shut down in 2019 after it failed to raise a new round. The team moved on.\nZipline raised more money.";
+const item = { company_name: "Vreal", what_they_tried: "A VR game streaming platform.", cause_of_death: "It failed to raise a new round.", year_closed: 2019, evidence_quote: "Vreal, a VR game streaming platform, shut down in 2019 after it failed to raise a new round." };
+check("valid extraction passes", validateExtraction(item, page).ok);
+check("quote not on the page -> rejected", !validateExtraction({ ...item, evidence_quote: "Vreal shut down after a fraud scandal." }, page).ok);
+check("quote must name the company", !validateExtraction({ ...item, company_name: "Zipline", evidence_quote: "The team moved on." }, page).ok);
+check("year not on the page -> rejected", !validateExtraction({ ...item, year_closed: 2018 }, page).ok);
+check("year out of range -> rejected", !validateExtraction({ ...item, year_closed: 1700 }, page).ok);
+check("cause not supported by the page -> rejected", !validateExtraction({ ...item, cause_of_death: "Regulators banned cryptocurrency exchanges nationwide." }, page).ok);
+check("no cause is allowed (stays empty)", validateExtraction({ ...item, cause_of_death: "" }, page).ok);
+check("generic name -> rejected", !validateExtraction({ ...item, company_name: "the startup" }, page).ok);
+check("missing what_they_tried -> rejected", !validateExtraction({ ...item, what_they_tried: "" }, page).ok);
+const parsedX = parseExtraction(JSON.stringify({ startups: [item, { ...item, company_name: "Zipline", evidence_quote: "Zipline raised more money." }] }), page, "https://techcrunch.com/x");
+check("only the startup the page says died becomes a candidate", parsedX.entries.length === 1 && parsedX.entries[0].company_name === "Vreal");
+check("candidate cites the signal page with its evidence", parsedX.entries[0].source_urls[0] === "https://techcrunch.com/x" && parsedX.entries[0].source_checks[0].ok);
+check("extracted entry is a candidate, never confirmed", parsedX.entries[0].death_status === "candidate" && validateEntry(parsedX.entries[0]).ok);
+check("rejected items are counted with reasons", parsedX.rejected.length === 1 && parsedX.rejected[0].errors.length > 0);
+check("malformed LLM output -> nothing", parseExtraction("not json", page, "https://t.co/x").entries.length === 0 && parseExtraction('[{"company_name":"Vreal"}]', page, "https://t.co/x").entries.length === 0);
+
+const memColl = (docs = []) => ({ docs,
+  find(q) { const m = docs.filter(d => Object.entries(q).every(([k, v]) => (v && v.$exists === false) ? !(k in d) : d[k] === v));
+    return { sort() { return this; }, limit(n) { return { toArray: async () => m.slice(0, n) }; } }; },
+  async findOne(q) { const key = q.$or?.[0].company_key; return docs.find(d => d.company_key === key) || null; },
+  async insertOne(d) { docs.push(d); },
+  async updateOne(q, u) { const d = docs.find(x => (q._id !== undefined ? x._id === q._id : x.url === q.url)); if (!d) return; Object.assign(d, u.$set || {}); for (const [k, v] of Object.entries(u.$push || {})) (d[k] ||= []).push(v); },
+});
+const sig = memColl([{ _id: 1, url: "https://techcrunch.com/x" }, { _id: 2, url: "https://www.reddit.com/r/x" }]);
+const stg = memColl([{ _id: 9, company_name: "Zoomo", company_key: "zoomo", death_status: "candidate", source_urls: ["https://www.loot-drop.io/startup/1-zoomo"] }]);
+const fakeLLM = { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [item] }) }) };
+const res = await runSignalExtraction({ signals: sig, staging: stg, tf: fakeTf({ "https://techcrunch.com/x": page }), llm: fakeLLM, limit: 5 });
+check("signal page -> one new candidate", res.created === 1 && stg.docs.some(d => d.company_name === "Vreal" && d.death_status === "candidate"));
+check("forum signal skipped without an LLM call", sig.docs.find(d => d._id === 2).extraction_status === "blocked:forum");
+check("processed signal is marked done", sig.docs.find(d => d._id === 1).extraction_status === "done");
+const sig2 = memColl([{ _id: 3, url: "https://variety.com/y" }]);
+await runSignalExtraction({ signals: sig2, staging: stg, tf: fakeTf({ "https://variety.com/y": page.replace("Vreal", "Zoomo").replace("Vreal", "Zoomo") }), llm: { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [{ ...item, company_name: "Zoomo", evidence_quote: item.evidence_quote.replace("Vreal", "Zoomo") }] }) }) }, limit: 5 });
+const zoomo = stg.docs.find(d => d.company_name === "Zoomo");
+check("known company: page added as a source, no duplicate", stg.docs.filter(d => d.company_key === "zoomo").length === 1 && zoomo.source_urls.includes("https://variety.com/y"));
+check("no LLM key -> extraction skipped, nothing written", (await runSignalExtraction({ signals: memColl([{ _id: 4, url: "https://a.com/z" }]), staging: stg, tf: fakeTf({}), llm: { available: () => false } })).skipped === "no-llm");
 
 console.log(`\nSmoke: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

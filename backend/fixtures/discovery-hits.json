@@ -1,0 +1,335 @@
+{
+ "note": "Search hits for the discovery pre-filter (sources.js leadSkipReason). 'backlog' and '2026-11-11 run' rows are titles and the first 140 characters of snippets from real TinyFish results stored in graveyard_signals on 2026-11-11; 'synthetic' rows were written for the test. expect: lead = names a company that shut down, or lists closed companies; skip = advice, statistics or unrelated.",
+ "hits": [
+  {
+   "title": "SimpleClosure | Business Dissolution Done Right",
+   "snippet": "SimpleClosure is your shutdown partner for responsible closure. We bring clarity, expertise, and efficiency to the shutdown process, so you ",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "Shutting Down: Lessons From Startup Founders Who've ...",
+   "snippet": "GA, CA, and FL founders, coaches, and shutdown specialists on the signs it's time to close a startup — and how to wind down the right way.",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "Shutting Down Your Startup - by Ben Yoskovitz",
+   "snippet": "Shutting a startup down is failure. We shouldn't sugarcoat it, celebrate it or pretend it's not real. It hurts. Worse, you will probably fee",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "I just shut down my startup. Here's what I learned.",
+   "snippet": "I just shut down my startup. Here's what I learned. Most startups fail. I've seen some statistics that show a 60% failure rate, others a 90%",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "Shutting down a startup: How to protect yourself and your ...",
+   "snippet": "Shutting down a business requires as much care and diligence as starting one: Understand your legal obligations and those of your company an",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "Startup shutdowns continued to accelerate in Q1 2024",
+   "snippet": "The number of startup shutdowns on Carta hit a new high in Q1, with 254 company closures—a 58% increase compared to last year.",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "Shut down my startup after 6 years - now what?",
+   "snippet": "",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "The 2025 Startup Shutdown: More Capital, Later Stages, and the First AI ...",
+   "snippet": "The data tells a clear story: 2025 is not a year of collapse—it is a year of maturation. Companies shutting down are older, have raised more",
+   "expect": "skip",
+   "from": "2026-11-11 run"
+  },
+  {
+   "title": "2025 will likely be another brutal year of failed startups ...",
+   "snippet": "2025 could be another brutal year of startups shutting down. In 2024, 966 startups shut down, compared to 769 in 2023, according to Carta. T",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Tech startups that closed down in 2025",
+   "snippet": "Tech startups that closed down in 2025 · Dunzo · BluSmart · Hike · Good Glamm Group · Otipy.",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "2025 United States federal government shutdown",
+   "snippet": "From October 1 to November 12, 2025, the federal government of the United States was shut down as Congress failed to pass appropriations leg",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Tech Startups That Shut Down in 2025: Lessons from the Tough Year",
+   "snippet": "",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "When is a Startup No Longer a Startup?",
+   "snippet": "When is a Startup No Longer a Startup? · Age: Usually less than 5-10 years old · Size: Less than 500 people · Capital: Not making a profit, ",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "What is correct start-up or startup or start up? | by Anna A ...",
+   "snippet": "Start up is now split. They all dropped the startup hyphenated version. Collins Dictionary got lost along the way, start-up and start up.",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Many Startups Shutdown a Few Times Before They Succeed",
+   "snippet": "It's time to know the truth about Startup shutdowns and why they don't mean absolute failure.",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "semanser/awesome-startup-postmortems",
+   "snippet": "Network's Failure* Post Mortem on a Failed Product Lessons. Failure Revisiting the Standout Jobs postmortem; Read, listen and research to av",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Startup Autopsy - Learn What Killed Them, So You Can Survive",
+   "snippet": "Startups fail for various reasons including lack of market fit, cash flow problems, partnership disputes, financing failures, and poor execu",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Why Startups Fail: CB Insights Data on All 12 Reasons (With ...",
+   "snippet": "TLDR ... The \"90% failure rate\" is a myth. Real data from the U.S. Bureau of Labor Statistics shows about 48% of startups fail within five y",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Why Startups Fail: Top Reasons Ranked From 431 Post- ...",
+   "snippet": "Results indicate that failure factors related to product/market misfit, lack of capital, great power of competition, law and regulation prob",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Ask HN: Services for Shutting Down a Startup?",
+   "snippet": "Financial and Legal is the only thing you need to focus on. You can literally shut down the operations yourself. The key issue that I found ",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Never Hated Anything More Than Shutting Down My YC ...",
+   "snippet": "I'm helping out a few YC founders shut down their startups. Some clear flaws with this being a potential business (not recurring revenue, ..",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "We are shutting down our startup, I get our code. What now?",
+   "snippet": "If you are shutting down the company, I would make the effort to upload all the code to GitHub or GitLab with the agreement between you and ",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Ask HN: Shut down a startup despite strong traction?",
+   "snippet": "We're preparing to shut it down or keep it running on low infrastructure costs. And that's why I've slowly started looking for my next job (",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "The business of winding down startups is booming",
+   "snippet": "A startup that specializes in tearing down failed startups could tear itself down when they are no longer needed.",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "> But in the startup world it's make profit, sell, or shut down ...",
+   "snippet": "But in the startup world it's make profit, sell, or shut down. In the startup world 90% of companies are shut down because their ideas are n",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Brutal Startup Failure",
+   "snippet": "Eventually, I made my final offer to the co-founder: \"Take $150k now, or we shut down the business.\" In a formal shareholder meeting, he not",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "A primer on startup shutdowns - Seed to Sequoia",
+   "snippet": "AngelList tracked 364 startup “wind-downs” in 2024 vs. 233 in 2023 (a 56% spike); and PitchBook data indicates over 3,200 private venture- .",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Excess Emissions During Periods of Startup, Shutdown, and Malfunction",
+   "snippet": "This action is effective on January 10, 2025, without further notice, unless the EPA receives significant adverse comment by December 26, 20",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "History of Startups: Why Some Become Epic Companies ...",
+   "snippet": "Ryasov will share professional insights and highlight case studies of well-known startup companies to illustrate the qualities of a successf",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Why Startups Really Fail in 2026 (Not What CB Insights Said)",
+   "snippet": "What the Public Failure Data Misses ... CB Insights studied failures after they happened. A post-mortem tells you why a company died, but no",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Mental Health Startup Ahead Shuts Down",
+   "snippet": "Ahead, a mental health startup, will shutdown after a key financial and operational backer pivoted away from what Ahead was offering.",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Startup Fast abruptly shuts down",
+   "snippet": "Startup Fast abruptly shuts down. The one-click checkout startup announced Tuesday it's shutting down, despite the CEO promising heady growt",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Tech Layoffs Tracker 2026",
+   "snippet": "Every tech layoff in 2026, updated daily: 706 layoffs and. Explorium shuts down after raising more than $127 million",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Silicon Valley November Summit 2026",
+   "snippet": "Join us this November in the heart of Silicon Valley. three days of startup pitches, hear from over 300+ startups from 20+ industry programs",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "14 Startup Postmortems",
+   "snippet": "Lately there appears to be several public postmortems of founders sharing their failures. Here is a collection of fantastic postmortems I've",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Startup Shutdowns Hit a Record in 2026, Mostly the ZIRP ...",
+   "snippet": "More venture-backed startups shut down in 2026 than in any year on record, according to data from Andreessen Horowitz cited by law firm Fole",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Record Startup Shutdowns Reflect a Market That Is Moving ...",
+   "snippet": "This year, more venture-backed companies shut down than at any point on record, according to data published last week by Andreessen Horowitz",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "70 Startup Failure Statistics for 2026 - MangoThrive",
+   "snippet": "48.6% of US private-sector establishments opened in the year to March 2020 closed within five years. See 70 startup failure statistics for 2",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Category:Companies disestablished in 2026",
+   "snippet": "This category is for companies, corporations or businesses disestablished in the year 2026. ... The following 3 pages are in this category, ",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Closed Companies",
+   "snippet": "Closed Companies ; Chimoney, 2026, FinTech / Payments ; Yupp, 2026, Artificial Intelligence ; f5 Therapeutics, 2026, Biotechnology ; Hooked ",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Remembering failed startups of 2022",
+   "snippet": "Bitfront, a California-based crypto exchange startup, shut down in November after investors withdrew their coins from the exchange.",
+   "expect": "lead",
+   "from": "backlog"
+  },
+  {
+   "title": "Why My Startup Failed - Medium",
+   "snippet": "Five distilled lessons of growing and closing an award winning startup · Lesson 1: Your Go-To-Market Strategy Is Only as Good as Your Sales ",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Why Startups Fail (2026) | Lessons From 200 Founders",
+   "snippet": "Roughly 70-90% of startups fail, depending on the dataset and time frame. Nearly a quarter of new businesses shut down in their very first .",
+   "expect": "skip",
+   "from": "backlog"
+  },
+  {
+   "title": "Bench Accounting shuts down abruptly, leaving customers scrambling",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "Exclusive: Synapse, the banking-as-a-service startup, files for bankruptcy",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "Berlin-based Gorillas is shutting down its US operations",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "Google acquihires Windsurf team in $2.4B deal",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "23andMe files for bankruptcy",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "Investors reacted to the shutdown of Quibi last week",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "Dunzo winds down operations - Economic Times",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "10 fintech startups that shut down this year",
+   "snippet": "",
+   "expect": "lead",
+   "from": "synthetic"
+  },
+  {
+   "title": "When to Shut Down Your Startup",
+   "snippet": "",
+   "expect": "skip",
+   "from": "synthetic"
+  },
+  {
+   "title": "Why Your Startup Should Shut Down",
+   "snippet": "",
+   "expect": "skip",
+   "from": "synthetic"
+  },
+  {
+   "title": "Indian startup shuts down after failing to raise funds",
+   "snippet": "The company did not say how many staff were affected.",
+   "expect": "skip",
+   "from": "synthetic"
+  },
+  {
+   "title": "How many startups shut down in 2024? Yahoo Finance",
+   "snippet": "",
+   "expect": "skip",
+   "from": "synthetic"
+  }
+ ]
+}

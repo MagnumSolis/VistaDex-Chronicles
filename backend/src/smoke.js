@@ -4,7 +4,7 @@
 
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
-import { sourceBlockReason, checkSourceText } from "./sources.js";
+import { sourceBlockReason, checkSourceText, leadSkipReason, shutdownLeads } from "./sources.js";
 import { verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
 import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
@@ -153,22 +153,41 @@ check("malformed LLM output -> nothing", parseExtraction("not json", page, "http
 
 const memColl = (docs = []) => ({ docs,
   find(q) { const m = docs.filter(d => Object.entries(q).every(([k, v]) => (v && v.$exists === false) ? !(k in d) : d[k] === v));
-    return { sort() { return this; }, limit(n) { return { toArray: async () => m.slice(0, n) }; } }; },
+    return { sort(spec) { const ks = Object.entries(spec); m.sort((a, b) => { for (const [k, dir] of ks) { if (a[k] < b[k]) return -dir; if (a[k] > b[k]) return dir; } return 0; }); return this; },
+      limit(n) { return { toArray: async () => m.slice(0, n) }; } }; },
   async findOne(q) { const key = q.$or?.[0].company_key; return docs.find(d => d.company_key === key) || null; },
   async insertOne(d) { docs.push(d); },
   async updateOne(q, u) { const d = docs.find(x => (q._id !== undefined ? x._id === q._id : x.url === q.url)); if (!d) return; Object.assign(d, u.$set || {}); for (const [k, v] of Object.entries(u.$push || {})) (d[k] ||= []).push(v); },
 });
-const sig = memColl([{ _id: 1, url: "https://techcrunch.com/x" }, { _id: 2, url: "https://www.reddit.com/r/x" }]);
+const sig = memColl([{ _id: 1, url: "https://techcrunch.com/x", signal_title: "Vreal shuts down" }, { _id: 2, url: "https://www.reddit.com/r/x", signal_title: "Vreal shuts down" }]);
 const stg = memColl([{ _id: 9, company_name: "Zoomo", company_key: "zoomo", death_status: "candidate", source_urls: ["https://www.loot-drop.io/startup/1-zoomo"] }]);
 const fakeLLM = { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [item] }) }) };
 const res = await runSignalExtraction({ signals: sig, staging: stg, tf: fakeTf({ "https://techcrunch.com/x": page }), llm: fakeLLM, limit: 5 });
 check("signal page -> one new candidate", res.created === 1 && stg.docs.some(d => d.company_name === "Vreal" && d.death_status === "candidate"));
 check("forum signal skipped without an LLM call", sig.docs.find(d => d._id === 2).extraction_status === "blocked:forum");
 check("processed signal is marked done", sig.docs.find(d => d._id === 1).extraction_status === "done");
-const sig2 = memColl([{ _id: 3, url: "https://variety.com/y" }]);
+const sig2 = memColl([{ _id: 3, url: "https://variety.com/y", signal_title: "Zoomo is shutting down" }]);
 await runSignalExtraction({ signals: sig2, staging: stg, tf: fakeTf({ "https://variety.com/y": page.replace("Vreal", "Zoomo").replace("Vreal", "Zoomo") }), llm: { available: () => true, complete: async () => ({ content: JSON.stringify({ startups: [{ ...item, company_name: "Zoomo", evidence_quote: item.evidence_quote.replace("Vreal", "Zoomo") }] }) }) }, limit: 5 });
 const zoomo = stg.docs.find(d => d.company_name === "Zoomo");
 check("known company: page added as a source, no duplicate", stg.docs.filter(d => d.company_key === "zoomo").length === 1 && zoomo.source_urls.includes("https://variety.com/y"));
+// Pre-filter: hits whose title/snippet name no company next to a shutdown phrase skip the fetch and the LLM.
+const hits = JSON.parse(readFileSync(new URL("../fixtures/discovery-hits.json", import.meta.url), "utf8")).hits;
+const wrong = hits.filter(h => (leadSkipReason(h.title, h.snippet) === null) !== (h.expect === "lead"));
+check(`pre-filter labels the fixture hits (${hits.length}); wrong: ${wrong.map(h => h.title).join(" / ")}`, wrong.length === 0);
+check("the 2026-11-11 run's advice pages would all have been skipped", hits.filter(h => h.from === "2026-11-11 run").every(h => leadSkipReason(h.title, h.snippet)));
+check("names come from the words next to the phrase", JSON.stringify(shutdownLeads("Exclusive: Synapse, the banking-as-a-service startup, files for bankruptcy")) === '["Synapse"]');
+check("a capitalised common word or state code is not a name", shutdownLeads("But in the startup world, CA founders shut down.").length === 0);
+let llmCalls = 0;
+const countingLLM = { available: () => true, complete: async () => { llmCalls++; return { content: JSON.stringify({ startups: [item] }) }; } };
+const sig3 = memColl([
+  { _id: 13, url: "https://techcrunch.com/new", signal_title: "Vreal shuts down", first_seen: 3 },
+  { _id: 11, url: "https://blog.example/advice", signal_title: "When to Shut Down Your Startup", snippet: "Shutting down is hard.", first_seen: 1 },
+  { _id: 12, url: "https://techcrunch.com/old", signal_title: "Vreal shuts down", first_seen: 2 },
+]);
+const res3 = await runSignalExtraction({ signals: sig3, staging: memColl([]), tf: fakeTf({ "https://techcrunch.com/old": page, "https://techcrunch.com/new": page }), llm: countingLLM, limit: 1 });
+check("advice hit skipped and counted, no fetch or LLM call", res3.prefiltered === 1 && sig3.docs.find(d => d._id === 11).extraction_status === "skipped:no-named-shutdown");
+check("pre-filtered signals do not use up the LLM limit", llmCalls === 1 && res3.signals === 1);
+check("backlog drains oldest first", sig3.docs.find(d => d._id === 12).extraction_status === "done" && !("extraction_status" in sig3.docs.find(d => d._id === 13)));
 check("no LLM key -> extraction skipped, nothing written", (await runSignalExtraction({ signals: memColl([{ _id: 4, url: "https://a.com/z" }]), staging: stg, tf: fakeTf({}), llm: { available: () => false } })).skipped === "no-llm");
 
 // 8. Discovery rotation is deterministic (AGENTS.md rule 3: no Math.random in production paths)

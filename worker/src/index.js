@@ -36,7 +36,33 @@ export default {
   fetch(request, env) {
     return handle(request, env, { store: d1Store(env.DB) });
   },
+  // Daily cleanup (wrangler.toml [triggers]): deletes study data older than RETENTION_DAYS (default 365, the
+  // "12 months" the Welcome notice promises).
+  async scheduled(_event, env) {
+    const days = Number(env.RETENTION_DAYS) || 365;
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    const out = await d1Store(env.DB).purgeOlderThan(cutoff);
+    console.log(`retention cleanup before ${cutoff}: ${out.events} events, ${out.traces} traces`);
+  },
 };
+
+// A run from a visitor who is not recorded (declined, not yet answered, or the pitch edition) keeps only what
+// finds bugs: event kinds, times, counts, providers, statuses. No idea text, claims, queries, URLs or quotes.
+const KEEP = new Set(["t", "kind", "type", "router", "stage", "provider", "model", "ok", "status", "fallbacks", "claim_index", "sources", "figures", "rules", "kept", "returned", "corroborated", "level", "used", "limit", "big_tech", "market", "reason"]);
+export function minimalTrace(trace) {
+  return {
+    trace_id: trace.trace_id, mode: trace.mode, recorded: false, idea_chars: trace.idea_chars,
+    started_at: trace.started_at, finished_at: trace.finished_at,
+    events: (trace.events || []).map(e => {
+      const out = {};
+      for (const [k, v] of Object.entries(e)) {
+        if (KEEP.has(k) && (typeof v !== "string" || v.length <= 40)) out[k] = v;
+        else if (Array.isArray(v) && (k === "results" || k === "ok")) out[k] = v.length;
+      }
+      return out;
+    }),
+  };
+}
 
 export async function handle(request, env, { store, fetchImpl, now = () => new Date().toISOString() }) {
   // A browser Origin header equal to the request's own origin means a
@@ -110,7 +136,8 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
   // No samples here: the server never fills fields with placeholder data.
   const graveyard = graveyardSnapshot.count > 0 ? withIds(graveyardSnapshot.entries) : GRAVEYARD_DB;
   const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard });
-  await store.saveTrace(trace.trace_id, trace.mode, trace, now());
+  const recorded = request.headers.get("X-VistaDex-Record") !== "no";
+  await store.saveTrace(trace.trace_id, trace.mode, recorded ? trace : minimalTrace(trace), now());
   return json(report, 200, {
     ...cors,
     "X-VistaDex-Trace-Id": trace.trace_id,
@@ -248,7 +275,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access",
+    "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access, X-VistaDex-Record",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

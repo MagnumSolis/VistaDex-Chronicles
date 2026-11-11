@@ -21,7 +21,7 @@ export const NOTICE = {
   // TODO(team): confirm. Default: the idea text is NOT stored in usage records.
   ideaText: "The idea text you paste is not stored in these records; we only note how long it is.",
   ideaTextMock: "In this version the screening runs in your browser, so the idea text never leaves it.",
-  ideaTextLive: "To make the report, the idea text is sent to our server. The server keeps a technical log of each screening (the claims it pulled out of your text and the sources it checked) so we can find bugs; deleting your session deletes those logs too.",
+  ideaTextLive: "To make the report, the idea text is sent to our server. If you take part, the server keeps a technical log of each screening (the claims it pulled out of your text and the sources it checked) so we can find bugs; deleting your session deletes those logs too. If you use VistaDex without recording, the log keeps only timings and counts, never your text. Everything is deleted after 12 months.",
   reportsLocal: "Your reports, including the idea text, are saved in this browser only so you can find them on the Reports page. They are never uploaded; clear them there at any time.",
   // TODO(team): opt-out policy. Default: a visible "Use without recording" choice on Welcome.
   optOut: "Use without recording",

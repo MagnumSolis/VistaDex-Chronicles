@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-5 (study flow: both parts reachable and finished: CURRENT)
+## study_version 2026-11-study-6 (paired measures for the within-subjects analysis: CURRENT)
+
+Bumped because the AI chatbot page changed and the study events changed (decision: 2026-11-11, from checking every study event against H1 to H4).
+
+- **Both conditions now log the same paired measures under one run id each.** `condition_started { condition, idea_key, order_position }` (never logged before, so the assigned idea and the order were not in the data; older data can only take the order from the code's parity, which the console and the analysis flag as "from code"), `confidence_pre`, `confidence_post`, `condition_survey` and `condition_ended { run_id, verified_sources }`. The chatbot part's run id is `b_` + 12 hex (before: a new `baseline-<ms>` for every event, so its before and after could not be joined); the VistaDex part uses the report's run id, and `verified_sources` counts the evidence links opened in that report. `order_position` comes from what the participant has finished (1 or 2), not from the planned order.
+- **The chatbot part asks for confidence before the chatbot steps.** Until study-5 the "before" slider was on the same page as the instructions and was logged on "I've read the AI's answer", i.e. after the participant had read the chatbot's answer (H1). Now: the idea and the confidence question, "Next: ask the chatbot" (new control `baseline_start`, logs `condition_started` and `confidence_pre`), then the chatbot steps, then the ratings.
+- **H2 is measured in both conditions.** The chatbot ratings ask "Did you check any of the AI's sources, or look anything up yourself?" (0 / 1-2 / 3+), as VistaDex asks about its evidence links. Both `condition_survey` and `run_scoped_survey` now carry `sources_checked` ("0" | "1-2" | "3+" | null when unanswered; field-track runs too). Before, the VistaDex answer was only a `control_pressed` and the chatbot had none.
+- **Console.** New Paired study view and paired.csv (one row per participant code across sessions, both conditions side by side, Wilcoxon signed-rank per measure). The Overview "Paired-complete" count and the funnel now count per condition (they counted any survey as both). The per-run join no longer puts the chatbot condition's measures on a VistaDex run (they had overwritten that run's before/after and survey in the Research view and the H4 split). The login form posts the token; tokens in URLs are no longer accepted.
+- **Analysis.** `analysis/study_analysis.mjs` (README) gives H1 to H4 from an export with the console's own joins. For study-4 and study-5 data: the chatbot part's before-confidence was taken after reading the chatbot's answer, the order comes from the code number, and the idea only from an unedited VistaDex run's `sample`; report those sessions separately or as a limitation.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-5 (study flow: both parts reachable and finished)
 
 Same events, payload keys and control ids as 2026-11-study-4. Bumped because the visitor-facing study flow changed (decision: 2026-11-11, found by testing the live study-4 site the day data window 2 opens).
 

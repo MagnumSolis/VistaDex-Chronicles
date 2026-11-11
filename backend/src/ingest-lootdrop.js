@@ -24,6 +24,29 @@ function decodeEntities(s) {
 }
 function stripTags(html) { return decodeEntities(html.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); }
 
+// The Failure Analysis card: <article data-full-text="FULL TEXT"> ... <h3 class="card-title">Failure
+// Analysis</h3> ... <p class="card-text">TRUNCATED....</p></article>. The cause is the
+// first paragraph of the full text, cut at a sentence boundary.
+export function failureAnalysis(html, max = 600) {
+  for (const m of html.matchAll(/<article\b([^>]*)>([\s\S]*?)<\/article>/g)) {
+    if (!/class="card-title">\s*Failure Analysis\s*</i.test(m[2])) continue;
+    const full = m[1].match(/data-full-text="([^"]*)"/)?.[1];
+    const text = full ? decodeEntities(full) : stripTags(m[2].match(/<p[^>]*>([\s\S]*?)<\/p>/)?.[1] || "").replace(/\.{3,}$/, "");
+    return firstSentences(text.split(/\n\s*\n/)[0].replace(/\s+/g, " ").trim(), max);
+  }
+  return "";
+}
+
+function firstSentences(text, max) {
+  if (text.length <= max) return text;
+  let out = "";
+  for (const s of text.split(/(?<=[.!?])\s+/)) {
+    if ((out + " " + s).trim().length > max) break;
+    out = (out + " " + s).trim();
+  }
+  return out || text.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
 export function parseStartupPage(html, url) {
   const title = decodeEntities((html.match(/<title>([^<]*)<\/title>/)?.[1] || ""));
   const companyName = title.split("|")[0].trim();
@@ -49,14 +72,12 @@ export function parseStartupPage(html, url) {
     .filter(p => p.length > 80);
   const narrative = paras.find(p => !/^Humane died/i.test(p) && !/Failure Analysis/i.test(p)) || paras[0] || "";
 
-  // Failure Analysis section (first paragraph after the heading)
-  const fa = body.match(/Failure Analysis<\/[a-z]+>\s*<[a-z]+>([^<]{30,})/i)?.[1];
-  const failureAnalysis = fa ? stripTags(fa) : "";
-
   return {
     company_name: companyName,
     what_they_tried: narrative.slice(0, 900),
-    cause_of_death: (failureAnalysis || narrative.slice(0, 400)).slice(0, 600),
+    // Only the page's own Failure Analysis card; empty when the page has none.
+    cause_of_death: failureAnalysis(body),
+    searched_fields: ["failure_reason"],
     cause_category: "other", // Loot Drop's 7 antipatterns map later via tagger
     year_closed: endYear ? Number(endYear) : null,
     raised: burned, // "TOTAL CASH BURNED" is the closest public funding figure

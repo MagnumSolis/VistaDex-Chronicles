@@ -27,8 +27,11 @@ export const TRACKED_FIELDS = [
   "registry_record", "what_they_tried", "year_closed",
 ];
 
-export function newGraveyardEntry({ company_name, what_they_tried, cause_of_death, failure_reason, cause_category, year_closed, closure_date, raised, funding_rounds, sector, product_type, country, registry_record, source_urls, source }) {
+// searched_fields: fields the ingest looked for; a looked-for field that came back
+// empty is recorded as "searched_not_found", the rest stay "never_searched".
+export function newGraveyardEntry({ company_name, what_they_tried, cause_of_death, failure_reason, cause_category, year_closed, closure_date, raised, funding_rounds, sector, product_type, country, registry_record, source_urls, source, searched_fields = [] }) {
   const search_status = blankSearchStatus(TRACKED_FIELDS);
+  for (const f of searched_fields) if (f in search_status) search_status[f] = "searched_not_found";
   if (failure_reason || cause_of_death) search_status.failure_reason = "found";
   if (funding_rounds?.length || raised) search_status.funding_rounds = "found";
   if (closure_date || year_closed) { search_status.closure_date = "found"; search_status.year_closed = "found"; }
@@ -68,7 +71,8 @@ export function validateEntry(entry) {
   const errors = [];
   if (!entry.company_name) errors.push("missing company_name");
   if (!entry.what_they_tried || entry.what_they_tried.length < 10) errors.push("what_they_tried too short");
-  if (!entry.failure_reason || entry.failure_reason.length < 5) errors.push("failure_reason too short");
+  // A cause of death is optional (blank stays blank, never invented), but a stated one must say something.
+  if (entry.failure_reason && entry.failure_reason.length < 5) errors.push("failure_reason too short");
   const y = entry.year_closed;
   if (!y || y < 1990 || y > new Date().getFullYear() + 1) errors.push(`year_closed out of range: ${y}`);
   if (!Array.isArray(entry.source_urls) || entry.source_urls.length === 0) errors.push("no source_urls");
@@ -101,4 +105,46 @@ export function isIndependentSource(url, existingUrls) {
   const d = registrableDomain(url);
   if (!d) return false;
   return !existingUrls.some(u => registrableDomain(u) === d);
+}
+
+// ── Signal extraction (LLM output is untrusted) ────────────────────────────
+// One startup an LLM read off a signal page. Every field must be supported by the
+// page itself: the evidence quote is copied from it and names the company, a year
+// appears on it, and most words of a stated cause appear on it. Anything else is
+// rejected, never repaired.
+const GENERIC_NAMES = /^(?:the |a |an )?(?:startup|company|firm|business|platform|app|service|it|they)s?$/i;
+const norm = s => String(s || "").toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[#*_>|`]+/g, " ").replace(/\s+/g, " ").trim();
+
+export function companyKey(name) {
+  return norm(name).replace(/[\s,]+(?:inc\.?|llc|ltd\.?|limited|corp\.?|corporation|gmbh|plc)$/, "").replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+export function validateExtraction(item, pageText) {
+  const errors = [];
+  const page = norm(pageText);
+  const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const value = {
+    company_name: str(item?.company_name, 120),
+    what_they_tried: str(item?.what_they_tried, 600),
+    cause_of_death: str(item?.cause_of_death, 600),
+    year_closed: item?.year_closed == null || item?.year_closed === "" ? null : Number(item.year_closed),
+    evidence_quote: str(item?.evidence_quote, 600),
+  };
+  const n = value.company_name;
+  if (n.length < 2 || n.length > 80 || /[\n\r]/.test(n) || GENERIC_NAMES.test(n)) errors.push("bad company_name");
+  if (value.what_they_tried.length < 10) errors.push("what_they_tried too short");
+  if (value.year_closed !== null) {
+    const y = value.year_closed;
+    if (!Number.isInteger(y) || y < 1990 || y > new Date().getFullYear() + 1) errors.push(`year_closed out of range: ${item.year_closed}`);
+    else if (!page.includes(String(y))) errors.push("year_closed not on the page");
+  }
+  const q = norm(value.evidence_quote);
+  if (q.length < 15 || !page.includes(q)) errors.push("evidence_quote not copied from the page");
+  else if (!q.includes(norm(n))) errors.push("evidence_quote does not name the company");
+  if (value.cause_of_death) {
+    const words = norm(value.cause_of_death).match(/[\p{L}\p{N}]{4,}/gu) || [];
+    const onPage = words.filter(w => page.includes(w)).length;
+    if (!words.length || onPage / words.length < 0.6) errors.push("cause_of_death not supported by the page");
+  }
+  return { ok: errors.length === 0, errors, value };
 }

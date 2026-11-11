@@ -31,6 +31,9 @@ async function stats() {
   const staging = db.collection("graveyard_staging");
   const live = db.collection("graveyard");
   console.log("staging:", await staging.countDocuments({}), "candidates:", await staging.countDocuments({ death_status: "candidate" }), "confirmed:", await staging.countDocuments({ death_status: "confirmed" }));
+  console.log("confirmed with a cause of death:", await staging.countDocuments({ death_status: "confirmed", failure_reason: { $nin: ["", null] } }));
+  const signals = db.collection("graveyard_signals");
+  console.log("signals:", await signals.countDocuments({}), "waiting for extraction:", await signals.countDocuments({ extraction_status: { $exists: false } }));
   console.log("live graveyard:", await live.countDocuments({}));
   await client.close();
 }

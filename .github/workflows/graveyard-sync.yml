@@ -1,7 +1,15 @@
 # .github/workflows/graveyard-sync.yml — automated graveyard growth.
-# On schedule (and on demand), runs the TinyFish death-watcher against Atlas
-# staging (confirming deaths with >=2 independent sources), exports confirmed
-# entries, and commits+pushes the snapshot — which then triggers deploy.yml.
+# On schedule (and on demand): key-free smoke test, then discovery (TinyFish search
+# → graveyard_signals → LLM extraction → staging candidates), then the Death Watcher
+# (a candidate is confirmed only with 2 fetched pages on distinct domains that name
+# the company and state its death), then export confirmed entries and commit+deploy
+# the snapshot. Nothing is published without 2 good sources.
+#
+# Per-run limits (repo variables, defaults below) keep each run inside free tiers:
+#   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 10 LLM calls, 30 s apart
+#   (~35k tokens) · WATCHER_LIMIT candidates, ~3 TinyFish calls each.
+# Secrets: MONGODB_URI, TINYFISH_API_KEY, GROQ_API_KEY and/or MISTRAL_API_KEY
+# (without an LLM key extraction skips and signals wait), CLOUDFLARE_*.
 
 name: graveyard-sync
 
@@ -26,13 +34,31 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install backend deps
         working-directory: backend
         run: npm install
 
-      - name: Death Watcher — confirm staged candidates
+      - name: Smoke test (key-free)
+        working-directory: backend
+        run: npm run smoke
+
+      - name: "Discovery: search, store signals, extract candidates"
+        working-directory: backend
+        continue-on-error: true # a failed discovery must not block confirming or exporting
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          DISCOVERY_QUERIES: ${{ vars.DISCOVERY_QUERIES || '4' }}
+          SIGNAL_LIMIT: ${{ vars.SIGNAL_LIMIT || '10' }}
+          FLEET_MODE: discovery
+        run: node src/tinyfish-fleet.js
+
+      - name: "Death Watcher: confirm candidates with 2 good sources"
         working-directory: backend
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

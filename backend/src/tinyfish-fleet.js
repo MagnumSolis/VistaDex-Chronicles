@@ -7,6 +7,6 @@ if (!env.TINYFISH_API_KEY) { console.error("TINYFISH_API_KEY not set"); process.
 if (!env.MONGODB_URI) { console.error("MONGODB_URI not set"); process.exit(1); }
 
 const known = process.env.KNOWN_COMPANIES ? process.env.KNOWN_COMPANIES.split(",") : [];
-runFleet({ apiKey: env.TINYFISH_API_KEY, mongoUri: env.MONGODB_URI, dbName: env.MONGODB_DB || "vistadex", knownCompanies: known })
+runFleet({ apiKey: env.TINYFISH_API_KEY, mongoUri: env.MONGODB_URI, dbName: env.MONGODB_DB || "vistadex", knownCompanies: known, env })
   .then(r => console.log("Fleet done:", JSON.stringify(r)))
   .catch(e => { console.error(e); process.exit(1); });

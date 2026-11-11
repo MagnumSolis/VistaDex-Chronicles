@@ -6,10 +6,12 @@
     "ingest:lootdrop": "node src/ingest-lootdrop.js",
     "agents:run": "node src/tinyfish-fleet.js",
     "agents:monitor": "node src/tinyfish-fleet.js --monitor",
+    "agents:reverify": "FLEET_MODE=reverify node src/tinyfish-fleet.js",
     "db:stats": "node src/db.js stats",
     "db:publish": "node src/db.js publish",
     "smoke": "node src/smoke.js",
     "db:export": "node src/export-graveyard.js",
+    "db:backfill-causes": "node src/backfill-causes.js",
     "research:sync": "node src/sync-research.js"
   },
   "dependencies": {

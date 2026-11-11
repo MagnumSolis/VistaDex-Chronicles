@@ -1,4 +1,4 @@
-// backend/src/extract-signals.js — turn raw graveyard_signals (search hits from News
+// backend/src/extract-signals.js: turn raw graveyard_signals (search hits from News
 // Scout and Post-Mortem Miner) into staging candidates.
 // For each unprocessed signal: fetch the page (TinyFish Fetch), ask an LLM (Groq or
 // Mistral, the pipeline's providers) which startups the page says shut down, then

@@ -1,4 +1,4 @@
-// backend/src/backfill-causes.js — re-read each loot-drop page and store its real
+// backend/src/backfill-causes.js: re-read each loot-drop page and store its real
 // cause of death (the Failure Analysis card). Earlier ingests copied the first 400
 // characters of the narrative instead. A page without the card leaves the cause
 // empty ("searched_not_found"); nothing is invented.

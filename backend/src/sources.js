@@ -1,4 +1,4 @@
-// backend/src/sources.js — what counts as a source for a startup death.
+// backend/src/sources.js: what counts as a source for a startup death.
 // A source is a fetched page that names the company AND states that it shut down,
 // was acquired or was dissolved, near that name. Some kinds of page never count,
 // whatever they say: dictionaries, outage checkers, video sites, forums, social

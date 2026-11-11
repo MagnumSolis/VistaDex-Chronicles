@@ -5,7 +5,8 @@
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
 import { sourceBlockReason, checkSourceText } from "./sources.js";
-import { verifyEntry } from "./fleet.js";
+import { verifyEntry, pickQueries, DISCOVERY_QUERIES } from "./fleet.js";
+import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
 import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
 
@@ -169,6 +170,20 @@ await runSignalExtraction({ signals: sig2, staging: stg, tf: fakeTf({ "https://v
 const zoomo = stg.docs.find(d => d.company_name === "Zoomo");
 check("known company: page added as a source, no duplicate", stg.docs.filter(d => d.company_key === "zoomo").length === 1 && zoomo.source_urls.includes("https://variety.com/y"));
 check("no LLM key -> extraction skipped, nothing written", (await runSignalExtraction({ signals: memColl([{ _id: 4, url: "https://a.com/z" }]), staging: stg, tf: fakeTf({}), llm: { available: () => false } })).skipped === "no-llm");
+
+// 8. Discovery rotation is deterministic (AGENTS.md rule 3: no Math.random in production paths)
+const nov = new Date("2026-11-11T00:00:00Z");
+const r1 = pickQueries(0, 4, nov), r1b = pickQueries(0, 4, nov);
+check("same cursor + date -> same queries", JSON.stringify(r1) === JSON.stringify(r1b));
+check("next run starts where this one stopped", pickQueries(r1.next, 4, nov).queries[0].query !== r1.queries[0].query && r1.next === 4);
+check("month and year filled from the run date", r1.queries[0].query === "startup shutting down November 2026");
+let cur = 0; const covered = new Set();
+for (let k = 0; k < 10; k++) { const r = pickQueries(cur, 4, nov); r.queries.forEach(q => covered.add(q.query)); cur = r.next; }
+check("rotation covers the whole bank (minus {company} templates)", covered.size === DISCOVERY_QUERIES.filter(q => !q.q.includes("{company}")).length);
+check("{company} templates skipped without KNOWN_COMPANIES", [...covered].every(q => !q.includes("{company}") && !q.includes("undefined")));
+check("{company} templates use KNOWN_COMPANIES when given", pickQueries(17, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+const srcDir = new URL(".", import.meta.url);
+check("no Math.random in backend/src", readdirSync(srcDir).filter(f => f.endsWith(".js") && f !== "smoke.js").every(f => !readFileSync(new URL(f, srcDir), "utf8").includes("Math.random")));
 
 console.log(`\nSmoke: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

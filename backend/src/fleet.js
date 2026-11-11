@@ -7,82 +7,115 @@ import { makeTinyFish, isAllowedUrl } from "./tinyfish.js";
 import { MongoClient } from "mongodb";
 import { registrableDomain } from "./schemas.js";
 import { sourceBlockReason, checkSources } from "./sources.js";
+import { makeExtractorLLM, runSignalExtraction } from "./extract-signals.js";
 
-const QUERIES = {
-  newsScout: [
-    "{company} shutting down",
-    "startup shutdown announcement 2025",
-    "what happened to {company} startup",
-  ],
-  postMortemMiner: [
-    "startup post-mortem why we failed",
-    "CB Insights startup failure post-mortem",
-    "site:news.ycombinator.com startup shutting down",
-  ],
-  registryReviewer: [
-    "{company} dissolution filing",
-    "{company} company registry strike-off",
-  ],
-};
+// Discovery query bank. Each run takes the next DISCOVERY_QUERIES queries in a fixed
+// order (a cursor stored in fleet_state), so successive runs cover the whole bank and
+// a run is reproducible from its cursor. {month} and {year} come from the run date;
+// {company} templates use KNOWN_COMPANIES and are skipped when it is empty.
+export const DISCOVERY_QUERIES = [
+  { agent: "news-scout", q: "startup shutting down {month} {year}" },
+  { agent: "post-mortem-miner", q: "startup post-mortem why we failed" },
+  { agent: "news-scout", q: "startup shuts down operations {year}" },
+  { agent: "post-mortem-miner", q: "startups that shut down in {year}" },
+  { agent: "news-scout", q: "startup winding down announcement {month} {year}" },
+  { agent: "post-mortem-miner", q: "why our startup failed lessons shutting down" },
+  { agent: "news-scout", q: "startup ceases operations after raising funding {year}" },
+  { agent: "post-mortem-miner", q: "failed startups list {year}" },
+  { agent: "news-scout", q: "startup acquired product shut down {year}" },
+  { agent: "news-scout", q: "startup files for chapter 7 liquidation {year}" },
+  { agent: "post-mortem-miner", q: "founder announces company is shutting down" },
+  { agent: "news-scout", q: "fintech startup shuts down {year}" },
+  { agent: "news-scout", q: "AI startup shuts down {year}" },
+  { agent: "news-scout", q: "edtech startup shuts down {year}" },
+  { agent: "news-scout", q: "healthtech startup shuts down {year}" },
+  { agent: "news-scout", q: "India startup shuts down {year}" },
+  { agent: "news-scout", q: "Europe startup closes doors {year}" },
+  { agent: "news-scout", q: "{company} shutting down" },
+  { agent: "registry-reviewer", q: "{company} dissolution filing" },
+];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-function extractCandidates(searchResults) {
-  // Lightweight heuristic candidate extraction from search snippets.
-  // The Groq tagger (pipeline stage) does the real classification later.
+// Pure: the queries for one run, starting at `cursor`. Returns the next cursor too.
+export function pickQueries(cursor, n, date = new Date(), knownCompanies = [], bank = DISCOVERY_QUERIES) {
+  const out = [];
+  let i = cursor;
+  for (let tries = 0; out.length < n && tries < bank.length; tries++, i++) {
+    const { agent, q } = bank[i % bank.length];
+    if (q.includes("{company}") && !knownCompanies.length) continue;
+    const query = q.replace("{month}", MONTHS[date.getUTCMonth()]).replace("{year}", String(date.getUTCFullYear()))
+      .replace("{company}", knownCompanies[i % (knownCompanies.length || 1)]);
+    out.push({ agent, query });
+  }
+  return { queries: out, next: i % bank.length };
+}
+
+function toSignals(searchResults, agent) {
+  // Raw leads only; extract-signals.js decides what (if anything) a page says.
   return searchResults
-    .filter(r => isAllowedUrl(r.url))
+    .filter(r => isAllowedUrl(r.url) && !sourceBlockReason(r.url))
     .map(r => ({
       signal_title: r.title,
       url: r.url,
       snippet: (r.snippet || "").slice(0, 500),
       site: r.site,
-      discovered_by: "fleet",
+      discovered_by: agent,
       discovered_at: new Date(),
     }));
 }
 
-export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCompanies = [] }) {
+// FLEET_MODE: "discovery" (search → signals → candidates), "watcher" (confirm candidates),
+// "reverify" (re-check every entry under the current source rule), "all" (default).
+export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCompanies = [], env = process.env }) {
+  const mode = String(env.FLEET_MODE || "all");
   const tf = makeTinyFish(apiKey);
   const client = new MongoClient(mongoUri);
   await client.connect();
   const db = client.db(dbName);
   const staging = db.collection("graveyard_staging");
   const signals = db.collection("graveyard_signals");
+  const state = db.collection("fleet_state");
+  const result = { mode };
 
-  let found = 0;
-  const runAgentQueries = async (agentName, queries) => {
-    for (const q of queries) {
-      const query = q.replace("{company}", knownCompanies[Math.floor(knownCompanies.length * Math.random())] || "startup");
-      if (query.includes("{company}") && !knownCompanies.length) continue;
-      try {
-        const results = await tf.search(query, 10);
-        const candidates = extractCandidates(results);
-        for (const c of candidates) {
-          await signals.updateOne({ url: c.url }, { $set: c, $setOnInsert: { first_seen: new Date() } }, { upsert: true });
-          found++;
+  try {
+    if (mode === "discovery" || mode === "all") {
+      const st = (await state.findOne({ _id: "discovery" })) || { cursor: 0 };
+      const { queries, next } = pickQueries(st.cursor, Number(env.DISCOVERY_QUERIES || 4), new Date(), knownCompanies);
+      let found = 0;
+      for (const { agent, query } of queries) {
+        try {
+          const sigs = toSignals(await tf.search(query, 10), agent);
+          for (const c of sigs) await signals.updateOne({ url: c.url }, { $set: c, $setOnInsert: { first_seen: new Date() } }, { upsert: true });
+          found += sigs.length;
+          console.log(`  [${agent}] "${query}" → ${sigs.length} signals`);
+        } catch (e) {
+          console.error(`  [${agent}] "${query}" failed: ${e.message.slice(0, 200)}`);
         }
-        console.log(`  [${agentName}] "${query.slice(0, 50)}" → ${candidates.length} signals`);
-      } catch (e) {
-        console.error(`  [${agentName}] "${query.slice(0, 50)}" failed: ${e.message}`);
+        await new Promise(r => setTimeout(r, 500));
       }
-      await new Promise(r => setTimeout(r, 500));
+      await state.updateOne({ _id: "discovery" }, { $set: { cursor: next, last_run: new Date(), last_queries: queries.map(q => q.query) } }, { upsert: true });
+      result.signals_found = found;
+
+      const llm = makeExtractorLLM(env);
+      result.extraction = await runSignalExtraction({
+        signals, staging, tf, llm,
+        limit: Number(env.SIGNAL_LIMIT || 10),
+        delayMs: Number(env.EXTRACT_DELAY_MS ?? 30000),
+      });
+      if (result.extraction.skipped) console.log("  [extractor] no GROQ_API_KEY / MISTRAL_API_KEY: signals wait for the next run with a key");
     }
-  };
 
-  const watcherOnly = ["watcher", "reverify"].includes(String(process.env.FLEET_MODE || ""));
-  if (!watcherOnly) {
-    await runAgentQueries("news-scout", QUERIES.newsScout);
-    await runAgentQueries("post-mortem-miner", QUERIES.postMortemMiner);
+    if (mode === "watcher" || mode === "reverify" || mode === "all") {
+      // Death Watcher: oldest check first. reverify also re-checks confirmed entries.
+      result.watcher = await runDeathWatcher(staging, tf, {
+        limit: Number(env.WATCHER_LIMIT || 20),
+        filter: mode === "reverify" ? { source_check_version: { $ne: SOURCE_CHECK_VERSION } } : { death_status: "candidate" },
+      });
+    }
+  } finally {
+    await client.close();
   }
-  // Death Watcher: re-check staging candidates for a second source, oldest check first.
-  // FLEET_MODE=reverify re-checks every entry (confirmed ones too) under the current rule.
-  const reverify = String(process.env.FLEET_MODE || "") === "reverify";
-  const watched = await runDeathWatcher(staging, tf, {
-    limit: Number(process.env.WATCHER_LIMIT || 20),
-    filter: reverify ? { source_check_version: { $ne: SOURCE_CHECK_VERSION } } : { death_status: "candidate" },
-  });
-
-  await client.close();
-  return { signals_found: found, ...watched };
+  return result;
 }
 
 // ── Death Watcher ──────────────────────────────────────────────────────────

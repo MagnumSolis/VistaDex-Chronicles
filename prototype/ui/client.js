@@ -6,6 +6,7 @@ import { validateContract } from "../core/contract.js";
 import { GRAVEYARD_DB } from "../data/graveyard.js";
 import { MOCK_SAMPLES } from "../data/samples.js";
 import { ACCESS_HEADER, getAccessCode, refusalMessage } from "./access.js";
+import { consentStatus, isDisabled } from "./telemetry.js";
 
 export function liveMode() {
   return Boolean(CONFIG.PROXY_URL);
@@ -59,7 +60,8 @@ async function screenViaProxy(ideaOrInput, onStage = async () => {}, signal) {
       method: "POST",
       signal: limit.signal,
       // The access code travels in a header so the request body stays exactly the input.
-      headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}) },
+      // Not recorded (pitch edition, declined, or not answered yet): the server keeps only a minimal log.
+      headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}), ...(isDisabled() || consentStatus() !== "given" ? { "X-VistaDex-Record": "no" } : {}) },
       body: JSON.stringify(typeof ideaOrInput === "string" ? { idea_text: ideaOrInput } : ideaOrInput),
     });
   } catch (err) {

@@ -29,6 +29,10 @@ name = "EVENTS_LIMITER"
 namespace_id = "1002"
 simple = { limit = 60, period = 60 }
 
+# Daily retention cleanup at 03:30 UTC (09:00 IST): deletes study data older than RETENTION_DAYS.
+[triggers]
+crons = ["30 3 * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "vistadex"

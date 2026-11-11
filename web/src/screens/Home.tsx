@@ -160,44 +160,58 @@ export function Home() {
   );
 }
 
+const host = (u: string) => { try { return new URL(/^https?:/.test(u) ? u : `https://${u}`).hostname.replace(/^www\./, "").split(".").slice(-2).join("."); } catch { return u; } };
+
+// One straight card in the brand's blocks: a charcoal title bar, the claim on cream, its evidence and leads on
+// nested surfaces, and the sample's own VistaDex Score in a lime band that closes the card.
 function HeroCard() {
   const entry = useMemo(() => sampleEntries().find(e => e.id === HERO_SAMPLE) ?? sampleEntries()[0], []);
   const r = entry.report;
   const claim = r.claims[0];
-  const sources = new Set(claim.source_urls.map(u => { try { return new URL(/^https?:/.test(u) ? u : `https://${u}`).hostname.replace(/^www\./, ""); } catch { return u; } })).size;
+  const domains = [...new Set(claim.source_urls.map(host))];
   const products = r.competitors ?? [];
+  const score = r.scores?.vistadex.value ?? null;
+  const checked = checkedLabel(entry.checkedOn ?? "");
   return (
-    <div className="relative pb-28">
-    <figure aria-label="A sample report card" className="on-light relative rounded-card bg-background text-foreground lg:rotate-[1.5deg]">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-card bg-charcoal px-5 py-3 text-on-charcoal">
-        <span className="eyebrow">VistaDex / Sample report</span>
-        <span className="eyebrow text-lime">Checked {checkedLabel(entry.checkedOn ?? "")}</span>
+    <figure aria-label="A sample report card" className="on-light overflow-hidden rounded-card bg-background text-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-charcoal px-5 py-3 text-on-charcoal">
+        <span className="eyebrow">Sample report · {r.input?.title}</span>
+        <span className="font-mono text-xs text-lime">sources read {checked}</span>
       </div>
-      <div className="p-5">
-        <p className="eyebrow text-muted-foreground">Idea claim · {r.input?.title}</p>
-        <p className="mt-2 font-display text-[1.6rem] leading-tight md:text-[1.9rem]">“{claim.claim}”</p>
+      <div className="px-5 pb-4 pt-5">
+        <p className="eyebrow text-muted-foreground">Claim 1 of {r.claims.length}</p>
+        <p className="mt-2 font-display text-[1.6rem] leading-tight md:text-[1.85rem]">“{claim.claim}”</p>
       </div>
-      <div className="grid border-t min-[360px]:grid-cols-[1fr_auto]">
-        <div className="p-5">
+      <div className="mx-3 grid gap-3 min-[400px]:grid-cols-2">
+        <div className="rounded-inner bg-card p-4">
           <p className="eyebrow text-muted-foreground">Evidence status</p>
           <StatusTag status={claim.status} className="mt-2" />
         </div>
-        <div className="border-t p-5 min-[360px]:border-l min-[360px]:border-t-0">
+        <div className="rounded-inner bg-card p-4">
           <p className="eyebrow text-muted-foreground">Independent sources</p>
-          <p className="mt-1 font-display text-[2rem] leading-none">{sources}</p>
+          <p className="mt-1 font-display text-[2rem] leading-none">{domains.length}</p>
+          <p className="mt-1.5 break-words font-mono text-xs text-muted-foreground">{domains.join(" · ")}</p>
         </div>
       </div>
-      <div className="m-3 mt-0 rounded-inner bg-page p-4 text-on-page">
-        <p className="eyebrow text-on-page-muted">Leads to check</p>
-        <p className="mt-1 text-[0.9375rem]">
-          {products.length ? `${products.length} similar product${products.length === 1 ? "" : "s"} named on a source page: ${products.map(c => c.name).join(", ")}.` : "No similar product named on the pages read."}
-          {r.graveyard_matches.length ? ` ${r.graveyard_matches.length} shut-down startup${r.graveyard_matches.length === 1 ? "" : "s"} worded alike.` : ""}
-        </p>
+      <div className="m-3 flex items-start gap-3 rounded-inner bg-muted p-4">
+        <ScanSearch aria-hidden className="mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
+        <div>
+          <p className="eyebrow text-muted-foreground">Leads to check</p>
+          <p className="mt-1 text-[0.9375rem] leading-snug">
+            {products.length ? `${products.length} similar product${products.length === 1 ? "" : "s"} named on a source page: ${products.map(c => c.name).join(", ")}.` : "No similar product named on the pages read."}
+            {r.graveyard_matches.length ? ` ${r.graveyard_matches.length} shut-down startup${r.graveyard_matches.length === 1 ? "" : "s"} worded alike.` : ""}
+          </p>
+        </div>
       </div>
-      <figcaption className="sr-only">A researched sample report: the claim "{claim.claim}" is {claim.status}, with {sources} independent sources, read by hand on {checkedLabel(entry.checkedOn ?? "")}.</figcaption>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 bg-lime px-5 py-4 text-on-lime">
+        <div>
+          <p className="eyebrow">VistaDex Score</p>
+          <p className="font-display leading-none">{score === null ? <span className="text-xl">Not enough data</span> : <><span className="text-[2.5rem]">{score}</span><span className="text-lg"> / 100</span></>}</p>
+        </div>
+        <p className="max-w-[16rem] font-display text-[1.15rem] leading-tight">A score you can take apart. You decide.</p>
+      </div>
+      <figcaption className="sr-only">A researched sample report for {r.input?.title}: the claim "{claim.claim}" is {claim.status}, with {domains.length} independent sources ({domains.join(", ")}), read by hand on {checked}. VistaDex Score {score ?? "not enough data"}.</figcaption>
     </figure>
-    <p className="absolute bottom-0 right-3 w-48 rotate-[3deg] rounded-inner bg-lime p-4 font-display text-[1.25rem] leading-tight text-on-lime">A score you can take apart. You decide.</p>
-    </div>
   );
 }
 

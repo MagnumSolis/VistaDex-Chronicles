@@ -5,6 +5,7 @@
 //   deleteSession(sessionId, now)           → { events, traces }
 //   exportEvents() / exportTraces()         → rows
 //   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
+//   releaseDailyScreen(day)                 gives one slot back (a run that failed)
 
 export function d1Store(db) {
   return {
@@ -43,6 +44,9 @@ export function d1Store(db) {
         "INSERT INTO daily_counters (day, screens) VALUES (?1, 1) ON CONFLICT(day) DO UPDATE SET screens = screens + 1 WHERE screens < ?2 RETURNING screens",
       ).bind(day, cap).first();
       return row ? { allowed: true, count: row.screens } : { allowed: false, count: cap };
+    },
+    async releaseDailyScreen(day) {
+      await db.prepare("UPDATE daily_counters SET screens = screens - 1 WHERE day = ? AND screens > 0").bind(day).run();
     },
     async exportEvents() {
       const { results } = await db.prepare("SELECT session_id, seq, ts, type, study_version, payload, received_at FROM events ORDER BY session_id, seq").all();
@@ -92,6 +96,7 @@ export function memoryStore() {
       daily.set(day, n + 1);
       return { allowed: true, count: n + 1 };
     },
+    async releaseDailyScreen(day) { if ((daily.get(day) || 0) > 0) daily.set(day, daily.get(day) - 1); },
     async exportEvents() { return [...events.values()].sort((a, b) => a.session_id.localeCompare(b.session_id) || a.seq - b.seq); },
     async exportTraces() { return [...traces.values()]; },
   };

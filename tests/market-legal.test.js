@@ -182,3 +182,25 @@ test("market: the reader may give the broader market a product belongs to, and t
   const ev = trace.finish().events.find(e => e.kind === "market_figures");
   assert.deepEqual({ returned: ev.returned, kept: ev.kept }, { returned: 2, kept: 1 });
 });
+
+test("legal: a rule tied to another market is not listed under this one", async () => {
+  const { keepRules: kr, ruleBelongsTo } = await import("../prototype/core/stages/legal.js");
+  const pages = [{ url: "https://a.example.com/x", title: "", text: "Clinics must follow the HIPAA Security Rule. Processors sign under GDPR Article 28. Some states have recording consent laws (state recording consent laws). India's DPDP Act covers health data." }];
+  const raw = [
+    { source: 1, rule: "HIPAA Security Rule", quote: "Clinics must follow the HIPAA Security Rule." },
+    { source: 1, rule: "GDPR Article 28", quote: "Processors sign under GDPR Article 28." },
+    { source: 1, rule: "State recording consent laws", quote: "Some states have recording consent laws (state recording consent laws)." },
+    { source: 1, rule: "DPDP Act", quote: "India's DPDP Act covers health data." },
+  ];
+  assert.deepEqual(kr(raw, pages, "EU").map(r => r.rule), ["GDPR Article 28"]);
+  assert.deepEqual(kr(raw, pages, "India").map(r => r.rule), ["DPDP Act"]);
+  assert.deepEqual(kr(raw, pages, "USA").map(r => r.rule).sort(), ["HIPAA Security Rule", "State recording consent laws"]);
+  assert.equal(ruleBelongsTo("ISO 14971", "India"), true, "a rule tied to no market is kept everywhere");
+});
+
+test("legal: the reader is told to list only the market's own rules", async () => {
+  let sys = "";
+  const llm = readerOf(s => { if (s.includes("laws, regulations, licences")) sys = s; return JSON.stringify({ rules: [] }); });
+  await searchLegal({ ideaText: "x", input: { ...input, markets: ["EU"] } }, { llm, retrieval: retrievalOf(LEGAL_PAGES), trace: T() });
+  assert.match(sys, /only rules that\s+apply in the market given/i);
+});

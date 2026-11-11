@@ -172,7 +172,10 @@ export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCom
 // A death is confirmed only with sources on >=2 distinct registrable domains, each
 // either the graveyard listing the entry came from or a fetched page that names the
 // company and states the death (sources.js). Search hits alone never count.
-export const SOURCE_CHECK_VERSION = 2;
+// 3: bracketed aliases ("Kuaibo (Qvod)") and more death phrasings; pages rejected for their text under an
+// older check are read once more.
+export const SOURCE_CHECK_VERSION = 3;
+const TEXT_REASONS = new Set(["company-not-named", "no-death-statement", "empty-page"]);
 const LISTINGS = new Set(["loot-drop.io"]); // the listing an entry was ingested from counts as its first source
 const WATCH_QUERIES = ['"{name}" shut down', '"{name}" startup closed', '"{name}" acquired by', '"{name}" dissolved company'];
 
@@ -180,7 +183,11 @@ const WATCH_QUERIES = ['"{name}" shut down', '"{name}" startup closed', '"{name}
 export async function verifyEntry(tf, entry, { maxNewChecks = 6 } = {}) {
   const urls = (entry.source_urls || []).filter(Boolean);
   const prior = new Map((entry.source_checks || []).map(c => [c.url, c]));
-  const priorRejected = (entry.rejected_sources || []).filter(r => r.reason !== "fetch-failed");
+  const older = (entry.source_check_version || 0) < SOURCE_CHECK_VERSION;
+  const rejected0 = entry.rejected_sources || [];
+  // Fetch failures are always retried; pages rejected for what they said are retried once after the check changes.
+  const priorRejected = rejected0.filter(r => r.reason !== "fetch-failed" && !(older && TEXT_REASONS.has(r.reason)));
+  const recheck = older ? rejected0.filter(r => TEXT_REASONS.has(r.reason) && !sourceBlockReason(r.url)).map(r => r.url).slice(0, 10) : [];
   const checks = [], toFetch = [];
   for (const [i, url] of urls.entries()) {
     if (i === 0 && LISTINGS.has(registrableDomain(url))) { checks.push({ url, ok: true, reason: "graveyard-listing" }); continue; }
@@ -189,6 +196,7 @@ export async function verifyEntry(tf, entry, { maxNewChecks = 6 } = {}) {
     if (blocked) checks.push({ url, ok: false, reason: blocked });
     else toFetch.push(url);
   }
+  for (const url of recheck) if (!urls.includes(url) && !toFetch.includes(url)) toFetch.push(url);
   if (toFetch.length) checks.push(...await checkSources(tf, toFetch, entry.company_name));
 
   const goodDomains = () => new Set(checks.filter(c => c.ok).map(c => registrableDomain(c.url)));

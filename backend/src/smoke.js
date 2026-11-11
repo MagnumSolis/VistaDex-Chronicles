@@ -4,8 +4,8 @@
 
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
-import { sourceBlockReason, checkSourceText, leadSkipReason, shutdownLeads } from "./sources.js";
-import { runFleet, verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
+import { sourceBlockReason, checkSourceText, leadSkipReason, shutdownLeads, nameVariants } from "./sources.js";
+import { runFleet, verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery, SOURCE_CHECK_VERSION } from "./fleet.js";
 import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
 import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
@@ -130,6 +130,14 @@ v = await verifyEntry(fakeTf({ "https://variety.com/a": article, "https://variet
 check("two pages on one domain are one source", v.death_status === "candidate");
 v = await verifyEntry(fakeTf({ "https://variety.com/q": "Quibi is a video app." }, ["https://variety.com/q"]), lootEntry());
 check("page that names but does not state the death -> still candidate", v.death_status === "candidate");
+// After the check changes, a page once rejected for its text is read again (no search needed).
+const qvodPage = "Qvod, the video player, shut down in 2014 after a police raid.";
+const oldCheck = () => ({ company_name: "Kuaibo (Qvod)", death_status: "candidate", source_check_version: 2, watch_attempts: 2,
+  source_urls: ["https://www.loot-drop.io/startup/9-kuaibo"], rejected_sources: [{ url: "https://news.example.com/qvod", reason: "company-not-named" }, { url: "https://www.reddit.com/r/x", reason: "forum" }] });
+v = await verifyEntry(fakeTf({ "https://news.example.com/qvod": qvodPage }), oldCheck());
+check("older check: a text-rejected page is read again and can confirm", v.death_status === "confirmed" && v.source_urls.includes("https://news.example.com/qvod"));
+v = await verifyEntry(fakeTf({ "https://news.example.com/qvod": qvodPage }), { ...oldCheck(), source_check_version: SOURCE_CHECK_VERSION });
+check("current check: a rejected page is not fetched again", v.death_status === "candidate");
 const down = { search: async () => { throw new Error("rate limited"); }, fetchPages: async () => { throw new Error("rate limited"); } };
 check("TinyFish failure throws, so the caller leaves the entry unchanged", await verifyEntry(down, lootEntry()).then(() => false, () => true));
 
@@ -217,6 +225,12 @@ check("rotation covers the whole bank (minus {company} templates)", covered.size
 check("{company} templates skipped without KNOWN_COMPANIES", [...covered].every(q => !q.includes("{company}") && !q.includes("undefined")));
 const companyAt = DISCOVERY_QUERIES.findIndex(e => e.q === "{company} shutting down");
 check("{company} templates use KNOWN_COMPANIES when given", pickQueries(companyAt, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+// A bracketed alias or a legal suffix after a comma is matched by its parts, never by a descriptor.
+check("bracketed alias: either name counts", checkSourceText("Qvod, the video player, shut down in 2014 after a police raid.", "Kuaibo (Qvod)").ok && checkSourceText("Kuaibo was shut down by regulators in 2014.", "Kuaibo (Qvod)").ok);
+check("a bracketed descriptor is not a name", !nameVariants("Getir (Intl. Ops)").includes("Intl. Ops") && nameVariants("Getir (Intl. Ops)").includes("Getir"));
+check("comma before the legal suffix", checkSourceText("HomeHero shut down in 2016 after failing to raise.", "HomeHero, Inc").ok);
+check("common death phrasings count", ["collapsed in 2019", "ceased to exist in 2020", "stopped operations last year"].every(v => checkSourceText(`Testco ${v}.`, "Testco").ok));
+check("a bare common word stays rejected", !checkSourceText("plenty (noun): a full supply. The shop collapsed.", "Plenty Unlimited").ok);
 // 9. Per-run metrics in fleet_state: one record per GitHub run, totals over all runs
 let mdoc = mergeRun(null, "r1", { queries: 4, signals: 25, prefiltered: 18, extracted: 7, new_candidates: 2, sources_added: 1, stopped: null });
 mdoc = mergeRun(mdoc, "r1", { confirmed: 14, watched: 50 });

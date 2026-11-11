@@ -40,7 +40,7 @@ pages say: no outside knowledge, no guesses, and never say whether the idea is a
 source number, the rule's name exactly as written on the page, one short sentence on what it covers in the
 page's words, and the exact sentence from the page that contains the rule's name.
 Return a JSON object: {"rules": [{"source": 1, "rule": "...", "summary": "...", "quote": "..."}]}.
-Never return a bare array. If no page names a rule, return {"rules": []}.`;
+List at most 8, the most clearly named first. Never return a bare array. If no page names a rule, return {"rules": []}.`;
 
 export function legalFacts(market, input) {
   const r = REGISTRIES[market];

@@ -154,3 +154,18 @@ test("score weights: counted axes add up to 100 with legal in", () => {
   const { vistadex } = scoreReport({ idea_text: "x", claims: [], graveyard_matches: [], objections: [] });
   assert.ok(vistadex.excluded.some(e => e.axis === "legal"));
 });
+
+test("competitors: a reply cut off by the length limit keeps its complete entries; the list is capped and given room", async () => {
+  const quote = "Harvey offers LLM contract review with lawyer oversight for law firms.";
+  let request = null;
+  const llm = createLLM({ default: [{ name: "fake", model: "f", complete: async req => {
+    if (!req.messages[0].content.includes("NAMES as already offering")) return "{}";
+    request = req;
+    // Truncated mid-entry, as a model does when it hits max_tokens.
+    return `{"competitors": [{"source": 1, "name": "Harvey", "why_similar": "x", "quote": "${quote}"}, {"source": 1, "name": "Robin AI", "why_sim`;
+  } }] });
+  const out = await findCompetitors({ ideaText: "x", input }, { llm, retrieval: retrievalOf([{ url: "https://harvey.ai/p", title: "H", text: quote }]), trace: T() });
+  assert.deepEqual(out.list.map(c => c.name), ["Harvey"], "the complete entry is kept; the cut-off one is dropped");
+  assert.ok(request.maxTokens >= 3000, "the call asks for room for the list");
+  assert.match(request.messages[0].content, /at most 8/, "the prompt caps the list");
+});

@@ -31,7 +31,7 @@ export const STEPS: Step[] = [
   { id: "leads", route: "report", target: "#section-graveyard", title: "Leads to check", body: "Products that fetched pages name as already doing something similar, and startups that shut down after trying it. Check whether they are really alike." },
   { id: "objections", route: "report", target: "#section-objections", title: "Objections", body: "The strongest arguments against the idea. Give them the same attention as the claims." },
   { id: "big_tech", route: "report", target: "#section-big_tech", title: "Big Tech risk", body: "Whether a big platform company already offers something similar. A company counts only with 2 independent sources; fewer stays unverified." },
-  { id: "legal", route: "report", target: "#section-legal", title: "Legal and market", body: "Registries, rules and market size for your target markets. Where this version can't produce them, the section says so." },
+  { id: "legal", route: "report", target: "#section-legal", title: "Legal and market", body: "Official registries and the rules sources name for each target market, and the market size that independent sources state. Each is quoted and linked; read them before relying on them." },
   { id: "finish", route: "report", title: "That's the tour", body: "Replay it any time with the ? button. Your reports are listed on the Reports page; How it works explains every formula." },
 ];
 const GATE = STEPS.findIndex(s => s.gate === "run");

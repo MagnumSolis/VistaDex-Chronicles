@@ -63,7 +63,7 @@ export async function startRun({ input, sample, confPre = null }: { input: IdeaI
   controller = new AbortController();
   const signal = controller.signal;
   const stages = idleStages();
-  if (live) for (const s of STAGES) stages[s.key] = { state: s.key === "legal" ? "skipped" : "server" };
+  if (live) for (const s of STAGES) stages[s.key] = { state: "server" };
   const t0 = performance.now();
   set({ status: "running", runId, stages, server: live, error: null, ideaChars: ideaText.length, startedAt: t0 });
   navigate(PATHS.running);
@@ -87,10 +87,10 @@ export async function startRun({ input, sample, confPre = null }: { input: IdeaI
     const notes: Record<StageKey, string> = {
       split: `${report.claims.length} claims`, check: `${report.claims.length} claims checked`,
       graveyard: `${report.graveyard_matches.length} lead${report.graveyard_matches.length === 1 ? "" : "s"}`,
-      legal: report.legal ? "Sample data (mock mode)" : "Not in this version yet",
+      legal: report.sample_fields?.includes("legal") ? "Sample data (mock mode)" : report.legal || report.market ? "Searched" : "Not searched",
       objections: `${report.objections.length} objection${report.objections.length === 1 ? "" : "s"}`,
     };
-    for (const s of STAGES) done[s.key] = { state: s.key === "legal" && !report.legal ? "skipped" : "done", note: notes[s.key] };
+    for (const s of STAGES) done[s.key] = { state: s.key === "legal" && !report.legal && !report.market ? "skipped" : "done", note: notes[s.key] };
     set({ status: "done", stages: done, server: false });
     navigate(reportPath(entry.id));
   } catch (err) {

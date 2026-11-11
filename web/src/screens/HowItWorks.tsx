@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PageTitle, Panel, Tile } from "@/components/ui-vd";
 import { STATUS, STATUS_ORDER, StatusTag } from "@/components/status";
 import { GRAVEYARD_DB, liveMode } from "@/proto";
-import { BIG_TECH_COMPANIES, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE, NOVELTY, DEFENSIBILITY, LEGAL, OVERLAP, WEIGHTS } from "@proto/core/scoring-config.js";
+import { BIG_TECH_COMPANIES, MIN_SCORE_AXES, MIN_SCORE_WEIGHT_SHARE, NOVELTY, DEFENSIBILITY, GRAVEYARD, LEGAL, OVERLAP, WEIGHTS } from "@proto/core/scoring-config.js";
 import { MARKET_NAME, REGISTRIES } from "@proto/core/stages/legal.js";
 import { navigate, PATHS } from "@/router";
 
@@ -18,7 +18,6 @@ const REGISTRY_LIST = (Object.keys(REGISTRIES) as (keyof typeof REGISTRIES)[]).m
 }));
 
 export function HowItWorks({ onReplay }: { onReplay?: () => void }) {
-  const verified = SEED.filter(e => e.source_verified === true).length;
   return (
     <div className="space-y-6 md:space-y-8">
       <PageTitle eyebrow="How it works" title="Evidence first. You decide.">
@@ -74,7 +73,7 @@ VistaDex shows what the evidence says about each claim, who already does somethi
           <Axis name="Novelty" weight={WEIGHTS.novelty}>Starts at 100. Each distinct competitor found on a fetched page costs {NOVELTY.perCompetitor} (at most {NOVELTY.maxCompetitorsCounted} counted); each disputed novelty claim costs {NOVELTY.disputed}; each confirmed one adds {NOVELTY.confirmed}. A contradicted novelty claim costs {NOVELTY.contradicted} and caps the axis at {NOVELTY.contradictedCap}. Finding no competitors caps it at {NOVELTY.noCompetitorsCap}: not finding any is not proof there are none.</Axis>
           <Axis name="Market" weight={WEIGHTS.market}>The total market size (TAM) on a log scale: $10M or less is 0, $1B or more is 100. The TAM is the median of market-size figures quoted on pages from at least 2 independent sources, never from the idea text. One source alone is shown but not counted. No TAM, no value.</Axis>
           <Axis name="Defensibility" weight={WEIGHTS.defensibility}>Starts at {DEFENSIBILITY.base}; a stated moat adds at most {DEFENSIBILITY.moatBonus}. Each confirmed defensibility claim adds {DEFENSIBILITY.confirmed}, a disputed one costs {DEFENSIBILITY.disputed}, a contradicted one {DEFENSIBILITY.contradicted}. Objections about the moat cost {DEFENSIBILITY.moatObjection.high} / {DEFENSIBILITY.moatObjection.medium} / {DEFENSIBILITY.moatObjection.low} by severity. A stated moat alone is not data.</Axis>
-          <Axis name="Graveyard distance" weight={WEIGHTS.graveyard}>100 × (1 − the strongest word overlap with a shut-down startup). No match at all gives 100. Shown with the number of entries checked and whether the seed was verified.</Axis>
+          <Axis name="Graveyard distance" weight={WEIGHTS.graveyard}>100 × (1 − the strongest word overlap with a shut-down startup). No match at all is capped at {GRAVEYARD.noMatchCap}: not finding a lookalike is not proof nobody tried. Shown with the number of entries checked.</Axis>
           <Axis name="Regulatory load" weight={WEIGHTS.legal}>Higher means fewer rules found. Starts at {LEGAL.start}; each rule that 2 independent sources name for your target markets costs {LEGAL.perRule} (at most {LEGAL.maxRulesCounted} counted). Finding none caps it at {LEGAL.noneFoundCap}: not finding a rule is not proof there is none. No target market, no value. It never says whether something is allowed.</Axis>
           <Axis name="Evidence quality" weight={WEIGHTS.evidence}>The share of claims that got a status (not unverified) backed by at least 2 independent sources.</Axis>
           <Axis name="Big Tech safety" weight={WEIGHTS.big_tech}>Low risk 100, medium 50, high 0. Shown, but not counted in this version: what evidence a low risk needs is still being defined, and “unverified” is never counted.</Axis>
@@ -115,7 +114,7 @@ VistaDex shows what the evidence says about each claim, who already does somethi
           <div className="rounded-card bg-card p-5">
             <p className="font-semibold">The graveyard (inside reports)</p>
             <p className="mt-2 text-[0.9375rem] leading-relaxed">
-              {SEED.length} startups that shut down, taken from public shutdown reports, matched against every idea in its report's Leads to check. Each entry links its sources; the team has checked <span className="font-mono">{verified}</span> of {SEED.length} so far, and each lead says whether its source was checked.
+              Startups that shut down, matched against every idea in its report's Leads to check. An automatic fleet searches the web for shutdown news every few hours; a startup joins only when two pages on different websites name it and state that it shut down, and each lead links those pages. Each report says how many entries it checked. {liveMode() ? "" : `This copy runs in mock mode and checks a small offline sample of ${SEED.length}.`}
             </p>
           </div>
           <div className="rounded-card bg-card p-5">
@@ -147,7 +146,7 @@ VistaDex shows what the evidence says about each claim, who already does somethi
         <ul className="max-w-[72ch] list-disc space-y-2.5 pl-5 text-[1rem] leading-relaxed">
           <li>Reports can be wrong. Open the sources before you rely on anything.</li>
           <li>Graveyard matching is currently <span className="font-semibold">word overlap</span>: two ideas worded alike match even if the businesses differ, and a real lookalike worded differently can be missed.</li>
-          <li>The graveyard is small ({SEED.length} startups) and {verified === 0 ? "none" : `only ${verified}`} of its closure sources {verified === 1 ? "has" : "have"} been checked by the team so far.</li>
+          <li>The graveyard holds only startups whose shutdown two independent pages state, so it misses many quiet failures, and its sources are checked automatically, not by hand.</li>
           <li>Market size: sources measure a market in different ways (global or regional, different years). The TAM is their median; read each figure before you rely on it. SAM and SOM need your own assumptions.</li>
           <li>Legal: a rule is listed because pages name it for this kind of product, not because it applies to yours. Ask a lawyer before you act on it.</li>
           <li>The score is a summary of what was found, built on simple formulas and provisional weights. Read the breakdown before trusting the number.</li>

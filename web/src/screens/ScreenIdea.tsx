@@ -27,6 +27,7 @@ const FIELDS: { id: TextField; label: string; hint: string; rows: number }[] = [
 ];
 const ROLES: { value: Role; label: string }[] = [
   { value: "founder", label: "Founder" }, { value: "investor", label: "Investor" }, { value: "accelerator", label: "Accelerator / incubator" },
+  { value: "student", label: "Student" }, { value: "other", label: "Other" },
 ];
 const MARKET_LABEL: Record<Jurisdiction, string> = { EU: "European Union", USA: "United States", India: "India" };
 const REQUIRED = new Set<string>(REQUIRED_FIELDS);

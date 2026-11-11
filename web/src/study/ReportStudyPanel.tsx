@@ -173,7 +173,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
         {!submitted ? (
           <Button className="mt-5" data-control="study_survey_submit" onClick={submit}>Submit</Button>
         ) : (
-          <p className="mt-5 text-sm font-medium text-green-700">✓ Thank you — your answers are recorded.</p>
+          <p className="mt-5 text-sm font-medium text-foreground">✓ Thank you — your answers are recorded.</p>
         )}
       </Panel>
     </div>

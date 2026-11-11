@@ -5,8 +5,9 @@
 // public-1 = two-edition revamp (public demo + pitch); public-2 = scores, structured input, Reports,
 // landing page; study-1 to study-3 = F364 research instrumentation on the public demo (docs/STUDY-NOTES.md);
 // study-4 = seq unique across tabs of one session; study-5 = study flow (both parts reachable and finished);
-// study-6 = paired measures (condition start/end, one chatbot run id, confidence before the chatbot answer).
-export const STUDY_VERSION = "2026-11-study-6";
+// study-6 = paired measures (condition start/end, one chatbot run id, confidence before the chatbot answer);
+// study-7 = "Your read" in the report, claim reading time, LinkedIn/X channels, graveyard lead sources.
+export const STUDY_VERSION = "2026-11-study-7";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

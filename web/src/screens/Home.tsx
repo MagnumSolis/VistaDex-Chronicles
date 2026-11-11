@@ -4,7 +4,7 @@
 // match the app. The hero card shows a real sample claim and what the mock pipeline really returns for
 // it — no invented report numbers or companies.
 import { useMemo, type ReactNode } from "react";
-import { ArrowRight, ClipboardList, Layers, Lightbulb, ScanSearch, ShieldCheck } from "lucide-react";
+import { ArrowRight, ClipboardList, GitMerge, History, Layers, Lightbulb, ScanSearch, ShieldCheck, ThumbsUp, Unlink, Rocket, Briefcase, GraduationCap, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusTag } from "@/components/status";
 import { Report } from "@/components/report/Report";
@@ -48,12 +48,12 @@ export function Home() {
         lead="Founders, students, and accelerator applicants increasingly use AI to generate and judge ideas. Its novelty judgements can be confident, opaque, and wrong.">
         <div className="mt-8 grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <ol className="grid gap-3 sm:grid-cols-2">
-            {[
-              ["Mode collapse", "Ideas look novel one by one, but cluster around a few underlying concepts."],
-              ["Sycophancy", "Models tend to over-affirm the idea the user already wants to believe."],
-              ["Untrustworthy citations", "Research agents can return broken, irrelevant, or fabricated sources."],
-              ["No memory of what died", "A past attempt is a strong signal, yet few review workflows look for one."],
-            ].map(([t, d], i) => <NumberedCard key={t} n={i + 1} title={t}>{d}</NumberedCard>)}
+            {([
+              ["Mode collapse", GitMerge, "Ideas look novel one by one, but cluster around a few underlying concepts."],
+              ["Sycophancy", ThumbsUp, "Models tend to over-affirm the idea the user already wants to believe."],
+              ["Untrustworthy citations", Unlink, "Research agents can return broken, irrelevant, or fabricated sources."],
+              ["No memory of what died", History, "A past attempt is a strong signal, yet few review workflows look for one."],
+            ] as const).map(([t, icon, d], i) => <NumberedCard key={t} n={i + 1} icon={icon} title={t}>{d}</NumberedCard>)}
           </ol>
           <figure className="flex flex-col justify-between rounded-card bg-lime p-6 text-on-lime">
             <blockquote className="font-display text-[1.75rem] leading-tight md:text-[2rem]">
@@ -102,11 +102,11 @@ export function Home() {
       {/* 04 Who it's for */}
       <Band n="04" label="Who it's for" title="A better first pass for people making real decisions.">
         <ul className="mt-8 grid gap-3 md:grid-cols-3">
-          {[
-            ["Founders", "Stress-test an idea before investing months in building."],
-            ["VCs and angels", "Run faster first-pass competitor and overlap checks."],
-            ["Accelerators & universities", "Batch-screen applications with a consistent research trail."],
-          ].map(([t, d], i) => <NumberedCard key={t} n={i + 1} title={t}>{d}</NumberedCard>)}
+          {([
+            ["Founders", Rocket, "Stress-test an idea before investing months in building."],
+            ["VCs and angels", Briefcase, "Run faster first-pass competitor and overlap checks."],
+            ["Accelerators & universities", GraduationCap, "Batch-screen applications with a consistent research trail."],
+          ] as const).map(([t, icon, d], i) => <NumberedCard key={t} n={i + 1} icon={icon} title={t}>{d}</NumberedCard>)}
         </ul>
       </Band>
 
@@ -213,10 +213,15 @@ function Band({ n, label, title, lead, children }: { n: string; label: string; t
   );
 }
 
-function NumberedCard({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+// A problem card: a line icon on a nested tile and the number on one row, then the title and text right
+// under them (no empty band between the number and the title).
+function NumberedCard({ n, icon: Icon, title, children }: { n: number; icon: LucideIcon; title: string; children: ReactNode }) {
   return (
-    <li className="flex min-h-48 flex-col justify-between rounded-card border border-border-strong bg-card p-5">
-      <span className="font-mono text-sm text-muted-foreground">0{n}</span>
+    <li className="flex flex-col gap-4 rounded-card border border-border-strong bg-card p-5">
+      <div className="flex items-start justify-between">
+        <span aria-hidden className="grid size-11 place-items-center rounded-inner bg-muted text-foreground"><Icon className="size-5" strokeWidth={1.75} /></span>
+        <span className="font-mono text-sm text-muted-foreground">0{n}</span>
+      </div>
       <div>
         <p className="font-display text-[1.6rem] leading-tight">{title}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</p>

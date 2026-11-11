@@ -95,9 +95,17 @@ export function researchJoin() {
       }
     });
     var bySidRuns = runsBySession(runs.slice());
+    // Sessions that send run_scoped_survey (the survey with its run id) also send a run-less
+    // condition_survey copy; that copy is only a fallback for older sessions without the scoped one.
+    var scopedSid = {};
+    ev.forEach(function (e) { if (e.type === "run_scoped_survey") scopedSid[e.session_id] = 1; });
     ev.forEach(function (e, i) {
       var q = e.payload || {};
       if (!PER_RUN_TYPES[e.type]) return;
+      if (e.type === "condition_survey" && scopedSid[e.session_id]) return;
+      // The study track's AI chatbot condition has no VistaDex run: its measures are compared in
+      // pairedParticipants and must not be matched to a run by start order.
+      if (q.condition === "baseline") return;
       var m = resolveRun(bySidRuns, e, i);
       if (!m) return;
       var r = m.run;

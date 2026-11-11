@@ -26,6 +26,7 @@ function participant(sid, code, { idea = "C", b = [40, 60], v = [40, 30], bSurve
       ev(sid, "confidence_post", { condition: "vistadex", run_id: "r_00000000000a", value: v[1] }),
       ev(sid, "claim_vote", { claim_index: 0, run_id: "r_00000000000a", status: "contradicted", vote: "agree" }),
       ev(sid, "condition_survey", { condition: "vistadex", trust: vSurvey, usefulness: vSurvey, helpfulness: vSurvey, effort: 4, open_text: "", sources_checked: "3+" }),
+      ev(sid, "run_scoped_survey", { run_id: "r_00000000000a", condition: "vistadex", trust: vSurvey, usefulness: vSurvey, helpfulness: vSurvey, effort: 4, open_text: "", sources_checked: "3+" }),
       ev(sid, "condition_ended", { condition: "vistadex", run_id: "r_00000000000a", verified_sources: clicks }),
     ],
   };
@@ -138,4 +139,14 @@ test("wilcoxon: normal approximation above n = 25, nothing to test below n = 1",
   assert.ok(r.p < 0.0001);
   assert.equal(wilcoxon([0, 0]).p, null);
   assert.equal(wilcoxon([]).n, 0);
+});
+
+test("joinRuns: the AI chatbot condition's measures never land on a VistaDex run", async () => {
+  const { joinRuns } = await import("../worker/src/research-join.js");
+  const runs = joinRuns(participant("s1", "P21", { b: [10, 90], v: [40, 30] })).filter(r => r.sid === "s1");
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].pre, 40);
+  assert.equal(runs[0].post, 30);
+  assert.equal(runs[0].survey.trust, 3, "the VistaDex survey, not the chatbot's");
+  assert.equal(runs[0].inferred, 0);
 });

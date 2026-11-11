@@ -6,6 +6,7 @@ import { validateContract } from "../core/contract.js";
 import { GRAVEYARD_DB } from "../data/graveyard.js";
 import { MOCK_SAMPLES } from "../data/samples.js";
 import { ACCESS_HEADER, getAccessCode, refusalMessage } from "./access.js";
+import { consentStatus, isDisabled } from "./telemetry.js";
 
 export function liveMode() {
   return Boolean(CONFIG.PROXY_URL);
@@ -41,23 +42,35 @@ function refusalCode(status, body) {
   return "http";
 }
 
+export const SCREEN_TIMEOUT_MS = 150000;
+
 async function screenViaProxy(ideaOrInput, onStage = async () => {}, signal) {
   // The proxy runs all stages server-side and does not report them one by one; the UI says so and
   // marks them done together once it answers.
   await onStage(1, "running");
   const code = getAccessCode();
+  // A live run takes about a minute; past SCREEN_TIMEOUT_MS the visitor gets a clear error, never an endless wait.
+  const limit = new AbortController();
+  const timer = setTimeout(() => limit.abort(), SCREEN_TIMEOUT_MS);
+  const onCancel = () => limit.abort();
+  signal?.addEventListener("abort", onCancel);
   let res;
   try {
     res = await fetch(`${CONFIG.PROXY_URL.replace(/\/$/, "")}/screen`, {
       method: "POST",
-      signal,
+      signal: limit.signal,
       // The access code travels in a header so the request body stays exactly the input.
-      headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}) },
+      // Not recorded (pitch edition, declined, or not answered yet): the server keeps only a minimal log.
+      headers: { "Content-Type": "application/json", ...(code ? { [ACCESS_HEADER]: code } : {}), ...(isDisabled() || consentStatus() !== "given" ? { "X-VistaDex-Record": "no" } : {}) },
       body: JSON.stringify(typeof ideaOrInput === "string" ? { idea_text: ideaOrInput } : ideaOrInput),
     });
   } catch (err) {
     if (signal?.aborted) throw cancelled();
+    if (limit.signal.aborted) throw new ScreenError("network", `The server took longer than ${SCREEN_TIMEOUT_MS / 1000} seconds. Please try again in a minute.`);
     throw new ScreenError("network", `The server could not be reached (${err?.message || "network error"}).`);
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", onCancel);
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);

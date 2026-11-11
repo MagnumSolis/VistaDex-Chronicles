@@ -27,6 +27,7 @@ import { withIds } from "./graveyard-live.js";
 import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
+import { createBudget } from "../../prototype/core/providers/http.js";
 
 const MAX_BODY_BYTES = 256 * 1024;
 const MAX_EVENTS_PER_BATCH = 200;
@@ -36,7 +37,35 @@ export default {
   fetch(request, env) {
     return handle(request, env, { store: d1Store(env.DB) });
   },
+  // Daily cleanup (wrangler.toml [triggers]): deletes study data older than RETENTION_DAYS (default 365, the
+  // "12 months" the Welcome notice promises).
+  async scheduled(_event, env) {
+    const days = Number(env.RETENTION_DAYS) || 365;
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    const store = d1Store(env.DB);
+    const out = await store.purgeOlderThan(cutoff);
+    await store.purgeCache(new Date(Date.now() - 2 * 86400000).toISOString());
+    console.log(`retention cleanup before ${cutoff}: ${out.events} events, ${out.traces} traces`);
+  },
 };
+
+// A run from a visitor who is not recorded (declined, not yet answered, or the pitch edition) keeps only what
+// finds bugs: event kinds, times, counts, providers, statuses. No idea text, claims, queries, URLs or quotes.
+const KEEP = new Set(["t", "kind", "type", "router", "stage", "provider", "model", "ok", "status", "fallbacks", "claim_index", "sources", "figures", "rules", "kept", "returned", "corroborated", "level", "used", "limit", "big_tech", "market", "reason"]);
+export function minimalTrace(trace) {
+  return {
+    trace_id: trace.trace_id, mode: trace.mode, recorded: false, idea_chars: trace.idea_chars,
+    started_at: trace.started_at, finished_at: trace.finished_at,
+    events: (trace.events || []).map(e => {
+      const out = {};
+      for (const [k, v] of Object.entries(e)) {
+        if (KEEP.has(k) && (typeof v !== "string" || v.length <= 40)) out[k] = v;
+        else if (Array.isArray(v) && (k === "results" || k === "ok")) out[k] = v.length;
+      }
+      return out;
+    }),
+  };
+}
 
 export async function handle(request, env, { store, fetchImpl, now = () => new Date().toISOString() }) {
   // A browser Origin header equal to the request's own origin means a
@@ -117,6 +146,7 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
 
   // Global daily cap, counted after validation so malformed requests don't use it up.
   const cap = Number(env.SCREEN_DAILY_CAP || 0);
+  let slotDay = null;
   if (cap > 0) {
     const stamp = now();
     const { allowed } = await store.takeDailyScreen(stamp.slice(0, 10), cap);
@@ -124,18 +154,31 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
       return json({ error: "daily_cap", message: "The study is paused for today. Please try again tomorrow." }, 429,
         { ...cors, "Retry-After": String(secondsUntilUtcMidnight(stamp)) });
     }
+    slotDay = stamp.slice(0, 10);
   }
+  try {
+    return await runAndStore(idea, env, { store, fetchImpl, now, cors, recorded: request.headers.get("X-VistaDex-Record") !== "no", key });
+  } catch (err) {
+    // A run that failed gives its daily-cap slot back, so errors never eat the day's budget.
+    if (slotDay) await store.releaseDailyScreen(slotDay).catch(() => {});
+    throw err;
+  }
+}
 
-  const llmRoutes = routesFromEnv(env, fetchImpl);
-  const retrieval = retrievalFromEnv(env, fetchImpl);
+async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = true, key }) {
+
+  // One call budget per run, shared by every provider (prototype/core/providers/http.js).
+  const budget = createBudget(Number(env.CALL_BUDGET) || undefined);
+  const llmRoutes = routesFromEnv(env, fetchImpl, { budget });
+  const retrieval = retrievalFromEnv(env, fetchImpl, { budget });
   const live = Object.values(llmRoutes).some(chain => chain.length) || retrieval.name !== "mock";
   // No samples here: the server never fills fields with placeholder data.
   const graveyard = graveyardSnapshot.count > 0 ? withIds(graveyardSnapshot.entries) : GRAVEYARD_DB;
-  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard });
+  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard, budget: live ? budget : null });
   report.generated_at = now();
   // Not recorded (X-VistaDex-Record: no): the report, which holds the idea text, is not kept on the server.
-  if (request.headers.get("X-VistaDex-Record") !== "no") await store.putCached(key, { title: typeof idea === "string" ? idea.slice(0, 60) : idea.title, report: JSON.stringify(report), trace_id: trace.trace_id, created_at: report.generated_at });
-  await store.saveTrace(trace.trace_id, trace.mode, trace, now());
+  if (recorded) await store.putCached(key, { title: typeof idea === "string" ? idea.slice(0, 60) : idea.title, report: JSON.stringify(report), trace_id: trace.trace_id, created_at: report.generated_at });
+  await store.saveTrace(trace.trace_id, trace.mode, recorded ? trace : minimalTrace(trace), now());
   return json(report, 200, {
     ...cors,
     "X-VistaDex-Trace-Id": trace.trace_id,
@@ -284,7 +327,7 @@ function corsHeaders(origin, env) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access",
+    "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access, X-VistaDex-Record",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

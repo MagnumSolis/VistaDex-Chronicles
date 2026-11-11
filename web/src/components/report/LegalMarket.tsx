@@ -52,12 +52,13 @@ export function LegalSection({ legal, markets, sample, live }: { legal?: Legal; 
   return (
     <div data-tour="legal">
       {sample && <SampleBanner />}
+      {legal.not_searched?.length ? <p className="mb-5 rounded-inner border-2 border-dashed border-foreground/40 p-3.5 text-[0.9375rem]">Not searched this run: {legal.not_searched.map(m => JURISDICTION_NAME[m]).join(", ")}. The run reached its limit of outgoing calls; run it again with fewer target markets to cover them.</p> : null}
       {live && <p className="mb-5 text-[0.9375rem] text-muted-foreground">Searched: {live.queries.map(q => `“${q}”`).join(", ")}; {live.sources_checked} source{live.sources_checked === 1 ? "" : "s"} read. A rule is listed only if a fetched page names it; it counts in the score only when 2 independent sources name it. This is not legal advice.</p>}
-      {shown.length === 0 ? (
+      {shown.length === 0 ? (legal.not_searched?.length ? null : (
         <EmptyState icon={MapPin} title="No target market was picked for this screening">
           Pick EU, USA or India on the Screen an idea page before you run, and this section covers those markets.
         </EmptyState>
-      ) : (
+      )) : (
         <div className="space-y-6">
           {shown.map(j => (
             <div key={j.jurisdiction} className="rounded-card bg-card p-5 md:p-6">

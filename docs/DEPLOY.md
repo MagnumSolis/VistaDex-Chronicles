@@ -1,5 +1,11 @@
 # Deploying VistaDex (proxy + static site)
 
+> **Current production (Nov 2026).** Site: Cloudflare Pages project `vistadex-app` at https://vistadex-app.pages.dev.
+> Proxy: Worker `vistadex-proxy` with D1 `vistadex`. Both deploy from `.github/workflows/deploy.yml` on every merge to
+> `main` (tests run first); `.github/workflows/ci.yml` checks every pull request. The GitHub Pages sections below describe
+> the earlier setup and are kept for reference. The `CLOUDFLARE_API_TOKEN` secret needs both "Workers Scripts: Edit" and
+> "Cloudflare Pages: Edit".
+
 Nothing here has been deployed yet. This is the checklist for whoever does it.
 
 ```
@@ -187,5 +193,5 @@ npm run a11y                      # axe-core + keyboard-only flow + small-width 
 - **The access code is not authentication.** It keeps crawlers and casual visitors out; anyone with the participant link can still run screens and spend the provider free tiers. The per-IP rate limits and the daily cap bound the damage. Check the rate-limit binding works on your plan (section 3b).
 - **The pitch edition is not protected** (see 4b): anyone who knows `#edition=pitch` gets it. It only turns telemetry off and shows the demo cohort.
 - **Traces store claim text.** Each `/screen` trace logs the extracted and dropped claims, i.e. sentences from the idea (`prototype/core/stages/extract.js`). TODO(team): remove the text or say so in the Welcome notice.
-- **No automatic retention or deletion schedule.** Decide how long study data is kept and delete it at the end of the course.
+- **Retention.** A daily cron (`[triggers]` in `wrangler.toml`, 09:00 IST) deletes events, sessions and traces older than `RETENTION_DAYS` (default 365, the 12 months in the notice). Runs from visitors who are not recorded (declined, not answered, pitch edition) keep only a minimal trace without idea or claim text.
 - **Graveyard matching is lexical (TF-IDF).** MiniLM embeddings are planned, and the threshold must be re-calibrated when switching.

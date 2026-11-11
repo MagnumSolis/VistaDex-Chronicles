@@ -14,6 +14,7 @@ test("scoring weights and thresholds are pinned", () => {
   assert.deepEqual({ ...cfg.DEFENSIBILITY, moatObjection: { ...cfg.DEFENSIBILITY.moatObjection } },
     { base: 50, moatBonus: 10, moatMinChars: 20, confirmed: 15, disputed: 10, contradicted: 25, moatObjection: { high: 15, medium: 10, low: 5 } });
   assert.deepEqual({ ...cfg.MARKET }, { tamFloorUsd: 1e7, tamCapUsd: 1e9 });
+  assert.deepEqual({ ...cfg.GRAVEYARD }, { noMatchCap: 70 });
   assert.deepEqual({ ...cfg.LEGAL }, { start: 100, perRule: 15, maxRulesCounted: 5, noneFoundCap: 70 });
   assert.deepEqual({ ...cfg.OVERLAP }, { caution: 0.3, high: 0.5, highCompetitors: 3 });
   assert.equal(cfg.BIG_TECH_COMPANIES.length, 11);

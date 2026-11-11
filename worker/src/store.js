@@ -5,7 +5,9 @@
 //   deleteSession(sessionId, now)           → { events, traces }
 //   exportEvents() / exportTraces()         → rows
 //   getCached(key) / putCached(key, row) / listCached(n) / setFrozen(key, frozen)   report cache (P0-7)
+//   purgeOlderThan(isoCutoff)               → { events, traces } deleted (retention cleanup)
 //   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
+//   releaseDailyScreen(day)                 gives one slot back (a run that failed)
 
 export function d1Store(db) {
   // The cache table is created on first use, so no manual migration is needed on the production database.
@@ -26,6 +28,10 @@ export function d1Store(db) {
       await cache();
       const { results } = await db.prepare("SELECT key, title, created_at, frozen, trace_id FROM report_cache ORDER BY frozen DESC, created_at DESC LIMIT ?").bind(n).all();
       return results.map(r => ({ ...r, frozen: Boolean(r.frozen) }));
+    },
+    async purgeCache(cutoff) {
+      await cache();
+      await db.prepare("DELETE FROM report_cache WHERE frozen = 0 AND created_at < ?").bind(cutoff).run();
     },
     async setFrozen(key, frozen) {
       await cache();
@@ -68,6 +74,18 @@ export function d1Store(db) {
       ).bind(day, cap).first();
       return row ? { allowed: true, count: row.screens } : { allowed: false, count: cap };
     },
+    async purgeOlderThan(cutoff) {
+      const out = await db.batch([
+        db.prepare("DELETE FROM events WHERE received_at < ?").bind(cutoff),
+        db.prepare("DELETE FROM traces WHERE created_at < ?").bind(cutoff),
+        db.prepare("DELETE FROM sessions WHERE last_seen < ?").bind(cutoff),
+        db.prepare("DELETE FROM daily_counters WHERE day < ?").bind(cutoff.slice(0, 10)),
+      ]);
+      return { events: out[0].meta?.changes || 0, traces: out[1].meta?.changes || 0 };
+    },
+    async releaseDailyScreen(day) {
+      await db.prepare("UPDATE daily_counters SET screens = screens - 1 WHERE day = ? AND screens > 0").bind(day).run();
+    },
     async exportEvents() {
       const { results } = await db.prepare("SELECT session_id, seq, ts, type, study_version, payload, received_at FROM events ORDER BY session_id, seq").all();
       return results;
@@ -90,6 +108,7 @@ export function memoryStore() {
     async getCached(key) { return cached.get(key) || null; },
     async putCached(key, row) { if (!cached.get(key)?.frozen) cached.set(key, { key, frozen: false, ...row }); },
     async listCached(n) { return [...cached.values()].sort((a, b) => b.frozen - a.frozen || b.created_at.localeCompare(a.created_at)).slice(0, n).map(({ report, ...r }) => r); },
+    async purgeCache(cutoff) { for (const [k, r] of cached) if (!r.frozen && r.created_at < cutoff) cached.delete(k); },
     async setFrozen(key, frozen) { const r = cached.get(key); if (!r) return false; r.frozen = frozen; return true; },
     async isWithdrawn(id) { return withdrawn.has(id); },
     async saveEvents(id, list, now) {
@@ -121,6 +140,13 @@ export function memoryStore() {
       daily.set(day, n + 1);
       return { allowed: true, count: n + 1 };
     },
+    async purgeOlderThan(cutoff) {
+      let e = 0, t = 0;
+      for (const [k, row] of events) if (row.received_at < cutoff) { events.delete(k); e++; }
+      for (const [k, row] of traces) if (row.created_at < cutoff) { traces.delete(k); t++; }
+      return { events: e, traces: t };
+    },
+    async releaseDailyScreen(day) { if ((daily.get(day) || 0) > 0) daily.set(day, daily.get(day) - 1); },
     async exportEvents() { return [...events.values()].sort((a, b) => a.session_id.localeCompare(b.session_id) || a.seq - b.seq); },
     async exportTraces() { return [...traces.values()]; },
   };

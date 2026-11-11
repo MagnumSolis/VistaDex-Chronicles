@@ -52,3 +52,12 @@ test("a run that is not recorded is never cached (the cached report holds the id
   await handle(new Request("https://proxy.test/screen", { method: "POST", headers: { Origin: ORIGIN, "Content-Type": "application/json", "X-VistaDex-Record": "no" }, body: JSON.stringify(input) }), env, { store, now: () => "2026-11-12T10:00:00.000Z" });
   assert.equal((await store.listCached(10)).length, 0);
 });
+
+test("cleanup removes unfrozen cached reports past a cutoff and keeps frozen ones", async () => {
+  const store = memoryStore();
+  await store.putCached("a", { title: "A", report: "{}", trace_id: "t", created_at: "2026-11-01T00:00:00.000Z" });
+  await store.putCached("b", { title: "B", report: "{}", trace_id: "t", created_at: "2026-11-01T00:00:00.000Z" });
+  await store.setFrozen("b", true);
+  await store.purgeCache("2026-11-10T00:00:00.000Z");
+  assert.deepEqual((await store.listCached(10)).map(e => e.key), ["b"]);
+});

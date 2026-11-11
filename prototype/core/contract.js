@@ -15,6 +15,7 @@
 //                      sources?, independent_sources?, corroborated? }], sources_checked? }] }        (2026-11: live search)
 //   sample_fields?:  names of the fields above that hold SAMPLE data (mock mode only)
 //   overlap_band?:   "clear" | "caution" | "high"
+//   generated_at?:   ISO time the evidence was gathered (set by the Worker; a cached report keeps its own time)
 //   scores?:         see scoring.js — computed in code
 // }
 

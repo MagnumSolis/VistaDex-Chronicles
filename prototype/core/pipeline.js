@@ -22,6 +22,9 @@ import { searchLegal } from "./stages/legal.js";
 // deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode, samples }
 //   samples: mock-mode placeholders (prototype/data/samples.js) — passed by the browser mock path only.
 const stripSearch = ({ search, ...rest }) => rest;
+// Bump when the pipeline's output for the same input would change (prompts, rules, stages): cached reports
+// from an older version are not reused (worker/src/index.js cacheKey).
+export const PIPELINE_VERSION = "2026-11-12a";
 // Rough cost of one optional search stage (search + fetch + one model call), and what the objector needs after.
 const CALLS_PER_SEARCH = 3;
 const CALLS_RESERVED = 3;

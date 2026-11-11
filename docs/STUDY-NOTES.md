@@ -52,6 +52,9 @@ Bumped because a score and a telemetry enum changed (decision: 2026-11-12, docs/
 - **Graveyard distance with no match is capped at 70** (was 100): finding no lookalike is not proof nobody tried. Most reports match nothing, so VistaDex Scores from study-11 on are lower than before for those ideas; do not compare scores across this version.
 - **Roles.** The Screen an idea form adds Student and Other; the feedback form adds Accelerator / incubator and Student. `run_started.role` and `feedback_submitted.role` gain those values. Role-based comparisons now have a student group from the field track too.
 - **Wording.** The progress screen no longer marks Legal & market as skipped on live runs; How it works describes the live graveyard (fleet-confirmed, two independent pages each) instead of the 18-entry offline seed; the walkthrough's legal step describes the live section.
+- **Same input, same report** (P0-7): a report is cached for 24 hours by its exact input, and the team can freeze a reviewed report (Console, Research, Report cache). **Freeze study ideas A to D before the study**, so every participant with the same idea sees the same report. Reports show "Evidence gathered <date>".
+- **Privacy** (P0-6): data older than 12 months is deleted daily; runs from visitors who are not recorded keep only a minimal log (no text) and are never cached. The Welcome notice says so.
+- **Reliability** (P0-2, P0-3): 3 screenings a minute per visitor; provider calls have timeouts and one retry; a run never exceeds its call budget, and legal markets it could not search are listed as "not searched this run".
 - **The bump resets consent**, as every bump does.
 
 ## study_version 2026-11-study-10 (stricter claim judging; Home hero card)

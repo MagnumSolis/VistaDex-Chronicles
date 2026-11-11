@@ -15,7 +15,7 @@
 // ACCESS_REQUIRED="true"), per-IP rate limits (SCREEN_LIMITER, EVENTS_LIMITER bindings) and a
 // global daily cap on /screen (SCREEN_DAILY_CAP, counted in D1).
 
-import { runScreen } from "../../prototype/core/pipeline.js";
+import { runScreen, PIPELINE_VERSION } from "../../prototype/core/pipeline.js";
 import { routesFromEnv } from "../../prototype/core/providers/llm.js";
 import { retrievalFromEnv } from "../../prototype/core/providers/retrieval.js";
 import { GRAVEYARD_DB } from "../../prototype/data/graveyard.js";
@@ -42,7 +42,9 @@ export default {
   async scheduled(_event, env) {
     const days = Number(env.RETENTION_DAYS) || 365;
     const cutoff = new Date(Date.now() - days * 86400000).toISOString();
-    const out = await d1Store(env.DB).purgeOlderThan(cutoff);
+    const store = d1Store(env.DB);
+    const out = await store.purgeOlderThan(cutoff);
+    await store.purgeCache(new Date(Date.now() - 2 * 86400000).toISOString());
     console.log(`retention cleanup before ${cutoff}: ${out.events} events, ${out.traces} traces`);
   },
 };
@@ -91,6 +93,16 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     if (url.pathname === "/research/data" && request.method === "GET") return await researchData(request, url, env, { store });
     if (url.pathname === "/research/qualitative" && request.method === "GET") return await researchQualitative(request, url, env);
     if (url.pathname === "/research/purge" && request.method === "POST") return await researchPurge(request, env, { store });
+    if (url.pathname === "/research/cache" && request.method === "GET") {
+      if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
+      return json({ entries: await store.listCached(200) });
+    }
+    if (url.pathname === "/research/cache/freeze" && request.method === "POST") {
+      if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
+      const b = await readJSON(request);
+      if (typeof b?.key !== "string") return json({ error: "send { key, frozen }" }, 400);
+      return json({ ok: await store.setFrozen(b.key, Boolean(b.frozen)) });
+    }
     return json({ error: "not found" }, 404, cors);
   } catch (err) {
     // Never echo provider responses (they can contain key fragments); log a short message only.
@@ -120,6 +132,18 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
     idea = ideaText;
   }
 
+  // Same input, same report: a cached report from the last 24 hours (or a frozen one, which never expires) is
+  // served without a new run and without using the daily cap (docs/LAUNCH-PLAN.md P0-7).
+  const liveKeys = Boolean(env.GROQ_API_KEY || env.MISTRAL_API_KEY || env.TINYFISH_API_KEY);
+  const key = await cacheKey(idea, liveKeys ? "live" : "mock");
+  const cached = await store.getCached(key);
+  if (cached && (cached.frozen || Date.parse(now()) - Date.parse(cached.created_at) < CACHE_MS)) {
+    return json(JSON.parse(cached.report), 200, {
+      ...cors, "X-VistaDex-Trace-Id": cached.trace_id || "", "X-VistaDex-Mode": liveKeys ? "live" : "mock", "X-VistaDex-Cache": cached.frozen ? "frozen" : "hit",
+      "Access-Control-Expose-Headers": "X-VistaDex-Trace-Id, X-VistaDex-Mode, X-VistaDex-Cache",
+    });
+  }
+
   // Global daily cap, counted after validation so malformed requests don't use it up.
   const cap = Number(env.SCREEN_DAILY_CAP || 0);
   let slotDay = null;
@@ -133,7 +157,7 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
     slotDay = stamp.slice(0, 10);
   }
   try {
-    return await runAndStore(idea, env, { store, fetchImpl, now, cors, recorded: request.headers.get("X-VistaDex-Record") !== "no" });
+    return await runAndStore(idea, env, { store, fetchImpl, now, cors, recorded: request.headers.get("X-VistaDex-Record") !== "no", key });
   } catch (err) {
     // A run that failed gives its daily-cap slot back, so errors never eat the day's budget.
     if (slotDay) await store.releaseDailyScreen(slotDay).catch(() => {});
@@ -141,7 +165,7 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
   }
 }
 
-async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = true }) {
+async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = true, key }) {
 
   // One call budget per run, shared by every provider (prototype/core/providers/http.js).
   const budget = createBudget(Number(env.CALL_BUDGET) || undefined);
@@ -151,12 +175,16 @@ async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = 
   // No samples here: the server never fills fields with placeholder data.
   const graveyard = graveyardSnapshot.count > 0 ? withIds(graveyardSnapshot.entries) : GRAVEYARD_DB;
   const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard, budget: live ? budget : null });
+  report.generated_at = now();
+  // Not recorded (X-VistaDex-Record: no): the report, which holds the idea text, is not kept on the server.
+  if (recorded) await store.putCached(key, { title: typeof idea === "string" ? idea.slice(0, 60) : idea.title, report: JSON.stringify(report), trace_id: trace.trace_id, created_at: report.generated_at });
   await store.saveTrace(trace.trace_id, trace.mode, recorded ? trace : minimalTrace(trace), now());
   return json(report, 200, {
     ...cors,
     "X-VistaDex-Trace-Id": trace.trace_id,
     "X-VistaDex-Mode": trace.mode, // "live" only when at least one provider key is set
-    "Access-Control-Expose-Headers": "X-VistaDex-Trace-Id, X-VistaDex-Mode",
+    "X-VistaDex-Cache": "miss",
+    "Access-Control-Expose-Headers": "X-VistaDex-Trace-Id, X-VistaDex-Mode, X-VistaDex-Cache",
   });
 }
 
@@ -251,6 +279,16 @@ async function researchQualitative(request, url, env) {
   if (!res.ok) return json({ ok: false, error: "mongo_query_failed" }, 502);
   const data = await res.json();
   return json({ ok: true, configured: true, docs: data.documents || [] });
+}
+
+// ── report cache ──
+const CACHE_MS = 24 * 3600 * 1000;
+// SHA-256 of the pipeline version and the normalised input (or the idea text with whitespace collapsed).
+export async function cacheKey(idea, mode = "live") {
+  const norm = typeof idea === "string" ? idea.replace(/\s+/g, " ").trim() : normalizeInput(idea);
+  const bytes = new TextEncoder().encode(JSON.stringify({ v: PIPELINE_VERSION, mode, idea: norm }));
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 function now2() { return new Date().toISOString(); }

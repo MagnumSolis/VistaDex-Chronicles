@@ -61,7 +61,7 @@ test("POST /screen without keys runs the mock path and returns the exact contrac
   assert.equal(res.status, 200);
   const report = await res.json();
   assert.deepEqual(validateContract(report), []);
-  assert.deepEqual(Object.keys(report).sort(), ["claims", "graveyard_matches", "idea_text", "objections", "overlap_band", "scores", "search"]);
+  assert.deepEqual(Object.keys(report).sort(), ["claims", "generated_at", "graveyard_matches", "idea_text", "objections", "overlap_band", "scores", "search"]);
   assert.ok(report.claims.every(c => c.status === "unverified"));
   const traceId = res.headers.get("X-VistaDex-Trace-Id");
   assert.ok(store._traces.has(traceId));

@@ -1,7 +1,7 @@
-# .github/workflows/deploy.yml — deploy the vistadex-proxy Worker whenever its
-# code or the graveyard snapshot changes on main. (The site is deployed
-# separately via `wrangler pages deploy web/dist` from the dev machine; the
-# graveyard-sync workflow deploys the proxy itself after each snapshot push.)
+# .github/workflows/deploy.yml — on main: deploy the vistadex-proxy Worker when its code changes, and the
+# site (Cloudflare Pages project vistadex-app) when the web app or the shared pipeline changes. Each deploy
+# runs the tests first. The graveyard-sync workflow deploys the proxy itself after each snapshot push.
+# The Pages job needs the CLOUDFLARE_API_TOKEN secret to include "Cloudflare Pages: Edit".
 name: deploy
 
 on:
@@ -10,6 +10,7 @@ on:
     paths:
       - "worker/**"
       - "prototype/**"
+      - "web/**"
   workflow_dispatch: {}
 
 concurrency:
@@ -19,17 +20,36 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+
+      - name: Tests before deploying
+        run: npm ci --prefix web && npm test
 
       - name: Deploy proxy Worker
         run: npx wrangler@4 deploy
         working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install, test, build
+        run: npm ci --prefix web && npm test && npm run test:web && npm run build
+      - name: Deploy site to Cloudflare Pages
+        run: npx wrangler@4 pages deploy web/dist --project-name vistadex-app --branch main --commit-hash "${GITHUB_SHA}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

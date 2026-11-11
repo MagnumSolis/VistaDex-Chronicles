@@ -2,7 +2,7 @@
 // {
 //   idea_text,
 //   claims: [{ claim, type, status, reasoning, source_urls, evidence? }],
-//   graveyard_matches: [{ company_name, what_they_tried, cause_of_death, year_closed, similarity }],
+//   graveyard_matches: [{ company_name, what_they_tried, cause_of_death, year_closed, similarity, source_urls }],
 //   objections: [{ objection, severity }],
 //   // added in 2026-10 round 2 (all optional, so earlier reports stay valid):
 //   input?:          { title, pitch, problem, solution, moat, industries[], role, markets[] }
@@ -50,6 +50,7 @@ export function toContract(r) {
       cause_of_death: String(g.cause_of_death ?? ""),
       year_closed: Number.isInteger(g.year_closed) ? g.year_closed : null,
       similarity: clamp01(Number(g.similarity)),
+      source_urls: Array.isArray(g.source_urls) ? g.source_urls.map(String) : [],
     })),
     objections: objections.map(o => ({
       objection: String(o.objection ?? ""),

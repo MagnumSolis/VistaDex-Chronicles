@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- The link-preview card for LinkedIn and X (1200 x 630). Rendered to public/og-card.png by og-card.mjs.
+     Brand tokens from src/index.css; fonts are the self-hosted @fontsource files. No numbers that change
+     (graveyard size, counts): the card must stay true without being regenerated. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Fraunces"; src: url("../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Instrument Sans"; src: url("../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+  @font-face { font-family: "Instrument Sans"; src: url("../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-600-normal.woff2") format("woff2"); font-weight: 600; }
+  @font-face { font-family: "JetBrains Mono"; src: url("../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+  :root { --page: #0B3B2C; --on-page: #EEF2E2; --on-page-muted: #B5CCBC; --lime: #CBEF6A; --on-lime: #0B2E22; --cream: #EEF2E2; --card: #F9FBF4; --ink: #0B2E22; --muted: #E3EAD3;
+    --st-contradicted: #661812; --st-contradicted-bg: #EECBC7; --st-disputed: #705713; --st-disputed-bg: #FBE2A3; --st-confirmed: #084BC9; --st-confirmed-bg: #CAD6F7; --st-unverified: #661A58; --st-unverified-bg: #F6DAEF; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body { background: var(--page); color: var(--on-page); font-family: "Instrument Sans", sans-serif; padding: 56px 64px; display: grid; grid-template-columns: 1fr 360px; gap: 40px; }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: "Fraunces", serif; font-size: 34px; }
+  .mark { width: 48px; height: 48px; border-radius: 12px; background: var(--lime); color: var(--on-lime); display: grid; place-items: center; font-size: 30px; }
+  .eyebrow { margin-top: 54px; font-size: 18px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--on-page-muted); }
+  h1 { margin-top: 16px; font-family: "Fraunces", serif; font-weight: 400; font-size: 66px; line-height: 1.04; letter-spacing: -.01em; }
+  h1 em { font-style: normal; color: var(--lime); }
+  .sub { margin-top: 24px; font-size: 24px; line-height: 1.4; color: var(--on-page); max-width: 640px; }
+  .foot { position: absolute; left: 64px; bottom: 50px; font-family: "JetBrains Mono", monospace; font-size: 20px; color: var(--on-page-muted); }
+  .panel { align-self: center; background: var(--cream); color: var(--ink); border-radius: 28px; padding: 26px; }
+  .label { font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+  .claim { margin-top: 12px; background: var(--card); border-radius: 20px; padding: 18px; font-family: "Fraunces", serif; font-size: 23px; line-height: 1.2; }
+  .tags { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tag { border-radius: 14px; padding: 12px 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .tag i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .c { background: var(--st-contradicted-bg); } .c i { background: var(--st-contradicted); }
+  .d { background: var(--st-disputed-bg); } .d i { background: var(--st-disputed); }
+  .f { background: var(--st-confirmed-bg); } .f i { background: var(--st-confirmed); }
+  .u { background: var(--st-unverified-bg); } .u i { background: var(--st-unverified); }
+  .note { margin-top: 16px; font-size: 15px; line-height: 1.4; color: #45584C; }
+</style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="mark">V</span>VistaDex</div>
+    <p class="eyebrow">Evidence before judgement</p>
+    <h1>Find out if your idea <em>already died once.</em></h1>
+    <p class="sub">Every claim checked against independent sources. Startups that tried it and shut down. A score you can take apart. You decide.</p>
+    <p class="foot">vistadex-app.pages.dev · research prototype, BITS Pilani</p>
+  </main>
+  <aside class="panel" aria-label="Sample claim card">
+    <p class="label">Idea claim</p>
+    <p class="claim">“No tool like this exists today.”</p>
+    <div class="tags">
+      <span class="tag c"><i></i>Contradicted</span>
+      <span class="tag d"><i></i>Disputed</span>
+      <span class="tag f"><i></i>Confirmed</span>
+      <span class="tag u"><i></i>Unverified</span>
+    </div>
+    <p class="note">Each status needs at least two independent sources.</p>
+  </aside>
+</body>
+</html>

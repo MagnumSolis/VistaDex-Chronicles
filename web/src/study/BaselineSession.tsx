@@ -142,10 +142,10 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
         </div>
         <fieldset className="mt-5">
           <legend className="text-sm font-medium">Did you check any of the AI's sources, or look anything up yourself?</legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid grid-cols-3 gap-1.5 sm:gap-2">
             {(["0", "1-2", "3+"] as const).map((o, i) => (
               <Choice key={o} name="baseline_sources" checked={sourcesChecked === o} onSelect={() => setSourcesChecked(o)}
-                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]}>
+                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]} compact>
                 {o}
               </Choice>
             ))}

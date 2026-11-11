@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-6). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-11-study-6",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-7). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-11-study-7",
   "envelope": [
     "session_id",
     "seq",
@@ -180,11 +180,6 @@
       "sources_checked",
       "trust",
       "usefulness"
-    ],
-    "source_clicked_by_claim": [
-      "claim_index",
-      "run_id",
-      "url"
     ]
   },
   "optional_keys": {
@@ -210,7 +205,9 @@
       "feedback",
       "notfound",
       "reports",
-      "contact"
+      "contact",
+      "study",
+      "baseline"
     ],
     "screen_time.screen": [
       "home",
@@ -222,7 +219,9 @@
       "feedback",
       "notfound",
       "reports",
-      "contact"
+      "contact",
+      "study",
+      "baseline"
     ],
     "screen_time.ended_by": [
       "navigate",
@@ -287,7 +286,8 @@
       "big_tech",
       "legal",
       "market",
-      "score_breakdown"
+      "score_breakdown",
+      "rate"
     ],
     "report_time.ended_by": [
       "new_run",

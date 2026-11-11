@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
-import { ROLES, registerStudyParticipant, registerFieldParticipant, studyIdeaKeys, currentParticipant } from "./participant";
+import { ROLES, registerStudyParticipant, registerFieldParticipant, studyIdeaKeys, studyIdeaInput, currentParticipant } from "./participant";
 import { logParticipantRegistered } from "./studyEvents";
 
 export function StudyGate({ onDone }: { onDone: () => void }) {
@@ -79,8 +79,8 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     key={r}
                     type="button"
                     data-control="study_role_chip" data-control-value={r}
-                    onClick={() => setRole(role === r ? null : r)}
-                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}
+                    onClick={() => setRole(role === r ? null : r)} aria-pressed={role === r}
+                    className={`min-h-11 rounded-control border-2 px-3.5 py-2 text-sm font-medium capitalize transition-colors ${role === r ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent"}`}
                   >
                     {r}
                   </button>
@@ -95,10 +95,10 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     key={k}
                     type="button"
                     data-control="study_idea_pick" data-control-value={k}
-                    onClick={() => setIdeaKey(k)}
-                    className={`rounded-control border-2 p-3 text-left text-xs leading-relaxed ${ideaKey === k ? "border-foreground bg-foreground/5" : "border-foreground/10 bg-card"}`}
+                    onClick={() => setIdeaKey(k)} aria-pressed={ideaKey === k}
+                    className={`min-h-11 rounded-control border-2 p-3 text-left text-sm leading-relaxed transition-colors ${ideaKey === k ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent"}`}
                   >
-                    <b className="font-mono">Idea {k}</b> — {["AI meal-planning for diabetics", "Student skill-swap marketplace", "AI mock-interview platform", "Same-day repair marketplace"][studyIdeaKeys().indexOf(k)]}
+                    <b className="font-mono">Idea {k}</b>: {studyIdeaInput(k).title}
                   </button>
                 ))}
               </div>
@@ -117,8 +117,8 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                   <button
                     key={r}
                     type="button"
-                    onClick={() => setRole(role === r ? null : r)}
-                    className={`rounded-full border-2 px-3 py-1.5 text-sm capitalize ${role === r ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card"}`}
+                    onClick={() => setRole(role === r ? null : r)} aria-pressed={role === r}
+                    className={`min-h-11 rounded-control border-2 px-3.5 py-2 text-sm font-medium capitalize transition-colors ${role === r ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent"}`}
                   >
                     {r}
                   </button>

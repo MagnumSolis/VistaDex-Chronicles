@@ -24,6 +24,8 @@ export interface GraveyardMatch {
   cause_of_death: string;
   year_closed: number | null;
   similarity: number;
+  /** Live graveyard: pages that name the company and state its shutdown (checked automatically). */
+  source_urls?: string[];
 }
 
 export interface Objection {

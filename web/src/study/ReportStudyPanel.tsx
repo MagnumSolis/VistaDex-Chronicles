@@ -4,27 +4,40 @@
 // post-condition survey. Rendered alongside the report, never replacing it.
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { Report } from "@/types";
-import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logClaimDwell, logSourceClickedByClaim, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
+import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
 
 /** One answer: a full-width rectangle (44px+) around a native radio with a visible dot, in the feedback
  *  page's colours. Nothing is preselected. onSelect runs on every press of the option itself (click,
  *  Space, arrow keys), so a repeated press logs again, as the old buttons did. */
-export function Choice({ name, checked, onSelect, control, children }: { name: string; checked: boolean; onSelect: () => void; control: string; children: ReactNode }) {
+// compact: short answers in a row of three on every width (centred, the dot only from sm), so a list of
+// votes stays short on phones.
+export function Choice({ name, checked, onSelect, control, children, compact = false }: { name: string; checked: boolean; onSelect: () => void; control: string; children: ReactNode; compact?: boolean }) {
   return (
-    <label className={cn("flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-control border px-3.5 py-2 text-sm font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
+    <label className={cn("flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-control border py-2 text-sm font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
+      compact ? "justify-center px-1.5 text-center sm:justify-start sm:px-3.5 sm:text-left" : "px-3.5",
       checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent")}>
       <input type="radio" name={name} checked={checked} onClick={onSelect} readOnly data-control={control} className="sr-only" />
-      <span aria-hidden className={cn("flex size-4 shrink-0 items-center justify-center rounded-full border-2", checked ? "border-primary-foreground" : "border-input")}>
+      <span aria-hidden className={cn("size-4 shrink-0 items-center justify-center rounded-full border-2", compact ? "hidden sm:flex" : "flex", checked ? "border-primary-foreground" : "border-input")}>
         {checked && <span className="size-2 rounded-full bg-primary-foreground" />}
       </span>
       {children}
     </label>
+  );
+}
+
+/** One part of the visitor's read: a paper card with its heading, inside the report's "Your read" section. */
+function Block({ title, children }: { title: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="rounded-card bg-card p-5 md:p-6">
+      <h3 id={id} className="mb-4 font-display text-[1.375rem] leading-tight">{title}</h3>
+      {children}
+    </section>
   );
 }
 
@@ -39,11 +52,11 @@ function VoteRow({ label, onVote, controlId }: { label: string; onVote: (v: Vote
   const pick = (v: Vote) => { setVote(v); onVote(v); };
   return (
     <fieldset className="min-w-0 py-3">
-      <legend className={cn("w-full truncate", QUESTION)} title={label}>{label}</legend>
-      {/* Three side by side from sm; stacked on phones so the labels stay whole at 320px. */}
-      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+      <legend className={cn("line-clamp-2 w-full", QUESTION)} title={label}>{label}</legend>
+      {/* Three side by side on every width (short labels, no dot below sm), so five items fit on a phone screen. */}
+      <div className="mt-2 grid grid-cols-3 gap-1.5 sm:gap-2">
         {VOTES.map(([v, text]) => (
-          <Choice key={v} name={name} checked={vote === v} onSelect={() => pick(v)} control={controlId[v]}>{text}</Choice>
+          <Choice key={v} name={name} checked={vote === v} onSelect={() => pick(v)} control={controlId[v]} compact>{text}</Choice>
         ))}
       </div>
     </fieldset>
@@ -97,7 +110,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
   return (
     <div className="space-y-4">
       {/* Post-report confidence — the calibration measure */}
-      <Panel tab="Your read" as="section">
+      <Block title="How sure are you now?">
         <div className="flex items-baseline justify-between">
           <span id="study-conf-post-label" className={QUESTION}>Now that you've read the report: how confident are you that this idea is novel and viable?</span>
           <span className="font-mono text-sm text-foreground/70">{confPost}%</span>
@@ -108,10 +121,10 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             ? `You opened ${checkedSources} source${checkedSources === 1 ? "" : "s"} yourself — noted, thanks.`
             : "You didn't open any sources yourself — noted, thanks."}
         </p>
-      </Panel>
+      </Block>
 
       {/* Agreeableness votes: each claim + each objection */}
-      <Panel tab="Do you agree?" as="section">
+      <Block title="Do you agree?">
         <p className="text-sm text-foreground/70">For each item, say whether you agree with what the report concluded.</p>
         <div className="mt-3 divide-y divide-foreground/5">
           {report.claims.map((c, i) => (
@@ -131,10 +144,10 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             />
           ))}
         </div>
-      </Panel>
+      </Block>
 
       {/* Post-condition survey */}
-      <Panel tab="Rate this report" as="section">
+      <Block title="Rate this report">
         <div className="space-y-5">
           <Likert label="I trust this report's assessment of the idea" value={trust} onChange={setTrust} low="1 — not at all" high="7 — completely" />
           <Likert label="The report was useful for judging the idea" value={usefulness} onChange={setUsefulness} low="1 — useless" high="7 — extremely useful" />
@@ -144,10 +157,10 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
         {/* fieldset, not label: a label forwards any click on it to its first button, which picked "0" by itself. */}
         <fieldset className="mt-5">
           <legend className={QUESTION}>Did you open any of the evidence links yourself?</legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid grid-cols-3 gap-1.5 sm:gap-2">
             {(["0", "1-2", "3+"] as const).map((o, i) => (
               <Choice key={o} name="study_sources" checked={checkedSources === [0, 1, 3][i]} onSelect={() => setCheckedSources([0, 1, 3][i])}
-                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]}>
+                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]} compact>
                 {o}
               </Choice>
             ))}
@@ -176,7 +189,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
         ) : (
           <p className="mt-5 text-sm font-medium text-foreground">✓ Thank you — your answers are recorded.</p>
         )}
-      </Panel>
+      </Block>
     </div>
   );
 }

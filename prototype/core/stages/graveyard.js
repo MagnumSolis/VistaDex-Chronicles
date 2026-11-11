@@ -26,5 +26,8 @@ export function matchGraveyard(ideaText, graveyard, { similarity = lexicalSimila
       cause_of_death: r.entry.cause_of_death,
       year_closed: r.entry.year_closed,
       similarity: r.score,
+      // Closure sources of the live snapshot (each page names the company and states the shutdown; checked
+      // automatically by the graveyard fleet). The offline seed's unchecked `sources` are not passed on.
+      source_urls: Array.isArray(r.entry.source_urls) ? r.entry.source_urls.map(String) : [],
     }));
 }

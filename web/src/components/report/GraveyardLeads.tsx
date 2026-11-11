@@ -11,11 +11,12 @@ const SEED = GRAVEYARD_DB as SeedEntry[];
 // "Leads to check": startups that shut down after trying something similar. Flat dashed cards — leads,
 // not evidence. The overlap is shown as words in common and a plain strength, never as a verdict.
 // checks (sample reports): the page each lead's closure was checked on; its quote is the cause shown.
-export function GraveyardLeads({ matches, ideaText, checks }: { matches: GraveyardMatch[]; ideaText: string; checks?: Record<string, LeadCheck> }) {
+// entriesChecked: how many shut-down startups the run compared against (report.search.graveyard).
+export function GraveyardLeads({ matches, ideaText, checks, entriesChecked }: { matches: GraveyardMatch[]; ideaText: string; checks?: Record<string, LeadCheck>; entriesChecked?: number | null }) {
   if (matches.length === 0) {
     return (
       <p className="rounded-card border-2 border-dashed border-border-strong p-5 text-[0.9375rem] leading-relaxed">
-        No close matches among the {SEED.length} shut-down startups in our seed set. That doesn&apos;t mean nobody has tried this.
+        No close matches among the {entriesChecked ?? SEED.length} shut-down startups checked. That doesn&apos;t mean nobody has tried this.
       </p>
     );
   }
@@ -25,7 +26,9 @@ export function GraveyardLeads({ matches, ideaText, checks }: { matches: Graveya
         const seed = SEED.find(e => e.company_name === m.company_name);
         const words = sharedWords(ideaText, m.what_they_tried);
         const check = checks?.[m.company_name];
-        const sources = check ? [check.url] : seed?.sources ?? [];
+        const live = m.source_urls ?? [];
+        const sources = check ? [check.url] : live.length ? live : seed?.sources ?? [];
+        const liveDomains = new Set(live.map(u => registrableDomain(u) || u)).size;
         return (
           <li key={m.company_name} className="rounded-card border-2 border-dashed border-border-strong bg-card p-5 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -62,6 +65,8 @@ export function GraveyardLeads({ matches, ideaText, checks }: { matches: Graveya
                 ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Closure checked for this sample on {checkedLabel(check.checked)}</span>
                 : seed?.source_verified
                 ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Closure source checked by the team</span>
+                : liveDomains >= 2
+                ? <span className="inline-flex items-center gap-1.5 font-medium"><CircleCheck aria-hidden className="size-4" /> Shutdown stated in {liveDomains} independent sources (automatic check)</span>
                 : <span className="inline-flex items-center gap-1.5 font-medium"><CircleDashed aria-hidden className="size-4" /> Closure source not yet checked by the team</span>}
               {sources.map(url => (
                 <a key={url} href={url} target="_blank" rel="noopener noreferrer" data-control="lead_source_link"

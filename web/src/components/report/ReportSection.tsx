@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useSectionInView } from "@/telemetry/useSectionInView";
 
-export type SectionId = "summary" | "profile" | "claims" | "graveyard" | "objections" | "big_tech" | "legal" | "market";
+export type SectionId = "summary" | "profile" | "claims" | "graveyard" | "objections" | "big_tech" | "legal" | "market" | "rate";
 export const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "summary", label: "Summary" },
   { id: "profile", label: "Profile" },
@@ -13,6 +13,8 @@ export const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "legal", label: "Legal" },
   { id: "market", label: "Market" },
 ];
+/** Session reports end with the visitor's own read (ratings): the last stop in the jump nav. */
+export const RATE_SECTION: { id: SectionId; label: string } = { id: "rate", label: "Your read" };
 
 /** The jump nav's current section: the last one whose top has reached the sticky offset (html
  *  scroll-padding-top, the same offset a jump scrolls to). 1px of slack for sub-pixel landings. At the

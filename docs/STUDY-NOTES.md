@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-6 (paired measures for the within-subjects analysis: CURRENT)
+## study_version 2026-11-study-7 (report "Your read", claim reading time, channels: CURRENT)
+
+Bumped because the report, the study page and the telemetry changed (decision: 2026-11-11, before sharing the public demo on LinkedIn and X and with investors).
+
+- **"Your read" is part of the report.** The ratings (confidence after, agree / disagree / not sure per claim and objection, the survey) were below the end of a ~27,000 px phone report, after "Done reviewing?" and a feedback card that leads to another form. They are now the report's last section, "Your read", in the jump nav (session reports only), before those two, and the Summary points to it. Votes and the sources answer sit three in a row on phones, so the vote list is about a third as tall. Expect a higher completion rate from study-7 on; compare with care.
+- **New measure: `claim_dwell { run_id, claim_index, ms }`**, the time each claim card was in view by the panel-viewed rule, summed per run and claim and sent when the report ends (like `section_time`). It was in the contract since study-1 but never sent. `source_clicked_by_claim` (never sent; `source_clicked` carries `claim_index`) is removed. `section_time.section` gains `rate`.
+- **Channels.** `participant_registered.source` maps LinkedIn (`linkedin.com`, `lnkd.in`) to `linkedin` and X (`x.com`, `twitter.com`, `t.co`) to `x`; before, a LinkedIn referrer was recorded as `ref:www`. The study page's registration now sends `source` too (it had none). Share links with `?utm_source=` (README).
+- **Report content.** Graveyard leads link the pages that state the shutdown ("Shutdown stated in N independent sources (automatic check)") and the "no match" line counts the graveyard the run checked (was the 18-entry offline seed). A price is no longer typed as a market-size claim; the objector sees each claim's source counts. The quiz no longer says "900+ documented failures".
+- **Not a measure, but in the data:** the report shows "Your read" to field-track visitors too, as before.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-6 (paired measures for the within-subjects analysis)
 
 Bumped because the AI chatbot page changed and the study events changed (decision: 2026-11-11, from checking every study event against H1 to H4).
 

@@ -1,6 +1,6 @@
 // ── Report — one long page: Summary · Profile · Claims · Leads to check · Objections · Big Tech risk · Legal · Market ──
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, FileDown, MessageSquareText, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowDown, ArrowRight, FileDown, MessageSquareText, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { features } from "@/edition";
@@ -13,7 +13,7 @@ import { ClaimCard, sourceCount } from "./ClaimCard";
 import { GraveyardLeads } from "./GraveyardLeads";
 import { Objections } from "./Objections";
 import { LegalSection, MarketSection } from "./LegalMarket";
-import { atBottom, pickActive, ReportSection, SECTIONS, type SectionId } from "./ReportSection";
+import { atBottom, pickActive, RATE_SECTION, ReportSection, SECTIONS, type SectionId } from "./ReportSection";
 import { BigTech, Competitors, Profile, ScoreSummary } from "./ScoreParts";
 
 const MODE_LABEL: Record<RunMode | "demo" | "sample", string> = {
@@ -25,11 +25,13 @@ const MODE_LABEL: Record<RunMode | "demo" | "sample", string> = {
 };
 const dateLabel = (d: Date | null) => (d ? d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "No date (demo data)");
 
-export function Report({ entry }: { entry: ReportEntry }) {
+// closing: the visitor's own read of the report (ratings), shown as the last section, "Your read".
+export function Report({ entry, closing }: { entry: ReportEntry; closing?: ReactNode }) {
   const { report } = entry;
   // Telemetry follows only this session's runs; demo reports are never instrumented.
   const runId = entry.runId;
-  const [active, pin] = useScrollSpy();
+  const sections = closing ? [...SECTIONS, RATE_SECTION] : SECTIONS;
+  const [active, pin] = useScrollSpy(sections);
   const counts = Object.fromEntries(STATUS_ORDER.map(s => [s, report.claims.filter(c => c.status === s).length]));
   const sources = report.claims.reduce((n, c) => n + sourceCount(c.source_urls), 0);
   const [ideaOpen, setIdeaOpen] = useState(false);
@@ -46,14 +48,17 @@ export function Report({ entry }: { entry: ReportEntry }) {
     document.getElementById(`section-${id}-title`)?.focus({ preventScroll: true });
   };
   const another = () => { clearDraft(); navigate(PATHS.screen); };
-  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: report.graveyard_matches.length + (report.competitors?.length ?? 0), objections: report.objections.length };
+  // "Leads to check" = products already doing something similar + startups that shut down (same count everywhere).
+  const productCount = report.competitors?.length ?? 0;
+  const leadCount = report.graveyard_matches.length + productCount;
+  const countFor: Partial<Record<SectionId, number>> = { claims: report.claims.length, graveyard: leadCount, objections: report.objections.length };
 
   return (
     <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8 print:block">
       {/* Jump nav: sticky rail on desktop, sticky horizontal chips on phones. */}
       <nav aria-label="Report sections" className="sticky top-0 z-30 -mx-4 mb-4 bg-page px-4 py-2.5 md:top-[var(--header-h,5.5rem)] md:-mx-6 md:px-6 lg:top-[calc(var(--header-h,5rem)+2rem)] lg:mx-0 lg:mb-0 lg:self-start lg:bg-transparent lg:p-0 print:hidden">
         <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible">
-          {SECTIONS.map(s => (
+          {sections.map(s => (
             <li key={s.id} className="shrink-0">
               <button type="button" onClick={() => jump(s.id)} aria-current={active === s.id ? "location" : undefined}
                 data-control="report_section_jump" data-control-value={s.id}
@@ -120,10 +125,21 @@ export function Report({ entry }: { entry: ReportEntry }) {
           </dl>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             <span className="font-mono text-foreground">{sources}</span> independent source{sources === 1 ? "" : "s"} across {report.claims.length} claim{report.claims.length === 1 ? "" : "s"}.
-            A status needs at least two. Also in this report: <span className="font-mono text-foreground">{report.graveyard_matches.length}</span> lead{report.graveyard_matches.length === 1 ? "" : "s"} to check
+            A status needs at least two. Also in this report: <span className="font-mono text-foreground">{leadCount}</span> lead{leadCount === 1 ? "" : "s"} to check
+            ({productCount} similar product{productCount === 1 ? "" : "s"}, {report.graveyard_matches.length} shut-down startup{report.graveyard_matches.length === 1 ? "" : "s"})
             and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
           <Actions onAnother={another} />
+          {closing && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-inner bg-muted p-4 print:hidden">
+              <p className="max-w-[52ch] text-[0.9375rem] leading-relaxed text-foreground">
+                When you have read the report, give your read at the end: about two minutes, and it is what this research study measures.
+              </p>
+              <Button variant="outline" onClick={() => jump("rate")} data-control="report_section_jump" data-control-value="rate">
+                Go to Your read <ArrowDown aria-hidden />
+              </Button>
+            </div>
+          )}
         </ReportSection>
 
         <ReportSection id="profile" title="Profile" runId={runId}
@@ -142,11 +158,11 @@ export function Report({ entry }: { entry: ReportEntry }) {
           )}
         </ReportSection>
 
-        <ReportSection id="graveyard" title="Leads to check" count={report.graveyard_matches.length + (report.competitors?.length ?? 0)} runId={runId}
+        <ReportSection id="graveyard" title="Leads to check" count={leadCount} runId={runId}
           intro="Products already doing something similar, and startups that shut down after trying it. A resemblance is a lead to verify, not a verdict.">
           <Competitors report={report} />
           <h3 className="mb-3 font-display text-[1.375rem] leading-tight">Startups that shut down</h3>
-          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} checks={entry.leadChecks} />
+          <GraveyardLeads matches={report.graveyard_matches} ideaText={report.idea_text} checks={entry.leadChecks} entriesChecked={report.search?.graveyard?.entries_checked} />
         </ReportSection>
 
         <ReportSection id="objections" title="Objections" count={report.objections.length} runId={runId}
@@ -167,6 +183,13 @@ export function Report({ entry }: { entry: ReportEntry }) {
         <ReportSection id="market" title="Market" runId={runId} intro="A ballpark size of the market, with its source and assumptions.">
           <MarketSection market={report.market} sample={Boolean(report.sample_fields?.includes("market"))} />
         </ReportSection>
+
+        {closing && (
+          <ReportSection id="rate" title="Your read" runId={runId} className="print:hidden"
+            intro="Your own read of this report, for the research study: how sure you are now, which conclusions you agree with, and how useful it was. Nothing here changes the report.">
+            {closing}
+          </ReportSection>
+        )}
 
         <div className="on-light rounded-panel bg-background p-5 text-foreground md:p-8 print:hidden">
           <p className="font-display text-2xl">Done reviewing?</p>
@@ -200,7 +223,7 @@ function Actions({ onAnother }: { onAnother: () => void }) {
 // The section at the sticky offset is marked current in the jump nav (pickActive). A clicked item is
 // pinned through its smooth scroll, and after it (a short last section may never reach the top),
 // until the visitor scrolls again.
-function useScrollSpy(): [SectionId, (id: SectionId) => void] {
+function useScrollSpy(list: { id: SectionId }[]): [SectionId, (id: SectionId) => void] {
   const [active, setActive] = useState<SectionId>("summary");
   const pinned = useRef<{ id: SectionId; settled: boolean; timer?: ReturnType<typeof setTimeout> } | null>(null);
   const settle = () => {
@@ -213,7 +236,7 @@ function useScrollSpy(): [SectionId, (id: SectionId) => void] {
     const update = () => {
       frame = 0;
       const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-      const sections = SECTIONS.map(s => ({ id: s.id, top: document.getElementById(`section-${s.id}`)?.getBoundingClientRect().top ?? Infinity }));
+      const sections = list.map(s => ({ id: s.id, top: document.getElementById(`section-${s.id}`)?.getBoundingClientRect().top ?? Infinity }));
       setActive(pickActive(sections, offset, atBottom(window.scrollY, window.innerHeight, document.documentElement.scrollHeight)));
     };
     const onScroll = () => {
@@ -225,7 +248,7 @@ function useScrollSpy(): [SectionId, (id: SectionId) => void] {
     addEventListener("scroll", onScroll, { passive: true });
     update();
     return () => { removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); clearTimeout(pinned.current?.timer); };
-  }, []);
+  }, [list.length]); // eslint-disable-line react-hooks/exhaustive-deps -- the list only grows by the rate section
   const pin = (id: SectionId) => {
     clearTimeout(pinned.current?.timer);
     pinned.current = { id, settled: false };

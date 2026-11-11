@@ -70,8 +70,19 @@ console and run, with an output folder outside the repo:
 
     node analysis/study_analysis.mjs ~/vistadex-events.json --out ~/vistadex-analysis
 
+**Sharing the public demo (field track).** Post links with a `utm_source` so each visitor's channel is
+recorded (`participant_registered.source`, the console's Channel column). The parameter goes before the `#`:
+
+    https://vistadex-app.pages.dev/?utm_source=linkedin
+    https://vistadex-app.pages.dev/?utm_source=x
+    https://vistadex-app.pages.dev/?utm_source=investors      (email or DM to investors and VCs)
+
+Without one, LinkedIn and X visitors are still recognised from their referrer (`linkedin`, `x`). Link
+previews use `web/public/og-card.png` (`npm --prefix web run og-card` re-renders it). The pitch edition
+(`#edition=pitch`) records nothing, so do not use it for links whose visits should count.
+
 Telemetry contract: `tests/fixtures/event-contract.json` (study_version
-`2026-11-study-6`). No idea text, no report content, no PII in events; traces
+`2026-11-study-7`). No idea text, no report content, no PII in events; traces
 hold pipeline detail and are deleted on session withdraw.
 
 ## Pipeline
@@ -121,7 +132,8 @@ If a provider errors or rate-limits, the next one is tried; every call, fallback
   ],
   "graveyard_matches": [
     { "company_name": "...", "what_they_tried": "...",
-      "cause_of_death": "...", "year_closed": 2020, "similarity": 0.87 }
+      "cause_of_death": "...", "year_closed": 2020, "similarity": 0.87,
+      "source_urls": ["https://..."] }
   ],
   "objections": [
     { "objection": "...", "severity": "high|medium|low" }
@@ -180,7 +192,7 @@ docs/BACKEND-HANDOFF.md     endpoints, contract, mock vs live, telemetry, secret
 - Batched uploads to `/events` (at most one request per 10 s, 200 events each). Visitors can delete their session (local + server, including linked traces). Feedback is sent under a separate random id.
 - The pitch edition sends **zero** events (`telemetry.js` is disabled at startup); tests and `npm run parity` check this.
 - Links carry a shared access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen` — see `docs/DEPLOY.md` §3b.
-- Every event carries `study_version` (`2026-11-study-6`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
+- Every event carries `study_version` (`2026-11-study-7`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
 
 ---
 

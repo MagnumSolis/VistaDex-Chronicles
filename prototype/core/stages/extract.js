@@ -21,7 +21,8 @@ Rules:
 Return a JSON object: {"claims": [{"claim": "..."}]}. Never return a bare array.`;
 
 const TYPE_PROMPT = `Type each claim as exactly one of: novelty, market_size, defensibility, traction, other.
-novelty = nothing like this exists / first / only; market_size = size, growth or demand of a market;
+novelty = nothing like this exists / first / only; market_size = size, growth or demand of a whole market
+(a price, a fee or what the product costs is NOT market_size: type it other);
 defensibility = moats, barriers, why others cannot copy; traction = users, customers, revenue, pilots or growth
 the company says it already has; other = anything else.
 Return a JSON object: {"types": [{"index": 0, "type": "..."}]}. Never return a bare array.`;
@@ -30,7 +31,7 @@ export async function extractClaims(ideaText, { llm, trace }) {
   const candidates = await splitClaims(ideaText, { llm, trace });
   const claims = candidates.map(text => {
     const t = typeClaim(text);
-    return { claim: text, type: t.type, _confident: t.confident, _hits: t.hits };
+    return { claim: text, type: t.type, _confident: t.confident, _hits: t.hits, _scores: t.scores };
   });
 
   const uncertain = claims.map((c, i) => (c._confident ? null : i)).filter(i => i !== null);
@@ -44,7 +45,9 @@ export async function extractClaims(ideaText, { llm, trace }) {
     let router = "rules";
     let type = c.type;
     if (pos !== -1) {
-      if (llmTypes[pos]) { type = llmTypes[pos]; router = "llm"; }
+      // market_size needs market language or a market-sized number (a rule hit); a price is not a market.
+      if (llmTypes[pos] === "market_size" && !c._scores.market_size) router = "rules(llm-market-size-without-market)";
+      else if (llmTypes[pos]) { type = llmTypes[pos]; router = "llm"; }
       else router = llm.available("extract") ? "rules-fallback(llm-failed)" : "rules-fallback(no-llm)";
     }
     trace.log("claim_typed", { claim: c.claim, type, router, rule_hits: c._hits });

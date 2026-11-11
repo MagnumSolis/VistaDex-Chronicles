@@ -27,6 +27,7 @@ import { withIds } from "./graveyard-live.js";
 import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
+import { createBudget } from "../../prototype/core/providers/http.js";
 
 const MAX_BODY_BYTES = 256 * 1024;
 const MAX_EVENTS_PER_BATCH = 200;
@@ -121,6 +122,7 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
 
   // Global daily cap, counted after validation so malformed requests don't use it up.
   const cap = Number(env.SCREEN_DAILY_CAP || 0);
+  let slotDay = null;
   if (cap > 0) {
     const stamp = now();
     const { allowed } = await store.takeDailyScreen(stamp.slice(0, 10), cap);
@@ -128,15 +130,27 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
       return json({ error: "daily_cap", message: "The study is paused for today. Please try again tomorrow." }, 429,
         { ...cors, "Retry-After": String(secondsUntilUtcMidnight(stamp)) });
     }
+    slotDay = stamp.slice(0, 10);
   }
+  try {
+    return await runAndStore(idea, env, { store, fetchImpl, now, cors, recorded: request.headers.get("X-VistaDex-Record") !== "no" });
+  } catch (err) {
+    // A run that failed gives its daily-cap slot back, so errors never eat the day's budget.
+    if (slotDay) await store.releaseDailyScreen(slotDay).catch(() => {});
+    throw err;
+  }
+}
 
-  const llmRoutes = routesFromEnv(env, fetchImpl);
-  const retrieval = retrievalFromEnv(env, fetchImpl);
+async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = true }) {
+
+  // One call budget per run, shared by every provider (prototype/core/providers/http.js).
+  const budget = createBudget(Number(env.CALL_BUDGET) || undefined);
+  const llmRoutes = routesFromEnv(env, fetchImpl, { budget });
+  const retrieval = retrievalFromEnv(env, fetchImpl, { budget });
   const live = Object.values(llmRoutes).some(chain => chain.length) || retrieval.name !== "mock";
   // No samples here: the server never fills fields with placeholder data.
   const graveyard = graveyardSnapshot.count > 0 ? withIds(graveyardSnapshot.entries) : GRAVEYARD_DB;
-  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard });
-  const recorded = request.headers.get("X-VistaDex-Record") !== "no";
+  const { report, trace } = await runScreen(idea, { mode: live ? "live" : "mock", llmRoutes, retrieval, graveyard, budget: live ? budget : null });
   await store.saveTrace(trace.trace_id, trace.mode, recorded ? trace : minimalTrace(trace), now());
   return json(report, 200, {
     ...cors,

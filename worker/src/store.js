@@ -6,6 +6,7 @@
 //   exportEvents() / exportTraces()         → rows
 //   purgeOlderThan(isoCutoff)               → { events, traces } deleted (retention cleanup)
 //   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
+//   releaseDailyScreen(day)                 gives one slot back (a run that failed)
 
 export function d1Store(db) {
   return {
@@ -53,6 +54,9 @@ export function d1Store(db) {
         db.prepare("DELETE FROM daily_counters WHERE day < ?").bind(cutoff.slice(0, 10)),
       ]);
       return { events: out[0].meta?.changes || 0, traces: out[1].meta?.changes || 0 };
+    },
+    async releaseDailyScreen(day) {
+      await db.prepare("UPDATE daily_counters SET screens = screens - 1 WHERE day = ? AND screens > 0").bind(day).run();
     },
     async exportEvents() {
       const { results } = await db.prepare("SELECT session_id, seq, ts, type, study_version, payload, received_at FROM events ORDER BY session_id, seq").all();
@@ -108,6 +112,7 @@ export function memoryStore() {
       for (const [k, row] of traces) if (row.created_at < cutoff) { traces.delete(k); t++; }
       return { events: e, traces: t };
     },
+    async releaseDailyScreen(day) { if ((daily.get(day) || 0) > 0) daily.set(day, daily.get(day) - 1); },
     async exportEvents() { return [...events.values()].sort((a, b) => a.session_id.localeCompare(b.session_id) || a.seq - b.seq); },
     async exportTraces() { return [...traces.values()]; },
   };

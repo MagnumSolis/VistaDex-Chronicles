@@ -39,6 +39,10 @@ export const DEFENSIBILITY = Object.freeze({
 // quoted a figure (or the figure supports a confirmed market-size claim).
 export const MARKET = Object.freeze({ tamFloorUsd: 1e7, tamCapUsd: 1e9 });
 
+// Graveyard distance with no match above the threshold: capped, since matching found nothing, which is not
+// proof nobody tried (absence never scores as a good result). Added study-11.
+export const GRAVEYARD = Object.freeze({ noMatchCap: 70 });
+
 // Regulatory load (higher = lighter): rules that ≥ 2 independent sources name for the idea's target markets.
 // A rule named by one source is shown but not counted. Finding none is not proof there are none.
 // TODO(team): tune.

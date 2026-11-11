@@ -100,7 +100,7 @@ export function toContract(r) {
         ...(q.independent_sources != null ? { independent_sources: Number(q.independent_sources) || 0, corroborated: Boolean(q.corroborated) } : {}),
       })),
       ...(j.sources_checked != null ? { sources_checked: Number(j.sources_checked) || 0 } : {}),
-    })) };
+    })), ...(Array.isArray(r.legal.not_searched) && r.legal.not_searched.length ? { not_searched: strs(r.legal.not_searched) } : {}) };
   }
   if (Array.isArray(r.sample_fields)) out.sample_fields = r.sample_fields.filter(f => SAMPLE_FIELDS.includes(f));
   return out;

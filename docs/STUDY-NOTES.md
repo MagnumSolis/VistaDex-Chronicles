@@ -45,7 +45,16 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-10 (stricter claim judging; Home hero card: CURRENT)
+## study_version 2026-11-study-11 (launch fixes: graveyard cap, roles, live wording: CURRENT)
+
+Bumped because a score and a telemetry enum changed (decision: 2026-11-12, docs/LAUNCH-PLAN.md P0-4 and P0-5).
+
+- **Graveyard distance with no match is capped at 70** (was 100): finding no lookalike is not proof nobody tried. Most reports match nothing, so VistaDex Scores from study-11 on are lower than before for those ideas; do not compare scores across this version.
+- **Roles.** The Screen an idea form adds Student and Other; the feedback form adds Accelerator / incubator and Student. `run_started.role` and `feedback_submitted.role` gain those values. Role-based comparisons now have a student group from the field track too.
+- **Wording.** The progress screen no longer marks Legal & market as skipped on live runs; How it works describes the live graveyard (fleet-confirmed, two independent pages each) instead of the 18-entry offline seed; the walkthrough's legal step describes the live section.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-10 (stricter claim judging; Home hero card)
 
 Bumped because claim statuses can change and the Home page changed (decision: 2026-11-12). Telemetry is unchanged.
 

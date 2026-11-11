@@ -7,7 +7,7 @@
 // study-4 = seq unique across tabs of one session; study-5 = study flow (both parts reachable and finished);
 // study-6 = paired measures (condition start/end, one chatbot run id, confidence before the chatbot answer);
 // study-7 = "Your read" in the report, claim reading time, LinkedIn/X channels, graveyard lead sources.
-export const STUDY_VERSION = "2026-11-study-10";
+export const STUDY_VERSION = "2026-11-study-11";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.
@@ -31,7 +31,7 @@ export const NOTICE = {
 // TODO(team): final question wording. Set signedOff to true once the team has approved it.
 export const FEEDBACK = {
   signedOff: false,
-  role: { question: "What best describes you?", options: [["founder", "Founder"], ["investor", "Investor"], ["other", "Other"]] },
+  role: { question: "What best describes you?", options: [["founder", "Founder"], ["investor", "Investor"], ["accelerator", "Accelerator / incubator"], ["student", "Student"], ["other", "Other"]] },
   useful: { question: "Was the report useful?", options: [["yes", "Yes"], ["partly", "Partly"], ["no", "No"], ["no_report", "I didn't run one"]] },
   section: { question: "Which section mattered most to you?", options: [["claims", "Claims"], ["graveyard", "Graveyard leads"], ["objections", "Objections"], ["legal", "Legal"], ["market", "Market"], ["none", "None of them"]] },
   wrong: { question: "What was wrong or missing?", hint: "Optional. Please don't include names or confidential information." },

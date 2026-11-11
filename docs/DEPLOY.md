@@ -1,5 +1,11 @@
 # Deploying VistaDex (proxy + static site)
 
+> **Current production (Nov 2026).** Site: Cloudflare Pages project `vistadex-app` at https://vistadex-app.pages.dev.
+> Proxy: Worker `vistadex-proxy` with D1 `vistadex`. Both deploy from `.github/workflows/deploy.yml` on every merge to
+> `main` (tests run first); `.github/workflows/ci.yml` checks every pull request. The GitHub Pages sections below describe
+> the earlier setup and are kept for reference. The `CLOUDFLARE_API_TOKEN` secret needs both "Workers Scripts: Edit" and
+> "Cloudflare Pages: Edit".
+
 Nothing here has been deployed yet. This is the checklist for whoever does it.
 
 ```

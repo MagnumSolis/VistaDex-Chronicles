@@ -22,6 +22,9 @@ import { searchLegal } from "./stages/legal.js";
 // deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode, samples }
 //   samples: mock-mode placeholders (prototype/data/samples.js) — passed by the browser mock path only.
 const stripSearch = ({ search, ...rest }) => rest;
+// Rough cost of one optional search stage (search + fetch + one model call), and what the objector needs after.
+const CALLS_PER_SEARCH = 3;
+const CALLS_RESERVED = 3;
 
 export async function runScreen(ideaOrInput, deps = {}) {
   const input = typeof ideaOrInput === "string" ? null : normalizeInput(ideaOrInput);
@@ -51,12 +54,27 @@ export async function runScreen(ideaOrInput, deps = {}) {
   // Competitors, Big Tech risk, market size and legal are independent of each other: run in parallel.
   // Market and legal are null when no search could run (the report then says so); market still reads the
   // quotes of confirmed market-size claims without a search.
-  const [competitors, bigTech, market, legal] = await Promise.all([
+  // Call budget (Workers allow 50 outgoing calls per request): competitors and market first, then Big Tech,
+  // then as many target markets for legal as still fit; the rest are listed as not searched this run.
+  const markets = input?.markets || [];
+  let legalMarkets = markets, runBigTech = true;
+  if (deps.budget) {
+    let spare = deps.budget.remaining - CALLS_RESERVED - 2 * CALLS_PER_SEARCH;
+    runBigTech = spare >= CALLS_PER_SEARCH;
+    if (runBigTech) spare -= CALLS_PER_SEARCH;
+    legalMarkets = markets.slice(0, Math.max(0, Math.floor(spare / CALLS_PER_SEARCH)));
+    trace.log("budget", { used: deps.budget.used, limit: deps.budget.limit, big_tech: runBigTech, legal_markets: legalMarkets, skipped_markets: markets.filter(m => !legalMarkets.includes(m)) });
+  }
+  const [competitors, bigTech, market, legalFound] = await Promise.all([
     findCompetitors({ ideaText, input, novelPages }, { llm, retrieval, trace }),
-    assessBigTech({ ideaText, input }, { llm, retrieval, trace }),
+    runBigTech ? assessBigTech({ ideaText, input }, { llm, retrieval, trace }) : null,
     searchMarket({ ideaText, input, claims }, { llm, retrieval, trace }),
-    searchLegal({ ideaText, input }, { llm, retrieval, trace }),
+    searchLegal({ ideaText, input: input && { ...input, markets: legalMarkets } }, { llm, retrieval, trace }),
   ]);
+  const notSearched = markets.filter(m => !legalMarkets.includes(m));
+  const legal = notSearched.length && retrieval.name !== "mock"
+    ? { ...(legalFound || { jurisdictions: [], search: { queries: [], sources_checked: 0 } }), not_searched: notSearched }
+    : legalFound;
   await onStage(2, "done", `${claims.length} claims classified`);
 
   await onStage(3, "running");

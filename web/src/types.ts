@@ -42,7 +42,7 @@ export interface LegalFact { kind: "patent" | "trademark" | "approval" | "licenc
 /** (b) A rule that may apply, naming the rule and where it comes from. Never "allowed / not allowed". */
 export interface LegalRequirement { rule: string; summary: string; source: Link; sources?: (Link & { quote: string })[]; independent_sources?: number; corroborated?: boolean }
 export interface LegalJurisdiction { jurisdiction: Jurisdiction; facts: LegalFact[]; requirements: LegalRequirement[]; sources_checked?: number }
-export interface Legal { jurisdictions: LegalJurisdiction[] }
+export interface Legal { jurisdictions: LegalJurisdiction[]; not_searched?: Jurisdiction[] }
 
 // ── Market: TAM from figures quoted by independent sources (median); SAM/SOM need the founder's assumptions ──
 export interface MarketQuote { value: string; value_usd: number | null; market: string; year: number | null; citation: Link | null; quote: string }
@@ -55,7 +55,7 @@ export interface Market {
 }
 
 // ── Round 2 ──
-export type Role = "founder" | "investor" | "accelerator";
+export type Role = "founder" | "investor" | "accelerator" | "student" | "other";
 export interface IdeaInput { title: string; pitch: string; problem: string; solution: string; moat: string; industries: string[]; role: Role | null; markets: Jurisdiction[] }
 export interface Competitor { name: string; url: string; why_similar: string; quote: string }
 export type BigTechLevel = "low" | "medium" | "high" | "none_found" | "unverified";

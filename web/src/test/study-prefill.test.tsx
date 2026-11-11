@@ -60,6 +60,30 @@ describe("assigned idea in the VistaDex condition", () => {
     expect((tm.events() as Ev[]).find(e => e.type === "run_started")!.payload.sample).toBe(null);
   }, 30000);
 
+  it("a draft from before registering is replaced by the assigned idea", async () => {
+    await openForm(); // not registered yet
+    fireEvent.change(screen.getByLabelText(/^Idea title/), { target: { value: "Something I tried first" } });
+    participant("study", "B"); // registers in the same page load
+    baselineDone();
+    go("/reports");
+    go("/screen");
+    await screen.findByLabelText(/^Idea title/);
+    expect(field(/^Idea title/)).toBe("Student skill-swap marketplace");
+    expect(screen.getByText(/Your assigned idea \(Idea B\) is filled in/)).toBeTruthy();
+  }, 30000);
+
+  it("an edited assigned idea keeps the edit and the note says it was changed", async () => {
+    participant("study", "D");
+    baselineDone();
+    await openForm();
+    fireEvent.change(screen.getByLabelText(/^Idea title/), { target: { value: "My own title" } });
+    expect(screen.queryByText(/is filled in/)).toBe(null);
+    expect(screen.getByText(/You changed your assigned idea \(Idea D\)/)).toBeTruthy();
+    go("/reports");
+    go("/screen");
+    expect(field(/^Idea title/)).toBe("My own title");
+  }, 30000);
+
   it("field-track visitors and finished study participants get an empty form", async () => {
     participant("field");
     await openForm();

@@ -33,16 +33,20 @@ const empty = (): IdeaInput => ({ title: "", pitch: "", problem: "", solution: "
 const same = (a: IdeaInput | undefined, b: IdeaInput) => JSON.stringify(a) === JSON.stringify(b);
 
 // The draft survives moving between screens (module memory only; never stored or logged).
-const draft: { input: IdeaInput; sample: string | null } = { input: empty(), sample: null };
-export function clearDraft() { draft.input = empty(); draft.sample = null; }
+// `assignedKey`: the study idea this draft was filled in with, so a participant's own edits survive moving
+// between screens.
+const draft: { input: IdeaInput; sample: string | null; assignedKey: string | null } = { input: empty(), sample: null, assignedKey: null };
+export function clearDraft() { draft.input = empty(); draft.sample = null; draft.assignedKey = null; }
 
-// Study track, VistaDex condition: an untouched form starts with the assigned idea, so everyone with the
-// same idea screens the same input. The run is marked "study_<key>" only if it is run unedited.
+// Study track, VistaDex condition: the form starts with the assigned idea, so everyone with the same idea
+// screens the same input. It replaces whatever was typed before registering; once filled in, the
+// participant's edits are kept. The run is marked "study_<key>" only if it is run unedited.
 function prefillAssigned() {
   const assigned = assignedStudyIdea();
-  if (!assigned || !same(draft.input, empty())) return;
+  if (!assigned || draft.assignedKey === assigned.key) return;
   draft.input = { ...empty(), ...assigned.input };
   draft.sample = assigned.sample;
+  draft.assignedKey = assigned.key;
 }
 function sampleInput(id: string | null): IdeaInput | undefined {
   const assigned = assignedStudyIdea();
@@ -138,7 +142,9 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
           </p>
           {assigned && (
             <p className="mt-4 rounded-inner bg-muted p-4 text-[0.9375rem] text-foreground">
-              Your assigned idea (Idea {assigned.key}) is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.
+              {same(input, { ...empty(), ...assigned.input })
+                ? <>Your assigned idea (Idea {assigned.key}) is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.</>
+                : <>You changed your assigned idea (Idea {assigned.key}). Please run it as it was given: reload this page to fill it in again.</>}
             </p>
           )}
           {errors.length > 0 && (

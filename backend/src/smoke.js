@@ -5,10 +5,11 @@
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
 import { sourceBlockReason, checkSourceText, leadSkipReason, shutdownLeads } from "./sources.js";
-import { verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
+import { runFleet, verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
 import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
 import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
+import { mergeRun, formatReport, runId, KEEP_RUNS } from "./fleet-metrics.js";
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.error(`✗ ${name}`); } };
@@ -216,6 +217,61 @@ check("rotation covers the whole bank (minus {company} templates)", covered.size
 check("{company} templates skipped without KNOWN_COMPANIES", [...covered].every(q => !q.includes("{company}") && !q.includes("undefined")));
 const companyAt = DISCOVERY_QUERIES.findIndex(e => e.q === "{company} shutting down");
 check("{company} templates use KNOWN_COMPANIES when given", pickQueries(companyAt, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+// 9. Per-run metrics in fleet_state: one record per GitHub run, totals over all runs
+let mdoc = mergeRun(null, "r1", { queries: 4, signals: 25, prefiltered: 18, extracted: 7, new_candidates: 2, sources_added: 1, stopped: null });
+mdoc = mergeRun(mdoc, "r1", { confirmed: 14, watched: 50 });
+check("discovery and watcher steps of one run share a record", mdoc.runs.length === 1 && mdoc.runs[0].new_candidates === 2 && mdoc.runs[0].confirmed === 14);
+mdoc = mergeRun(mdoc, "r2", { queries: 4, signals: 30, new_candidates: 5, confirmed: 3 });
+check("totals sum the runs", mdoc.totals.runs === 2 && mdoc.totals.signals === 55 && mdoc.totals.new_candidates === 7 && mdoc.totals.confirmed === 17);
+check("a re-reported field replaces, not doubles, its total", mergeRun(mdoc, "r2", { confirmed: 4 }).totals.confirmed === 18);
+let many = null; for (let k = 0; k < KEEP_RUNS + 5; k++) many = mergeRun(many, `m${k}`, { signals: 1 });
+check("only the last KEEP_RUNS run records are kept; totals keep everything", many.runs.length === KEEP_RUNS && many.runs[0].run_id === "m5" && many.totals.signals === KEEP_RUNS + 5);
+const md = formatReport(mdoc, "r2");
+check("report names every number for this run", ["queries 4", "signals 30", "pre-filtered –", "new candidates 5", "confirmed 3"].every(t => md.includes(t)));
+const rows = md.split("\n").filter(l => /^\| (\*\*this run|\d{4}-)/.test(l));
+check("report shows the trend, newest first, times in IST", rows.length === 2 && rows[0].startsWith("| **this run**") && rows[1].includes(" IST |"));
+check("IST is UTC+5:30", mergeRun && formatReport(mergeRun(null, "z", { signals: 1 }, new Date("2026-11-11T15:46:00Z")), "z").includes("2026-11-11 21:16 IST"));
+check("signals waiting is a level, not summed", mergeRun(mergeRun(null, "a", { backlog: 60 }), "b", { backlog: 50 }).totals.backlog === undefined);
+check("run id comes from GITHUB_RUN_ID", runId({ GITHUB_RUN_ID: "43047343056" }) === "43047343056" && runId({}, nov).startsWith("local-2026-11-11"));
+
+// 10. One whole run (discovery, then the Death Watcher as a second step) on fakes: no network
+const matches = (d, q) => Object.entries(q).every(([k, v]) => {
+  if (k === "$or") return v.some(sub => matches(d, sub));
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    if ("$exists" in v) return (k in d) === v.$exists;
+    if ("$ne" in v) return d[k] !== v.$ne;
+    if ("$regex" in v) return new RegExp(v.$regex, v.$options).test(d[k] || "");
+  }
+  return d[k] === v;
+});
+const memDb = () => { const cols = {}; return { cols, collection(name) { const docs = (cols[name] ||= []); let n = 0; return {
+  find(q = {}) { const m = docs.filter(d => matches(d, q)); return { sort(spec) { const ks = Object.entries(spec); m.sort((a, b) => { for (const [k, dir] of ks) { if ((a[k] ?? 0) < (b[k] ?? 0)) return -dir; if ((a[k] ?? 0) > (b[k] ?? 0)) return dir; } return 0; }); return this; }, limit(l) { return { toArray: async () => m.slice(0, l) }; } }; },
+  async findOne(q) { return docs.find(d => matches(d, q)) || null; },
+  async countDocuments(q = {}) { return docs.filter(d => matches(d, q)).length; },
+  async insertOne(d) { docs.push({ _id: `${name}-${++n}`, ...d }); },
+  async replaceOne(q, d, o) { const i = docs.findIndex(x => matches(x, q)); if (i >= 0) docs[i] = d; else if (o?.upsert) docs.push(d); },
+  async updateOne(q, u, o) { let d = docs.find(x => matches(x, q)); let upsertedCount = 0;
+    if (!d) { if (!o?.upsert) return { matchedCount: 0 }; d = { _id: `${name}-${++n}`, ...Object.fromEntries(Object.entries(q).filter(([k]) => !k.startsWith("$"))), ...(u.$setOnInsert || {}) }; docs.push(d); upsertedCount = 1; }
+    Object.assign(d, u.$set || {}); for (const [k, v] of Object.entries(u.$push || {})) (d[k] ||= []).push(v); return { matchedCount: 1, upsertedCount }; },
+}; } }; };
+const fdb = memDb();
+const news = "Vreal, a VR game streaming platform, shut down in 2019 after it failed to raise a new round.";
+const fleetTf = {
+  search: async q => q.startsWith('"Vreal"') ? [{ url: "https://variety.com/vreal", title: "Vreal shuts down", snippet: news }]
+    : [{ url: "https://techcrunch.com/vreal", title: "Vreal shuts down", snippet: news }, { url: "https://advice.example/when", title: "When to Shut Down Your Startup", snippet: "Shutting down is hard." }],
+  fetchPages: async urls => Object.fromEntries(urls.map(u => [u, { content: u.includes("vreal") ? page : "Shutting down is hard." }])),
+};
+const fenv = { FLEET_MODE: "discovery", DISCOVERY_QUERIES: "2", SIGNAL_LIMIT: "5", EXTRACT_DELAY_MS: "0", SEARCH_DELAY_MS: "0", WATCH_DELAY_MS: "0", GITHUB_RUN_ID: "777" };
+const d1 = await runFleet({ env: fenv, deps: { db: fdb, tf: fleetTf, llm: fakeLLM } });
+check("discovery run: queries, signals, pre-filtered, extracted, new candidates", d1.discovery.queries === 2 && d1.discovery.signals === 4 && d1.discovery.new_signals === 2
+  && d1.discovery.prefiltered === 1 && d1.discovery.extracted === 1 && d1.discovery.new_candidates === 1 && d1.discovery.backlog === 0);
+check("a new candidate is never confirmed by discovery", fdb.cols.graveyard_staging.every(e => e.death_status === "candidate"));
+const w1 = await runFleet({ env: { ...fenv, FLEET_MODE: "watcher" }, deps: { db: fdb, tf: fleetTf, llm: fakeLLM } });
+check("watcher confirms only with a 2nd fetched page on another domain", w1.watcher.confirmed === 1 && fdb.cols.graveyard_staging[0].death_status === "confirmed" && new Set(fdb.cols.graveyard_staging[0].source_urls.map(registrableDomain)).size === 2);
+const m1 = fdb.cols.fleet_state.find(d => d._id === "metrics");
+check("fleet_state holds one record for the run with every number", m1.runs.length === 1 && m1.runs[0].run_id === "777" && m1.runs[0].new_candidates === 1 && m1.runs[0].confirmed === 1 && m1.totals.prefiltered === 1);
+check("the query cursor still advances", fdb.cols.fleet_state.find(d => d._id === "discovery").cursor === 2);
+
 const srcDir = new URL(".", import.meta.url);
 check("no Math.random in backend/src", readdirSync(srcDir).filter(f => f.endsWith(".js") && f !== "smoke.js").every(f => !readFileSync(new URL(f, srcDir), "utf8").includes("Math.random")));
 

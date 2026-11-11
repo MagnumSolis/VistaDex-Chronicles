@@ -3,7 +3,9 @@
 # → graveyard_signals → LLM extraction → staging candidates), then the Death Watcher
 # (a candidate is confirmed only with 2 fetched pages on distinct domains that name
 # the company and state its death), then export confirmed entries and commit+deploy
-# the snapshot. Nothing is published without 2 good sources.
+# the snapshot. Nothing is published without 2 good sources. Each run's numbers
+# (queries, signals, pre-filtered, extracted, new candidates, sources added,
+# confirmed) go to fleet_state {_id: "metrics"} and the job summary.
 #
 # Per-run limits (repo variables, defaults below) keep each run inside free tiers:
 #   DISCOVERY_QUERIES 4 TinyFish searches · SIGNAL_LIMIT 20 LLM calls (~2.5k tokens
@@ -87,6 +89,13 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: npm run db:stats
+
+      - name: "Run report: queries, signals, pre-filtered, extracted, new candidates, sources added, confirmed"
+        if: always()
+        working-directory: backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: node src/fleet-report.js
 
       - name: Commit + push snapshot (if changed)
         id: snapshot

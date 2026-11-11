@@ -6,8 +6,9 @@
 import { makeTinyFish, isAllowedUrl } from "./tinyfish.js";
 import { MongoClient } from "mongodb";
 import { registrableDomain } from "./schemas.js";
-import { sourceBlockReason, checkSources } from "./sources.js";
+import { sourceBlockReason, checkSources, leadSkipReason } from "./sources.js";
 import { makeExtractorLLM, runSignalExtraction } from "./extract-signals.js";
+import { recordRun, runId, summaryLine } from "./fleet-metrics.js";
 
 // Discovery query bank. Each run takes the next DISCOVERY_QUERIES queries in a fixed
 // order (a cursor stored in fleet_state), so successive runs cover the whole bank and
@@ -94,37 +95,44 @@ function toSignals(searchResults, agent) {
 
 // FLEET_MODE: "discovery" (search → signals → candidates), "watcher" (confirm candidates),
 // "reverify" (re-check every entry under the current source rule), "all" (default).
-export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCompanies = [], env = process.env }) {
+// `deps` ({ db, tf, llm }) replaces the real Mongo, TinyFish and LLM in tests.
+export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCompanies = [], env = process.env, deps = {} }) {
   const mode = String(env.FLEET_MODE || "all");
-  const tf = makeTinyFish(apiKey);
-  const client = new MongoClient(mongoUri);
-  await client.connect();
-  const db = client.db(dbName);
+  const tf = deps.tf || makeTinyFish(apiKey);
+  const client = deps.db ? null : new MongoClient(mongoUri);
+  if (client) await client.connect();
+  const db = deps.db || client.db(dbName);
   const staging = db.collection("graveyard_staging");
   const signals = db.collection("graveyard_signals");
   const state = db.collection("fleet_state");
-  const result = { mode };
+  const result = { mode, run_id: runId(env) };
 
   try {
     if (mode === "discovery" || mode === "all") {
       const st = (await state.findOne({ _id: "discovery" })) || { cursor: 0 };
       const { queries, next } = pickQueries(st.cursor, Number(env.DISCOVERY_QUERIES || 4), new Date(), knownCompanies);
-      let found = 0;
+      let found = 0, fresh = 0;
       for (const { agent, query } of queries) {
         try {
           const sigs = toSignals(await tf.search(query, 10), agent);
-          for (const c of sigs) await signals.updateOne({ url: c.url }, { $set: c, $setOnInsert: { first_seen: new Date() } }, { upsert: true });
+          let added = 0;
+          for (const c of sigs) {
+            const r = await signals.updateOne({ url: c.url }, { $set: c, $setOnInsert: { first_seen: new Date() } }, { upsert: true });
+            added += r.upsertedCount || 0;
+          }
           found += sigs.length;
-          console.log(`  [${agent}] "${query}" → ${sigs.length} signals`);
+          fresh += added;
+          const leads = sigs.filter(c => !leadSkipReason(c.signal_title, c.snippet)).length;
+          console.log(`  [${agent}] "${query}" → ${sigs.length} signals (${added} new, ${leads} name a company)`);
         } catch (e) {
           console.error(`  [${agent}] "${query}" failed: ${e.message.slice(0, 200)}`);
         }
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, Number(env.SEARCH_DELAY_MS ?? 500)));
       }
       await state.updateOne({ _id: "discovery" }, { $set: { cursor: next, last_run: new Date(), last_queries: queries.map(q => q.query) } }, { upsert: true });
       result.signals_found = found;
 
-      const llm = makeExtractorLLM(env);
+      const llm = deps.llm || makeExtractorLLM(env);
       result.extraction = await runSignalExtraction({
         signals, staging, tf, llm,
         limit: Number(env.SIGNAL_LIMIT || 10),
@@ -132,17 +140,30 @@ export async function runFleet({ apiKey, mongoUri, dbName = "vistadex", knownCom
         budgetMs: Number(env.EXTRACT_BUDGET_MS || 20 * 60 * 1000),
       });
       if (result.extraction.skipped) console.log("  [extractor] no GROQ_API_KEY / MISTRAL_API_KEY: signals wait for the next run with a key");
+      const x = result.extraction;
+      result.discovery = {
+        queries: queries.length, query_list: queries.map(q => q.query), signals: found, new_signals: fresh,
+        prefiltered: x.prefiltered ?? 0, extracted: x.signals ?? 0, new_candidates: x.created ?? 0, sources_added: x.added_source ?? 0,
+        rejected_items: x.rejected ?? 0, blocked: x.blocked ?? 0, fetch_failed: x.fetch_failed ?? 0, stopped: x.skipped || x.stopped || null,
+        backlog: await signals.countDocuments({ extraction_status: { $exists: false } }),
+      };
+      await recordRun(state, result.run_id, result.discovery);
+      console.log(`Discovery ${result.run_id}: ${summaryLine(result.discovery)} · signals waiting ${result.discovery.backlog}`);
     }
 
     if (mode === "watcher" || mode === "reverify" || mode === "all") {
       // Death Watcher: oldest check first. reverify also re-checks confirmed entries.
       result.watcher = await runDeathWatcher(staging, tf, {
         limit: Number(env.WATCHER_LIMIT || 20),
+        delayMs: Number(env.WATCH_DELAY_MS ?? 800),
         filter: mode === "reverify" ? { source_check_version: { $ne: SOURCE_CHECK_VERSION } } : { death_status: "candidate" },
       });
+      const w = result.watcher;
+      await recordRun(state, result.run_id, { confirmed: w.confirmed, watched: w.watched, demoted: w.demoted, watcher_errors: w.errors });
+      console.log(`Death Watcher ${result.run_id}: confirmed ${w.confirmed} of ${w.watched} watched, ${w.demoted} demoted, ${w.errors} errors`);
     }
   } finally {
-    await client.close();
+    await client?.close();
   }
   return result;
 }

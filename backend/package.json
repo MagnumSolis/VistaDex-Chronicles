@@ -10,6 +10,7 @@
     "db:publish": "node src/db.js publish",
     "smoke": "node src/smoke.js",
     "db:export": "node src/export-graveyard.js",
+    "db:backfill-causes": "node src/backfill-causes.js",
     "research:sync": "node src/sync-research.js"
   },
   "dependencies": {

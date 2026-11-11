@@ -33,6 +33,18 @@ const fixture = `<html><head><title>Testco | Failed Startup Case Study</title></
 <div class="stat-box"><span class="stat-label">TOTAL CASH BURNED</span><span class="stat-value">$50.0M</span></div>
 <div class="stat-box"><span class="stat-label">FOUNDING YEAR</span><span class="stat-value">2019</span></div>
 <div class="stat-box"><span class="stat-label">END YEAR</span><span class="stat-value">2024</span></div>
+<article class="grid-card" data-full-text="Testco died because enterprise buyers would not pay for widgets before the market existed. Sales cycles ran longer than the runway. The team &#39;tried&#39; three pivots.
+
+A second paragraph that is not part of the cause.">
+    <div class="card-header">
+        <span class="card-icon"><img src="/icons/switch.png" alt="Failure Analysis" class="icon-img"></span>
+        <h3 class="card-title">Failure Analysis</h3>
+    </div>
+    <p class="card-text">Testco died because enterprise buyers would not pay....</p>
+</article>
+<article class="grid-card" data-full-text="The widget market today is crowded.">
+    <div class="card-header"><h3 class="card-title">Market Analysis</h3></div>
+</article>
 </body></html>`;
 const parsed = parseStartupPage(fixture, "https://www.loot-drop.io/startup/999-testco");
 check("parses company name", parsed.company_name === "Testco");
@@ -42,6 +54,15 @@ check("parses sector", parsed.sector === "SaaS B2B");
 check("parses product type", parsed.product_type === "Developer Tools");
 check("parses narrative", parsed.what_they_tried.includes("Testco attempted"));
 check("records source url", parsed.source_urls[0].includes("loot-drop.io"));
+// Cause of death comes from the Failure Analysis card, never from the narrative
+check("cause is the Failure Analysis text", parsed.cause_of_death.startsWith("Testco died because enterprise buyers"));
+check("cause keeps whole sentences of the first paragraph", parsed.cause_of_death.endsWith("three pivots.") && !parsed.cause_of_death.includes("second paragraph"));
+check("cause is not a copy of what_they_tried", parsed.cause_of_death !== parsed.what_they_tried);
+const noFa = parseStartupPage(fixture.replace(/<article[\s\S]*<\/article>/, ""), "https://www.loot-drop.io/startup/998-testco");
+check("no Failure Analysis card -> cause stays empty", noFa.cause_of_death === "");
+const noFaEntry = newGraveyardEntry(noFa);
+check("empty cause is recorded as searched_not_found", noFaEntry.failure_reason === "" && noFaEntry.search_status.failure_reason === "searched_not_found");
+check("entry without a cause still validates as candidate", validateEntry(noFaEntry).ok);
 const entry = newGraveyardEntry(parsed);
 check("entry validates as candidate", validateEntry(entry).ok);
 check("entry is candidate, never auto-confirmed", entry.death_status === "candidate");

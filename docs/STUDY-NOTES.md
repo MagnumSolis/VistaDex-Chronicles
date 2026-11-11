@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-8 (Home problem cards; console Insights: CURRENT)
+## study_version 2026-11-study-9 (live Market and Legal, Regulatory load in the score: CURRENT)
+
+Bumped because the report content and the VistaDex Score changed (decision: 2026-11-11). Telemetry is unchanged.
+
+- **Market is live.** A market-size search on the title and industry reads up to 6 pages; a figure is kept only if the sentence that states it is on the page and holds the money amount. One figure per independent site; the TAM is their median, cited to the closest figure. The Market axis counts only with figures from 2 or more independent sites (or quotes supporting a confirmed market-size claim). Before, the TAM came only from a confirmed market-size claim, so most reports had no Market axis. Expect more reports with a Market value from study-9 on.
+- **Legal is live.** For each target market the founder picks: links to the official trademark and patent search, and the rules that fetched pages name for this kind of product, each with the sentence that names it. A rule named by 2 independent sites is corroborated.
+- **New axis: Regulatory load** (weight 10; the counted weights now add up to 100): 100 minus 15 per corroborated rule (at most 5), capped at 70 when none is found, no value without a target market. Scores from study-9 are not directly comparable with earlier ones.
+- **Competitor search retries once** when the model answers in the wrong shape (one live run lost its competitors this way).
+- **Home.** The hero card shows a researched sample report (sources checked by hand on 20 Oct 2026) instead of the mock-mode card.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-8 (Home problem cards; console Insights)
 
 Bumped because the visitor-facing Home page changed (decision: 2026-11-11). Telemetry is unchanged: same events, payloads and controls as study-7.
 

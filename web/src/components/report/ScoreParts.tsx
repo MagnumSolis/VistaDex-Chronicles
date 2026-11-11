@@ -13,9 +13,9 @@ import { useSectionInView } from "@/telemetry/useSectionInView";
 import type { AxisId, BigTechLevel, BigTechRisk, ClaimStatus, Competitor, OverlapBand, Report, Scores } from "@/types";
 
 export const AXIS_LABEL: Record<AxisId, string> = {
-  novelty: "Novelty", market: "Market", defensibility: "Defensibility", graveyard: "Graveyard distance", evidence: "Evidence quality", big_tech: "Big Tech safety",
+  novelty: "Novelty", market: "Market", defensibility: "Defensibility", graveyard: "Graveyard distance", evidence: "Evidence quality", legal: "Regulatory load", big_tech: "Big Tech safety",
 };
-const RADAR_AXES: AxisId[] = ["novelty", "market", "defensibility", "graveyard", "evidence"];
+const RADAR_AXES: AxisId[] = ["novelty", "market", "defensibility", "graveyard", "evidence", "legal"];
 
 // ── Overlap band: neutral ink (it is not a claim status) with a 1–3 bar like severity ──
 const BAND: Record<OverlapBand, { label: string; level: number; help: string }> = {

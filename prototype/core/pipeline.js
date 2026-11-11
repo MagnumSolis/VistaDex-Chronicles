@@ -14,12 +14,15 @@ import { matchGraveyard } from "./stages/graveyard.js";
 import { raiseObjections } from "./stages/objector.js";
 import { findCompetitors } from "./stages/competitors.js";
 import { assessBigTech } from "./stages/bigtech.js";
-import { tamFromEvidence } from "./stages/market.js";
+import { searchMarket } from "./stages/market.js";
+import { searchLegal } from "./stages/legal.js";
 
 // ideaOrInput: the idea text (string), or the structured input { title, pitch, problem, solution, moat,
 // industries, role, markets } — then idea_text is built from it (input.js) and the input is kept on the report.
 // deps: { llmRoutes, retrieval, similarity, graveyard, onStage, mode, samples }
 //   samples: mock-mode placeholders (prototype/data/samples.js) — passed by the browser mock path only.
+const stripSearch = ({ search, ...rest }) => rest;
+
 export async function runScreen(ideaOrInput, deps = {}) {
   const input = typeof ideaOrInput === "string" ? null : normalizeInput(ideaOrInput);
   const ideaText = input ? buildIdeaText(input) : String(ideaOrInput ?? "");
@@ -45,12 +48,15 @@ export async function runScreen(ideaOrInput, deps = {}) {
   const claims = classified.map(({ _pages, ...c }) => c);
   // Competitors (dedicated search on title + pitch, plus the novelty claims' pages) and Big Tech risk.
   // Both are null when no search could run; the report then says "Not available in this version yet".
-  // Competitors and Big Tech risk are independent of each other — run in parallel.
-  const [competitors, bigTech] = await Promise.all([
+  // Competitors, Big Tech risk, market size and legal are independent of each other: run in parallel.
+  // Market and legal are null when no search could run (the report then says so); market still reads the
+  // quotes of confirmed market-size claims without a search.
+  const [competitors, bigTech, market, legal] = await Promise.all([
     findCompetitors({ ideaText, input, novelPages }, { llm, retrieval, trace }),
     assessBigTech({ ideaText, input }, { llm, retrieval, trace }),
+    searchMarket({ ideaText, input, claims }, { llm, retrieval, trace }),
+    searchLegal({ ideaText, input }, { llm, retrieval, trace }),
   ]);
-  const market = tamFromEvidence(claims, trace);
   await onStage(2, "done", `${claims.length} claims classified`);
 
   await onStage(3, "running");
@@ -67,9 +73,12 @@ export async function runScreen(ideaOrInput, deps = {}) {
     claims, graveyard_matches: matches, objections,
     ...(competitors ? { competitors: competitors.list } : {}),
     ...(bigTech ? { big_tech_risk: bigTech } : {}),
-    ...(market ? { market } : {}),
+    ...(market ? { market: stripSearch(market) } : {}),
+    ...(legal ? { legal: stripSearch(legal) } : {}),
     search: {
       ...(competitors ? { competitors: competitors.search } : {}),
+      ...(market?.search ? { market: market.search } : {}),
+      ...(legal ? { legal: legal.search } : {}),
       graveyard: { entries_checked: graveyard.length, verified_entries: graveyard.filter(g => g.source_verified === true).length },
     },
   }, deps.samples);

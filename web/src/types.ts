@@ -33,21 +33,23 @@ export interface Objection {
   severity: Severity;
 }
 
-// ── Legal (not produced by the pipeline yet) ──
+// ── Legal: registries to search and rules that fetched pages name, per target market (live since study-9) ──
 export type Jurisdiction = "EU" | "USA" | "India";
 export const JURISDICTIONS: Jurisdiction[] = ["EU", "USA", "India"];
 export interface Link { name: string; url: string }
 /** (a) Something a person can look up: a patent, trademark, approval or licence, with the registry. */
 export interface LegalFact { kind: "patent" | "trademark" | "approval" | "licence"; title: string; detail: string; reference?: string; registry: Link }
 /** (b) A rule that may apply, naming the rule and where it comes from. Never "allowed / not allowed". */
-export interface LegalRequirement { rule: string; summary: string; source: Link }
-export interface LegalJurisdiction { jurisdiction: Jurisdiction; facts: LegalFact[]; requirements: LegalRequirement[] }
+export interface LegalRequirement { rule: string; summary: string; source: Link; sources?: (Link & { quote: string })[]; independent_sources?: number; corroborated?: boolean }
+export interface LegalJurisdiction { jurisdiction: Jurisdiction; facts: LegalFact[]; requirements: LegalRequirement[]; sources_checked?: number }
 export interface Legal { jurisdictions: LegalJurisdiction[] }
 
-// ── Market: TAM from a verified source quote; SAM/SOM not produced live yet ──
+// ── Market: TAM from figures quoted by independent sources (median); SAM/SOM need the founder's assumptions ──
+export interface MarketQuote { value: string; value_usd: number | null; market: string; year: number | null; citation: Link | null; quote: string }
 export interface MarketFigure { value: string; scope: string }
 export interface Market {
-  tam?: MarketFigure & { value_usd: number | null; citation: Link | null; quote: string };
+  tam?: MarketFigure & { value_usd: number | null; citation: Link | null; quote: string; corroborated?: boolean; independent_sources?: number };
+  figures?: MarketQuote[];
   sam?: MarketFigure & { assumptions: string[] };
   som?: MarketFigure & { assumptions: string[] };
 }
@@ -64,7 +66,7 @@ export interface BigTechRisk {
   summary: string; companies_checked: string[]; queries: string[]; sources_checked: number;
 }
 export type OverlapBand = "clear" | "caution" | "high";
-export type AxisId = "novelty" | "market" | "defensibility" | "graveyard" | "evidence" | "big_tech";
+export type AxisId = "novelty" | "market" | "defensibility" | "graveyard" | "evidence" | "legal" | "big_tech";
 export interface Axis { value: number | null; inputs: Record<string, unknown>; boundary: string; note?: string; reason?: string; sample: boolean }
 export interface Scores {
   vistadex: { value: number | null; reason?: string; sample: boolean; used: { axis: AxisId; weight: number; share: number; value: number }[]; excluded: { axis: AxisId; reason: string }[] };
@@ -81,12 +83,14 @@ export interface Report {
   market?: Market;
   input?: IdeaInput;
   competitors?: Competitor[];
-  search?: { competitors?: { queries: string[]; sources_checked: number }; graveyard?: { entries_checked: number; verified_entries: number } };
+  search?: { competitors?: SearchBoundary; market?: SearchBoundary; legal?: SearchBoundary; graveyard?: { entries_checked: number; verified_entries: number } };
   big_tech_risk?: BigTechRisk;
   overlap_band?: OverlapBand;
   scores?: Scores;
   sample_fields?: SampleField[];
 }
+
+export interface SearchBoundary { queries: string[]; sources_checked: number }
 
 export type RunMode = "mock" | "live" | "proxy-mock";
 

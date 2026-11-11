@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import * as cfg from "../prototype/core/scoring-config.js";
 
 test("scoring weights and thresholds are pinned", () => {
-  assert.deepEqual({ ...cfg.WEIGHTS }, { novelty: 25, market: 20, defensibility: 20, graveyard: 15, evidence: 10, big_tech: 10 });
+  assert.deepEqual({ ...cfg.WEIGHTS }, { novelty: 25, market: 20, defensibility: 20, graveyard: 15, evidence: 10, legal: 10, big_tech: 10 });
   assert.equal(cfg.BIG_TECH_IN_SCORE, false);
   assert.deepEqual({ ...cfg.BIG_TECH_SAFETY }, { low: 100, medium: 50, high: 0 });
   assert.equal(cfg.MIN_SCORE_AXES, 3);
@@ -14,6 +14,7 @@ test("scoring weights and thresholds are pinned", () => {
   assert.deepEqual({ ...cfg.DEFENSIBILITY, moatObjection: { ...cfg.DEFENSIBILITY.moatObjection } },
     { base: 50, moatBonus: 10, moatMinChars: 20, confirmed: 15, disputed: 10, contradicted: 25, moatObjection: { high: 15, medium: 10, low: 5 } });
   assert.deepEqual({ ...cfg.MARKET }, { tamFloorUsd: 1e7, tamCapUsd: 1e9 });
+  assert.deepEqual({ ...cfg.LEGAL }, { start: 100, perRule: 15, maxRulesCounted: 5, noneFoundCap: 70 });
   assert.deepEqual({ ...cfg.OVERLAP }, { caution: 0.3, high: 0.5, highCompetitors: 3 });
   assert.equal(cfg.BIG_TECH_COMPANIES.length, 11);
 });

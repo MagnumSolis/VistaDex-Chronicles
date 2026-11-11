@@ -7,10 +7,12 @@
 //   // added in 2026-10 round 2 (all optional, so earlier reports stay valid):
 //   input?:          { title, pitch, problem, solution, moat, industries[], role, markets[] }
 //   competitors?:    [{ name, url, why_similar, quote }]           — each backed by a fetched page
-//   search?:         { competitors?: { queries[], sources_checked }, graveyard?: { entries_checked, verified_entries } }
+//   search?:         { competitors?, market?, legal?: { queries[], sources_checked }, graveyard?: { entries_checked, verified_entries } }
 //   big_tech_risk?:  { level, companies[], unconfirmed[], summary, companies_checked[], queries[], sources_checked }
-//   market?:         { tam?: { value, value_usd, scope, citation, quote }, sam?, som? }
-//   legal?:          { jurisdictions[] }
+//   market?:         { tam?: { value, value_usd, scope, citation, quote, corroborated?, independent_sources? },
+//                      figures?: [{ value, value_usd, market, year, citation, quote }], sam?, som? }   (2026-11: live search)
+//   legal?:          { jurisdictions: [{ jurisdiction, facts[], requirements: [{ rule, summary, source,
+//                      sources?, independent_sources?, corroborated? }], sources_checked? }] }        (2026-11: live search)
 //   sample_fields?:  names of the fields above that hold SAMPLE data (mock mode only)
 //   overlap_band?:   "clear" | "caution" | "high"
 //   scores?:         see scoring.js — computed in code
@@ -62,6 +64,7 @@ export function toContract(r) {
   if (r.search) {
     out.search = {};
     if (r.search.competitors) out.search.competitors = { queries: strs(r.search.competitors.queries), sources_checked: Number(r.search.competitors.sources_checked) || 0 };
+    for (const k of ["market", "legal"]) if (r.search[k]) out.search[k] = { queries: strs(r.search[k].queries), sources_checked: Number(r.search[k].sources_checked) || 0 };
     if (r.search.graveyard) out.search.graveyard = { entries_checked: Number(r.search.graveyard.entries_checked) || 0, verified_entries: Number(r.search.graveyard.verified_entries) || 0 };
   }
   if (r.big_tech_risk) {
@@ -79,10 +82,26 @@ export function toContract(r) {
   if (r.market) {
     const m = r.market;
     out.market = {};
-    if (m.tam) out.market.tam = { value: str(m.tam.value), value_usd: Number(m.tam.value_usd) || null, scope: str(m.tam.scope), citation: link(m.tam.citation), quote: str(m.tam.quote) };
+    if (m.tam) {
+      out.market.tam = { value: str(m.tam.value), value_usd: Number(m.tam.value_usd) || null, scope: str(m.tam.scope), citation: link(m.tam.citation), quote: str(m.tam.quote) };
+      if (typeof m.tam.corroborated === "boolean") out.market.tam.corroborated = m.tam.corroborated;
+      if (m.tam.independent_sources != null) out.market.tam.independent_sources = Number(m.tam.independent_sources) || 0;
+    }
+    if (Array.isArray(m.figures)) out.market.figures = m.figures.map(f => ({ value: str(f.value), value_usd: Number(f.value_usd) || null, market: str(f.market), year: Number(f.year) || null, citation: link(f.citation), quote: str(f.quote) }));
     for (const k of ["sam", "som"]) if (m[k]) out.market[k] = { value: str(m[k].value), scope: str(m[k].scope), assumptions: strs(m[k].assumptions) };
   }
-  if (r.legal) out.legal = r.legal;
+  if (r.legal) {
+    out.legal = { jurisdictions: (r.legal.jurisdictions || []).map(j => ({
+      jurisdiction: str(j.jurisdiction),
+      facts: (j.facts || []).map(f => ({ kind: str(f.kind), title: str(f.title), detail: str(f.detail), ...(f.reference ? { reference: str(f.reference) } : {}), registry: link(f.registry) })),
+      requirements: (j.requirements || []).map(q => ({
+        rule: str(q.rule), summary: str(q.summary), source: link(q.source),
+        ...(Array.isArray(q.sources) ? { sources: q.sources.map(x => ({ ...link(x), quote: str(x.quote) })) } : {}),
+        ...(q.independent_sources != null ? { independent_sources: Number(q.independent_sources) || 0, corroborated: Boolean(q.corroborated) } : {}),
+      })),
+      ...(j.sources_checked != null ? { sources_checked: Number(j.sources_checked) || 0 } : {}),
+    })) };
+  }
   if (Array.isArray(r.sample_fields)) out.sample_fields = r.sample_fields.filter(f => SAMPLE_FIELDS.includes(f));
   return out;
 }

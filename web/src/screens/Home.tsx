@@ -1,25 +1,25 @@
 // ── Home — the landing page (rebuilt from the team's Figma draft, sections renumbered after removals) ──
 // Readable without the Welcome notice and not recorded until the visitor has answered it. The product
 // screens are the real components rendered with sample data, scaled down and inert, so they always
-// match the app. The hero card shows a real sample claim and what the mock pipeline really returns for
-// it — no invented report numbers or companies.
+// match the app. The hero card shows the first claim of a researched sample report, with what the pipeline's
+// own code derives from its hand-checked sources: no invented report numbers or companies.
 import { useMemo, type ReactNode } from "react";
 import { ArrowRight, ClipboardList, GitMerge, History, Layers, Lightbulb, ScanSearch, ShieldCheck, ThumbsUp, Unlink, Rocket, Briefcase, GraduationCap, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusTag } from "@/components/status";
 import { Report } from "@/components/report/Report";
 import { features } from "@/edition";
-import { GRAVEYARD_DB, studyConfig } from "@/proto";
+import { studyConfig } from "@/proto";
 import { navigate, PATHS } from "@/router";
 import { SAMPLES } from "@/lib/samples";
-import { makeDemoEntries } from "@/lib/reports";
+import { checkedLabel, makeDemoEntries, sampleEntries } from "@/lib/reports";
 import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Reports } from "@/screens/Reports";
 
 const { NOTICE, RETENTION_PERIOD } = studyConfig;
-const SEED_SIZE = (GRAVEYARD_DB as unknown[]).length;
-// The journaling sample's first novelty claim; key-free mock mode has no web search, so it is unverified with 0 sources.
-const HERO_CLAIM = "No such tool currently exists that combines passive behavioral analysis with real-time therapist routing at under $30/month.";
+// The hero card is the first claim of a researched sample report (prototype/data/sample-reports.js): real pages,
+// read by hand, with the status, source count and leads computed by the pipeline's own code.
+const HERO_SAMPLE = "sample-meeting-notes";
 
 export function Home() {
   const demo = useMemo(() => makeDemoEntries(), []);
@@ -161,32 +161,40 @@ export function Home() {
 }
 
 function HeroCard() {
+  const entry = useMemo(() => sampleEntries().find(e => e.id === HERO_SAMPLE) ?? sampleEntries()[0], []);
+  const r = entry.report;
+  const claim = r.claims[0];
+  const sources = new Set(claim.source_urls.map(u => { try { return new URL(/^https?:/.test(u) ? u : `https://${u}`).hostname.replace(/^www\./, ""); } catch { return u; } })).size;
+  const products = r.competitors ?? [];
   return (
-    <div className="relative pb-10">
+    <div className="relative pb-28">
     <figure aria-label="A sample report card" className="on-light relative rounded-card bg-background text-foreground lg:rotate-[1.5deg]">
-      <div className="flex items-center justify-between rounded-t-card bg-charcoal px-5 py-3 text-on-charcoal">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-card bg-charcoal px-5 py-3 text-on-charcoal">
         <span className="eyebrow">VistaDex / Sample report</span>
-        <span className="eyebrow text-lime">Mock mode</span>
+        <span className="eyebrow text-lime">Checked {checkedLabel(entry.checkedOn ?? "")}</span>
       </div>
       <div className="p-5">
-        <p className="eyebrow text-muted-foreground">Idea claim</p>
-        <p className="mt-2 font-display text-[1.6rem] leading-tight md:text-[1.9rem]">“{HERO_CLAIM}”</p>
+        <p className="eyebrow text-muted-foreground">Idea claim · {r.input?.title}</p>
+        <p className="mt-2 font-display text-[1.6rem] leading-tight md:text-[1.9rem]">“{claim.claim}”</p>
       </div>
-      <div className="grid grid-cols-[1fr_auto] border-t">
+      <div className="grid border-t min-[360px]:grid-cols-[1fr_auto]">
         <div className="p-5">
           <p className="eyebrow text-muted-foreground">Evidence status</p>
-          <StatusTag status="unverified" className="mt-2" />
+          <StatusTag status={claim.status} className="mt-2" />
         </div>
-        <div className="border-l p-5">
+        <div className="border-t p-5 min-[360px]:border-l min-[360px]:border-t-0">
           <p className="eyebrow text-muted-foreground">Independent sources</p>
-          <p className="mt-1 font-display text-[2rem] leading-none">00</p>
+          <p className="mt-1 font-display text-[2rem] leading-none">{sources}</p>
         </div>
       </div>
       <div className="m-3 mt-0 rounded-inner bg-page p-4 text-on-page">
         <p className="eyebrow text-on-page-muted">Leads to check</p>
-        <p className="mt-1 text-[0.9375rem]">No graveyard match above the threshold among {SEED_SIZE} shut-down startups. Not proof nobody tried.</p>
+        <p className="mt-1 text-[0.9375rem]">
+          {products.length ? `${products.length} similar product${products.length === 1 ? "" : "s"} named on a source page: ${products.map(c => c.name).join(", ")}.` : "No similar product named on the pages read."}
+          {r.graveyard_matches.length ? ` ${r.graveyard_matches.length} shut-down startup${r.graveyard_matches.length === 1 ? "" : "s"} worded alike.` : ""}
+        </p>
       </div>
-      <figcaption className="sr-only">Sample report card from the mock mode: a claim from the journaling sample idea, unverified with no independent sources, and no graveyard lead.</figcaption>
+      <figcaption className="sr-only">A researched sample report: the claim "{claim.claim}" is {claim.status}, with {sources} independent sources, read by hand on {checkedLabel(entry.checkedOn ?? "")}.</figcaption>
     </figure>
     <p className="absolute bottom-0 right-3 w-48 rotate-[3deg] rounded-inner bg-lime p-4 font-display text-[1.25rem] leading-tight text-on-lime">A score you can take apart. You decide.</p>
     </div>

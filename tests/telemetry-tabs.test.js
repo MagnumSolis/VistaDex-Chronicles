@@ -45,8 +45,10 @@ test("two tabs in one session never send the same seq, and D1 keeps every event"
   }
   assert.equal(bySeq.size, 7, "seven distinct events");
   for (const e of all) assert.ok(Number.isSafeInteger(e.seq) && e.seq > 0, "seq is a positive safe integer (Worker check)");
-  for (const tab of [a, b]) {
-    const seqs = tab.events().map(e => e.seq);
+  // Each tab's own events only: a tab also holds events it adopted from the other tab at load, whose seq
+  // came from that tab's clock (this made the check fail when the millisecond ticked between tabs, in CI).
+  for (const [tab, own] of [[a, "a"], [b, "b"]]) {
+    const seqs = tab.events().filter(e => String(e.payload?.control ?? "").startsWith(own)).map(e => e.seq);
     assert.deepEqual(seqs, [...seqs].sort((x, y) => x - y), "seq increases within a tab");
   }
 

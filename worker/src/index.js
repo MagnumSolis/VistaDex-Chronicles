@@ -59,7 +59,7 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     const del = url.pathname.match(/^\/session\/([^/]+)$/);
     if (request.method === "DELETE" && del) return await withdraw(decodeURIComponent(del[1]), { store, now, cors });
     if (request.method === "GET" && isExport) return await exportData(request, url, env, { store });
-    // Research console: GET /research (login + dashboard, token via ?t= or cookie)
+    // Research console: GET /research (login page or dashboard), POST /research (login form; sets the cookie)
     if (url.pathname === "/research") return await researchConsole(request, url, env, { store });
     if (url.pathname === "/research/data" && request.method === "GET") return await researchData(request, url, env, { store });
     if (url.pathname === "/research/qualitative" && request.method === "GET") return await researchQualitative(request, url, env);
@@ -289,27 +289,41 @@ export function toCSV(rows) {
 
 
 // ── Research console: view / edit / download study data (token-gated) ──
-// GET  /research          login page (?t=TOKEN sets the session cookie) + dashboard
+// GET  /research          login page, or the dashboard with the session cookie (an old ?t=TOKEN link
+//                          sets the cookie and redirects to /research, so the token leaves the address bar)
+// POST /research          login form (t=TOKEN): sets the session cookie, 303 to /research
 // GET  /research/data     JSON: sessions, events-by-type, latest events, traces count
 // POST /research/purge    { session_ids: [...] } deletes those sessions' events + traces
+// The token is accepted only from the session cookie or an Authorization: Bearer header (scripts), never
+// from a URL, where it would land in browser history, logs and Referer headers.
 function researchAuthed(request, url, env) {
   if (!env.EXPORT_TOKEN) return null;
   const cookie = (request.headers.get("Cookie") || "").match(/vdx_research=([^;]+)/)?.[1];
-  const q = url.searchParams.get("t");
-  if (q && timingSafeEqual(q, env.EXPORT_TOKEN)) return "query";
   if (cookie && timingSafeEqual(cookie, env.EXPORT_TOKEN)) return "cookie";
+  const bearer = (request.headers.get("Authorization") || "").match(/^Bearer (.+)$/)?.[1];
+  if (bearer && timingSafeEqual(bearer, env.EXPORT_TOKEN)) return "bearer";
   return null;
 }
+const researchCookie = env => `vdx_research=${env.EXPORT_TOKEN}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`;
+const signedIn = env => new Response(null, { status: 303, headers: { Location: "/research", "Set-Cookie": researchCookie(env), "Cache-Control": "no-store" } });
 
 async function researchConsole(request, url, env, { store }) {
-  const authed = researchAuthed(request, url, env);
+  const valid = t => !!(env.EXPORT_TOKEN && t && timingSafeEqual(t, env.EXPORT_TOKEN));
+  let failed = false;
+  if (request.method === "POST") {
+    const t = new URLSearchParams(await request.text()).get("t");
+    if (valid(t)) return signedIn(env);
+    failed = true;
+  } else if (url.searchParams.has("t") && valid(url.searchParams.get("t"))) {
+    return signedIn(env); // an old ?t= link: set the cookie and move to a URL without the token
+  }
+  const authed = !failed && researchAuthed(request, url, env);
   if (!authed) {
     return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>VistaDex · Research Console</title><meta name="robots" content="noindex"><style>body{font-family:ui-monospace,monospace;background:#0A2622;color:#F5F1E8;display:grid;place-items:center;min-height:100vh;margin:0}.box{background:#10312B;border:1px solid rgba(234,226,210,.13);border-radius:14px;padding:34px;width:min(380px,90vw)}h1{font-size:15px;margin:0 0 6px}p{color:#A9B5AC;font-size:12.5px;margin:0 0 18px}input{width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid rgba(234,226,210,.2);background:#06201B;color:#F5F1E8;font-family:inherit;margin-bottom:14px}button{width:100%;padding:11px;border:none;border-radius:9px;background:linear-gradient(135deg,#FF6B1A,#FF9E4A);color:#1D0A00;font-weight:700;cursor:pointer}</style></head>
-<body><form class="box" method="GET" action="/research"><h1>VistaDex Research Console</h1><p>Team access only. Enter the research token.</p><input type="password" name="t" placeholder="Research token" autofocus><button type="submit">Enter</button></form></body></html>`,
-      { status: 200, headers: { "Content-Type": "text/html", "Cache-Control": "no-store, max-age=0" } });
+<body><form class="box" method="POST" action="/research"><h1>VistaDex Research Console</h1><p>${failed ? "That token did not match. Try again." : "Team access only. Enter the research token."}</p><input type="password" name="t" placeholder="Research token" aria-label="Research token" autocomplete="current-password" autofocus><button type="submit">Enter</button></form></body></html>`,
+      { status: failed ? 401 : 200, headers: { "Content-Type": "text/html", "Cache-Control": "no-store, max-age=0" } });
   }
   const headers = { "Content-Type": "text/html" };
-  if (authed === "query") headers["Set-Cookie"] = `vdx_research=${env.EXPORT_TOKEN}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`;
   headers["Cache-Control"] = "no-store, max-age=0";
   return new Response(RESEARCH_PAGE, { status: 200, headers });
 }

@@ -5,6 +5,7 @@ import { memoryStore } from "../worker/src/store.js";
 import { validateContract } from "../prototype/core/contract.js";
 
 const ORIGIN = "http://localhost:5173";
+const COOKIE = { Cookie: "vdx_research=test-token" };
 const ENV = { ALLOWED_ORIGINS: `${ORIGIN},https://magnumsolis.github.io`, EXPORT_TOKEN: "test-token" };
 const SID = "11111111-2222-4333-8444-555555555555";
 
@@ -212,7 +213,7 @@ test("research console: per-run measures join to run_started events and the page
   const save = await handle(req("POST", "/events", { body: { session_id: sid, events } }), ENV, { store });
   assert.equal(save.status, 200);
 
-  const data = await handle(req("GET", `/research/data?full=1&t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  const data = await handle(req("GET", "/research/data?full=1", { headers: COOKIE }), ENV, { store });
   assert.equal(data.status, 200);
   const d = await data.json();
   assert.equal(d.totals.events, events.length);
@@ -228,7 +229,7 @@ test("research console: per-run measures join to run_started events and the page
   assert.ok(all.every(e => e.payload && typeof e.payload === "object"));
 
   // the page shell: full session ids are rendered, not truncated
-  const page = await handle(req("GET", `/research?t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  const page = await handle(req("GET", "/research", { headers: COOKIE }), ENV, { store });
   const html = await page.text();
   assert.ok(html.includes("copySid"), "session id copy handler present");
   assert.ok(!html.includes("slice(0, 8)"), "no 8-char session id truncation left in the page");
@@ -236,9 +237,46 @@ test("research console: per-run measures join to run_started events and the page
   assert.ok(html.includes("Every response"), "per-response answers table present");
 
   // qualitative endpoint: without Mongo configured it must still report usable data
-  const qual = await handle(req("GET", `/research/qualitative?t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  const qual = await handle(req("GET", "/research/qualitative", { headers: COOKIE }), ENV, { store });
   const q = await qual.json();
   assert.equal(q.ok, true);
   assert.equal(q.configured, false);
   assert.ok(/D1/i.test(q.note), "note points at D1, not a dead end");
+});
+
+// ── research console login: the token never travels in a URL ──
+const COOKIE_NAME = "vdx_research";
+test("research console: the login form posts the token; success sets the cookie and redirects to a clean URL", async () => {
+  const store = memoryStore();
+  const login = await handle(req("GET", "/research"), ENV, { store });
+  const html = await login.text();
+  assert.match(html, /<form[^>]*method="POST"[^>]*action="\/research"/, "login form posts");
+  const ok = await handle(new Request("https://proxy.test/research", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Origin: "https://proxy.test" },
+    body: new URLSearchParams({ t: ENV.EXPORT_TOKEN }).toString(),
+  }), ENV, { store });
+  assert.equal(ok.status, 303);
+  assert.equal(ok.headers.get("Location"), "/research");
+  assert.match(ok.headers.get("Set-Cookie"), new RegExp(`^${COOKIE_NAME}=[^;]+; HttpOnly; Secure; SameSite=Strict`));
+  const bad = await handle(new Request("https://proxy.test/research", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Origin: "https://proxy.test" },
+    body: "t=wrong",
+  }), ENV, { store });
+  assert.equal(bad.status, 401);
+  assert.equal(bad.headers.get("Set-Cookie"), null);
+  assert.match(await bad.text(), /did not match/);
+});
+
+test("research console: a token in the URL is not accepted for data, and an old ?t= link is redirected away", async () => {
+  const store = memoryStore();
+  for (const path of [`/research/data?full=1&t=${ENV.EXPORT_TOKEN}`, `/research/qualitative?t=${ENV.EXPORT_TOKEN}`]) {
+    assert.equal((await handle(req("GET", path), ENV, { store })).status, 401, path);
+  }
+  const old = await handle(req("GET", `/research?t=${ENV.EXPORT_TOKEN}`), ENV, { store });
+  assert.equal(old.status, 303);
+  assert.equal(old.headers.get("Location"), "/research");
+  assert.ok(old.headers.get("Set-Cookie"));
+  // scripts can still use the Bearer header
+  const bearer = await handle(req("GET", "/research/data", { headers: { Authorization: `Bearer ${ENV.EXPORT_TOKEN}` } }), ENV, { store });
+  assert.equal(bearer.status, 200);
 });

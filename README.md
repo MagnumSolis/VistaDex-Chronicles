@@ -59,12 +59,19 @@ records nothing):
 
 Measures: H1 trust calibration (confidence pre→post per condition), H2
 verification behaviour (source clicks + self-report), H3 agreeableness (vote
-rate vs claim status). Researcher console (token-gated): proxy `/research` —
-participants joined with confidence deltas, agreeableness rates, verification
-counts, survey scores, funnel, session purge, CSV/JSON export.
+rate vs claim status), H4 opening sources vs confidence change across runs.
+Researcher console (token-gated): proxy `/research`. **Paired study** shows each
+study participant's AI chatbot and VistaDex conditions side by side with
+Wilcoxon signed-rank tests (VistaDex minus chatbot) and a paired.csv; the other
+views cover participants, funnel, per-run measures, feedback, sessions, purge
+and CSV/JSON export. Sign in with the research token in the login form (it is
+never put in a URL). For the paper's numbers, export events.json from the
+console and run, with an output folder outside the repo:
+
+    node analysis/study_analysis.mjs ~/vistadex-events.json --out ~/vistadex-analysis
 
 Telemetry contract: `tests/fixtures/event-contract.json` (study_version
-`2026-11-study-5`). No idea text, no report content, no PII in events; traces
+`2026-11-study-6`). No idea text, no report content, no PII in events; traces
 hold pipeline detail and are deleted on session withdraw.
 
 ## Pipeline
@@ -173,7 +180,7 @@ docs/BACKEND-HANDOFF.md     endpoints, contract, mock vs live, telemetry, secret
 - Batched uploads to `/events` (at most one request per 10 s, 200 events each). Visitors can delete their session (local + server, including linked traces). Feedback is sent under a separate random id.
 - The pitch edition sends **zero** events (`telemetry.js` is disabled at startup); tests and `npm run parity` check this.
 - Links carry a shared access code in the URL fragment (`#code=…`); the proxy also applies per-IP rate limits and a daily cap on `/screen` — see `docs/DEPLOY.md` §3b.
-- Every event carries `study_version` (`2026-11-study-5`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
+- Every event carries `study_version` (`2026-11-study-6`). The contract in `tests/fixtures/event-contract.json` keeps the pilot-2 study contract under `history`.
 
 ---
 

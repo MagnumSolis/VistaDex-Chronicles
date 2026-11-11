@@ -7,6 +7,8 @@ export function logParticipantRegistered(p: { code: string; role: string | null;
   track("participant_registered", { code: p.code, role: p.role, track: p.track });
 }
 
+/** Study track: a condition begins (the chatbot part when its first step is answered, VistaDex when the
+ *  assigned idea is run). order_position: 1 or 2, from what the participant has actually finished. */
 export function logConditionStarted(condition: Condition, ideaKey: string, orderPosition: number) {
   track("condition_started", { condition, idea_key: ideaKey, order_position: orderPosition });
 }
@@ -30,13 +32,18 @@ export function logObjectionVote(runId: string, objectionIndex: number, severity
   track("objection_vote", { objection_index: objectionIndex, run_id: runId, severity, vote });
 }
 
-export function logConditionSurvey(condition: Condition, answers: { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string }) {
+/** H2 self-report: how many sources the participant opened or looked up themselves (null: not answered). */
+export type SourcesChecked = "0" | "1-2" | "3+" | null;
+type SurveyAnswers = { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string; sourcesChecked: SourcesChecked };
+
+export function logConditionSurvey(condition: Condition, answers: SurveyAnswers) {
   track("condition_survey", {
     condition,
     trust: answers.trust,
     usefulness: answers.usefulness,
     helpfulness: answers.helpfulness,
     effort: answers.effort,
+    sources_checked: answers.sourcesChecked,
     // The visitor wrote this text to be read (feedback field) — stored verbatim,
     // unlike usage telemetry which never stores idea or report content.
     open_text: answers.openText.slice(0, 2000),
@@ -63,7 +70,7 @@ export function logComprehensionCheck(runId: string, answer: "honest_uncertainty
   track("comprehension_check", { answer, run_id: runId });
 }
 
-export function logRunScopedSurvey(runId: string, condition: Condition, answers: { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string }) {
+export function logRunScopedSurvey(runId: string, condition: Condition, answers: SurveyAnswers) {
   track("run_scoped_survey", {
     run_id: runId,
     condition,
@@ -71,6 +78,10 @@ export function logRunScopedSurvey(runId: string, condition: Condition, answers:
     usefulness: answers.usefulness,
     helpfulness: answers.helpfulness,
     effort: answers.effort,
+    sources_checked: answers.sourcesChecked,
     open_text: answers.openText.slice(0, 2000),
   });
 }
+
+/** A run id for one AI chatbot condition: "b_" + 12 random hex, like the report's "r_" ids. */
+export const newBaselineRunId = () => `b_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;

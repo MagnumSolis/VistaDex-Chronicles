@@ -95,9 +95,17 @@ export function researchJoin() {
       }
     });
     var bySidRuns = runsBySession(runs.slice());
+    // Sessions that send run_scoped_survey (the survey with its run id) also send a run-less
+    // condition_survey copy; that copy is only a fallback for older sessions without the scoped one.
+    var scopedSid = {};
+    ev.forEach(function (e) { if (e.type === "run_scoped_survey") scopedSid[e.session_id] = 1; });
     ev.forEach(function (e, i) {
       var q = e.payload || {};
       if (!PER_RUN_TYPES[e.type]) return;
+      if (e.type === "condition_survey" && scopedSid[e.session_id]) return;
+      // The study track's AI chatbot condition has no VistaDex run: its measures are compared in
+      // pairedParticipants and must not be matched to a run by start order.
+      if (q.condition === "baseline") return;
       var m = resolveRun(bySidRuns, e, i);
       if (!m) return;
       var r = m.run;
@@ -120,7 +128,143 @@ export function researchJoin() {
     return runs;
   }
 
-  return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct };
+  // ── Study track, within subjects: one row per participant code, both conditions side by side ──
+  // A participant is a study-track participant_registered code (trimmed, upper case); every session that
+  // registered that code belongs to them (two sittings in two sessions are one participant). Per condition,
+  // its run is the one named in condition_ended; else (older data) the assigned-idea run (run_started.sample
+  // "study_<key>") or the chatbot part's "b_" run; else the condition's latest measures, flagged runInferred.
+  function normCode(c) { return String(c == null ? "" : c).replace(/^\s+|\s+$/g, "").toUpperCase(); }
+  function lastOf(list) { return list.length ? list[list.length - 1] : null; }
+  function conditionRow(evs, c) {
+    function ofType(t, cond) { return evs.filter(function (e) { return e.type === t && (!cond || (e.payload || {}).condition === c); }); }
+    var ended = lastOf(ofType("condition_ended", true));
+    var runId = ended ? ended.payload.run_id : null;
+    if (!runId && c === "vistadex") {
+      var assigned = evs.filter(function (e) { return e.type === "run_started" && /^study_/.test((e.payload || {}).sample || ""); });
+      if (assigned.length) runId = assigned[0].payload.run_id;
+    }
+    if (!runId && c === "baseline") {
+      var b = lastOf(ofType("confidence_pre", true).filter(function (e) { return /^b_/.test(e.payload.run_id || ""); }));
+      if (b) runId = b.payload.run_id;
+    }
+    function measure(t) {
+      var list = ofType(t, true);
+      var exact = runId ? list.filter(function (e) { return e.payload.run_id === runId; }) : [];
+      return lastOf(exact.length ? exact : list);
+    }
+    var pre = measure("confidence_pre"), post = measure("confidence_post");
+    var scoped = runId ? lastOf(evs.filter(function (e) { return e.type === "run_scoped_survey" && e.payload.run_id === runId; })) : null;
+    var survey = scoped || lastOf(ofType("condition_survey", true));
+    var sq = survey ? survey.payload : {};
+    var row = {
+      started: ofType("condition_started", true).length > 0, ended: !!ended, runId: runId, runInferred: !runId,
+      pre: pre ? pre.payload.value : null, preMoved: pre && typeof pre.payload.moved === "boolean" ? pre.payload.moved : null,
+      post: post ? post.payload.value : null, delta: null,
+      trust: survey ? sq.trust : null, usefulness: survey ? sq.usefulness : null, helpfulness: survey ? sq.helpfulness : null,
+      effort: survey ? sq.effort : null, sourcesChecked: survey && sq.sources_checked != null ? sq.sources_checked : null,
+      openText: survey && sq.open_text ? sq.open_text : "", clicks: null, votes: 0, agreePct: null,
+    };
+    if (row.pre != null && row.post != null) row.delta = row.post - row.pre;
+    if (c === "vistadex") {
+      if (ended && typeof ended.payload.verified_sources === "number") row.clicks = ended.payload.verified_sources;
+      else if (runId) row.clicks = evs.filter(function (e) { return (e.type === "source_clicked" || e.type === "source_clicked_by_claim") && e.payload.run_id === runId; }).length;
+      if (runId) {
+        var latest = {}, keys = [];
+        evs.forEach(function (e) {
+          if ((e.type !== "claim_vote" && e.type !== "objection_vote") || e.payload.run_id !== runId) return;
+          var k = e.type + ":" + (e.type === "claim_vote" ? e.payload.claim_index : e.payload.objection_index);
+          if (!latest[k]) keys.push(k);
+          latest[k] = e.payload;
+        });
+        var t = voteTotals(keys.map(function (k) { return latest[k]; }));
+        row.votes = t.votes; row.agreePct = agreePct(t);
+      }
+    }
+    return row;
+  }
+  function pairedParticipants(ev) {
+    var codeBySid = {};
+    ev.forEach(function (e) {
+      var q = e.payload || {};
+      if (e.type === "participant_registered" && q.track === "study" && normCode(q.code)) codeBySid[e.session_id] = normCode(q.code);
+    });
+    var people = {}, codes = [];
+    ev.forEach(function (e) {
+      var code = codeBySid[e.session_id];
+      if (!code) return;
+      if (!people[code]) { people[code] = { sessions: [], evs: [] }; codes.push(code); }
+      if (people[code].sessions.indexOf(e.session_id) < 0) people[code].sessions.push(e.session_id);
+      people[code].evs.push(e);
+    });
+    return codes.map(function (code) {
+      var evs = people[code].evs;
+      var starts = evs.filter(function (e) { return e.type === "condition_started"; });
+      var first = starts.filter(function (e) { return e.payload.order_position === 1; })[0];
+      var order = first ? first.payload.condition + "-first" : null, inferred = false;
+      if (!order) {
+        var num = parseInt(code.replace(/\D/g, ""), 10);
+        if (num > 0) { order = num % 2 === 1 ? "baseline-first" : "vistadex-first"; inferred = true; }
+      }
+      var idea = starts.length ? starts[0].payload.idea_key : null;
+      if (!idea) {
+        var s = evs.filter(function (e) { return e.type === "run_started" && /^study_/.test((e.payload || {}).sample || ""); })[0];
+        if (s) idea = s.payload.sample.slice(6);
+      }
+      var b = conditionRow(evs, "baseline"), v = conditionRow(evs, "vistadex");
+      return { code: code, sessions: people[code].sessions, idea: idea || null, order: order, orderInferred: inferred,
+        complete: b.pre != null && b.post != null && v.pre != null && v.post != null, baseline: b, vistadex: v,
+        last: evs.length ? evs[evs.length - 1].ts : null };
+    });
+  }
+
+  // Wilcoxon signed-rank test on paired differences. Zeros are dropped; ties get average ranks; two-sided p
+  // is exact (full distribution of W+ over all sign patterns, ties included) up to n = 25, else the normal
+  // approximation with tie and continuity corrections. median: of all differences, zeros included.
+  function wilcoxon(diffs) {
+    var all = diffs.filter(function (d) { return typeof d === "number" && !isNaN(d); });
+    var sorted = all.slice().sort(function (a, b) { return a - b; });
+    var median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2) : null;
+    var nz = all.filter(function (d) { return d !== 0; });
+    var n = nz.length, res = { n: n, zeros: all.length - n, wPlus: 0, wMinus: 0, p: null, method: null, median: median };
+    if (!n) return res;
+    var byAbs = nz.map(function (d) { return { d: d, a: Math.abs(d) }; }).sort(function (x, y) { return x.a - y.a; });
+    var ranks2 = [], ties = 0, i = 0; // ranks doubled, so tied (half) ranks stay integers
+    while (i < n) {
+      var j = i;
+      while (j + 1 < n && byAbs[j + 1].a === byAbs[i].a) j++;
+      var t = j - i + 1;
+      if (t > 1) ties += t * t * t - t;
+      for (var k = i; k <= j; k++) ranks2[k] = i + j + 2;
+      i = j + 1;
+    }
+    var w2 = 0, total2 = 0;
+    byAbs.forEach(function (x, k) { total2 += ranks2[k]; if (x.d > 0) w2 += ranks2[k]; });
+    res.wPlus = w2 / 2; res.wMinus = (total2 - w2) / 2;
+    if (n <= 25) {
+      var counts = [1];
+      for (var m = 1; m <= total2; m++) counts.push(0);
+      ranks2.forEach(function (r) { for (var s = total2; s >= r; s--) counts[s] += counts[s - r]; });
+      var all2 = Math.pow(2, n), lo = 0, hi = 0;
+      for (var s2 = 0; s2 <= total2; s2++) { if (s2 <= w2) lo += counts[s2]; if (s2 >= w2) hi += counts[s2]; }
+      res.p = Math.min(1, 2 * Math.min(lo, hi) / all2);
+      res.method = "exact";
+    } else {
+      var mean = n * (n + 1) / 4, sd = Math.sqrt(n * (n + 1) * (2 * n + 1) / 24 - ties / 48);
+      var z = sd ? Math.max(0, Math.abs(res.wPlus - mean) - 0.5) / sd : 0;
+      res.p = Math.min(1, 2 * (1 - phi(z)));
+      res.method = "normal";
+    }
+    return res;
+  }
+  // Standard normal CDF (Abramowitz & Stegun 7.1.26, |error| < 1.5e-7).
+  function phi(z) {
+    var x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.3275911 * x);
+    var erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+  }
+
+  return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct,
+    pairedParticipants: pairedParticipants, wilcoxon: wilcoxon };
 }
 
 const join = researchJoin();
@@ -129,3 +273,5 @@ export const joinRuns = join.joinRuns;
 export const latestVotes = join.latestVotes;
 export const voteTotals = join.voteTotals;
 export const agreePct = join.agreePct;
+export const pairedParticipants = join.pairedParticipants;
+export const wilcoxon = join.wilcoxon;

@@ -15,7 +15,7 @@ import type { Condition } from "./participant";
 /** One answer: a full-width rectangle (44px+) around a native radio with a visible dot, in the feedback
  *  page's colours. Nothing is preselected. onSelect runs on every press of the option itself (click,
  *  Space, arrow keys), so a repeated press logs again, as the old buttons did. */
-function Choice({ name, checked, onSelect, control, children }: { name: string; checked: boolean; onSelect: () => void; control: string; children: ReactNode }) {
+export function Choice({ name, checked, onSelect, control, children }: { name: string; checked: boolean; onSelect: () => void; control: string; children: ReactNode }) {
   return (
     <label className={cn("flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-control border px-3.5 py-2 text-sm font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
       checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent")}>
@@ -70,7 +70,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
   report: Report;
   runId: string;
   condition: Condition;
-  onDone?: () => void;
+  onDone?: (runId: string) => void;
 }) {
   const [confPost, setConfPost] = useState(50);
   const [trust, setTrust] = useState(4);
@@ -84,13 +84,14 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
 
   const submit = () => {
     logConfidencePost(condition, runId, confPost);
-    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open });
+    const sourcesChecked = checkedSources === null ? null : checkedSources === 0 ? "0" : checkedSources === 1 ? "1-2" : "3+";
+    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
     // Per-run copy for the learning analysis (H4): same answers, run-scoped.
-    logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open });
+    logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
     // Survey answers are the study's core measure: upload immediately, never wait for the batch window.
     flushNow().catch(() => {});
     setSubmitted(true);
-    onDone?.();
+    onDone?.(runId);
   };
 
   return (

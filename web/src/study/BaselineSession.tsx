@@ -10,7 +10,8 @@ import { Panel } from "@/components/ui-vd";
 import { Slider } from "@/components/ui/slider";
 import type { Participant } from "./participant";
 import { conditionDone, studyIdea } from "./participant";
-import { logConditionStarted, logConfidencePre, logConfidencePost, logConditionSurvey, logConditionEnded } from "./studyEvents";
+import { logConditionStarted, logConfidencePre, logConfidencePost, logConditionSurvey, logConditionEnded, newBaselineRunId, type SourcesChecked } from "./studyEvents";
+import { Choice } from "./ReportStudyPanel";
 
 function Likert({ label, value, onChange, low, high }: { label: string; value: number; onChange: (v: number) => void; low: string; high: string }) {
   return (
@@ -34,7 +35,9 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
   // First part (VistaDex still to do): hands over to VistaDex. Second part: finishes the study.
   const [first] = useState(() => !conditionDone(participant, "vistadex"));
   const part = first ? 1 : 2;
-  const [step, setStep] = useState<"pre" | "post" | "finished">("pre");
+  const [step, setStep] = useState<"pre" | "chat" | "post" | "finished">("pre");
+  const [runId] = useState(newBaselineRunId);
+  const [sourcesChecked, setSourcesChecked] = useState<SourcesChecked>(null);
   const [confPre, setConfPre] = useState(50);
   const [confPost, setConfPost] = useState(50);
   const [tool, setTool] = useState("");
@@ -47,27 +50,50 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
 
   const idea = studyIdea(participant.ideaKey);
 
+  // Confidence before the participant sees the chatbot's answer (H1), then the chatbot steps.
+  const begin = () => {
+    logConditionStarted("baseline", participant.ideaKey, part);
+    logConfidencePre("baseline", confPre, runId);
+    setStep("chat");
+  };
+  const intro = (
+    <h1 className="font-display text-3xl">{first ? "Your first task: an AI chatbot" : "Your second task: an AI chatbot"}</h1>
+  );
+
   if (step === "pre") {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
         <Panel tab={`Part ${part}: AI chatbot`} as="section">
-          <h1 className="font-display text-3xl">{first ? "Your first task: an AI chatbot" : "Your second task: an AI chatbot"}</h1>
-          <ol className="mt-4 space-y-3 text-sm leading-relaxed">
-            <li><b>1.</b> Copy this idea ({first ? "also your idea for VistaDex later" : "the same idea you screened with VistaDex"}):
-              <div className="mt-2 rounded-inner border-2 border-foreground/10 bg-card p-3 text-xs leading-relaxed">{idea}</div>
-            </li>
-            <li><b>2.</b> Open ChatGPT, Claude, Gemini — whichever you normally use.</li>
-            <li><b>3.</b> Ask it to evaluate this startup idea — use your own words.</li>
-            <li><b>4.</b> Read the answer as you normally would.</li>
-            <li><b>5.</b> Come back here and answer the questions.</li>
-          </ol>
+          {intro}
+          <p className="mt-4 text-sm leading-relaxed">Your idea ({first ? "also your idea for VistaDex later" : "the same idea you screened with VistaDex"}):</p>
+          <div className="mt-2 rounded-inner border-2 border-foreground/10 bg-card p-3 text-xs leading-relaxed">{idea}</div>
           <div className="mt-5">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-medium">Before you start: how confident are you that this idea is novel and viable?</span>
+              <span className="text-sm font-medium">Before you open the chatbot: how confident are you that this idea is novel and viable?</span>
               <span className="font-mono text-sm text-foreground/70">{confPre}%</span>
             </div>
             <Slider value={[confPre]} min={0} max={100} step={5} onValueChange={v => setConfPre(v[0])} data-control="baseline_conf_pre" className="mt-1" />
           </div>
+          <Button className="mt-5" data-control="baseline_start" onClick={begin}>Next: ask the chatbot →</Button>
+        </Panel>
+      </div>
+    );
+  }
+
+  if (step === "chat") {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Panel tab={`Part ${part}: AI chatbot`} as="section">
+          {intro}
+          <ol className="mt-4 space-y-3 text-sm leading-relaxed">
+            <li><b>1.</b> Copy this idea:
+              <div className="mt-2 rounded-inner border-2 border-foreground/10 bg-card p-3 text-xs leading-relaxed">{idea}</div>
+            </li>
+            <li><b>2.</b> Open ChatGPT, Claude, Gemini: whichever you normally use.</li>
+            <li><b>3.</b> Ask it to evaluate this startup idea, in your own words.</li>
+            <li><b>4.</b> Read the answer as you normally would.</li>
+            <li><b>5.</b> Come back here and answer the questions.</li>
+          </ol>
           <label className="mt-4 block">
             <span className="text-sm font-medium">Which tool did you use?</span>
             <input
@@ -76,11 +102,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
               placeholder="e.g. ChatGPT"
             />
           </label>
-          <Button
-            className="mt-5"
-            data-control="baseline_continue"
-            onClick={() => { setStep("post"); logConfidencePre("baseline", confPre, "baseline-" + Date.now()); }}
-          >
+          <Button className="mt-5" data-control="baseline_continue" onClick={() => setStep("post")}>
             I've read the AI's answer — continue →
           </Button>
         </Panel>
@@ -118,6 +140,17 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <Likert label="The assessment helped me see what to verify next" value={helpfulness} onChange={setHelpfulness} low="1 — not at all" high="7 — a lot" />
           <Likert label="Getting a good read on the idea took effort" value={effort} onChange={setEffort} low="1 — effortless" high="7 — a lot of work" />
         </div>
+        <fieldset className="mt-5">
+          <legend className="text-sm font-medium">Did you check any of the AI's sources, or look anything up yourself?</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {(["0", "1-2", "3+"] as const).map((o, i) => (
+              <Choice key={o} name="baseline_sources" checked={sourcesChecked === o} onSelect={() => setSourcesChecked(o)}
+                control={["study_sources_0", "study_sources_1_2", "study_sources_3p"][i]}>
+                {o}
+              </Choice>
+            ))}
+          </div>
+        </fieldset>
         <label className="mt-5 block">
           <span className="text-sm font-medium">About how long did you spend with the AI? (minutes)</span>
           <input
@@ -136,9 +169,9 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
         <Button
           className="mt-5"
           onClick={() => {
-            logConfidencePost("baseline", "baseline-" + Date.now(), confPost);
-            logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open });
-            logConditionEnded("baseline", "baseline-" + Date.now(), 0);
+            logConfidencePost("baseline", runId, confPost);
+            logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
+            logConditionEnded("baseline", runId, 0);
             onDone();
             if (!first) setStep("finished");
           }}

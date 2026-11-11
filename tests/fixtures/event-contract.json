@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-5). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-11-study-5",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-6). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-11-study-6",
   "envelope": [
     "session_id",
     "seq",
@@ -149,6 +149,7 @@
       "effort",
       "helpfulness",
       "open_text",
+      "sources_checked",
       "trust",
       "usefulness"
     ],
@@ -176,6 +177,7 @@
       "helpfulness",
       "open_text",
       "run_id",
+      "sources_checked",
       "trust",
       "usefulness"
     ],
@@ -407,6 +409,18 @@
       "system_failure",
       "not_sure",
       "other"
+    ],
+    "condition_survey.sources_checked": [
+      "0",
+      "1-2",
+      "3+",
+      null
+    ],
+    "run_scoped_survey.sources_checked": [
+      "0",
+      "1-2",
+      "3+",
+      null
     ]
   },
   "controls": [
@@ -509,6 +523,7 @@
     "study_start",
     "study_continue_field",
     "baseline_conf_pre",
+    "baseline_start",
     "baseline_tool_field",
     "baseline_conf_post",
     "baseline_continue",

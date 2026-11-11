@@ -33,7 +33,7 @@ const QUESTIONS: Q[] = [
 function shuffle<T>(a: T[]): T[] {
   const out = [...a];
   for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); // crypto, as AGENTS.md asks for randomness
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
@@ -56,7 +56,7 @@ export function GraveyardQuiz({ running }: { running: boolean }) {
       return (
         <div className="mt-4 rounded-inner border-2 border-foreground/10 bg-card p-4 text-center">
           <p className="font-display text-xl">{score}/{QUESTIONS.length} right</p>
-          <p className="mt-1 text-xs text-muted-foreground">The graveyard is real — stage 3 just checked your idea against {`900+`} documented failures like these.</p>
+          <p className="mt-1 text-xs text-muted-foreground">The graveyard is real: your idea is checked against documented shut-down startups like these.</p>
         </div>
       );
     }

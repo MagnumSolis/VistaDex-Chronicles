@@ -22,7 +22,7 @@ SCREEN_DAILY_CAP = "300"
 [[ratelimits]]
 name = "SCREEN_LIMITER"
 namespace_id = "1001"
-simple = { limit = 30, period = 60 }
+simple = { limit = 3, period = 60 }  # one visitor: 3 screenings a minute (a live run takes about a minute)
 
 [[ratelimits]]
 name = "EVENTS_LIMITER"

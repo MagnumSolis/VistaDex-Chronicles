@@ -1,6 +1,8 @@
 // ── llm.js — One LLM interface, several backends, ordered fallback ──
 // Backends are OpenAI-compatible chat endpoints (Groq, Mistral). Keys are only
 // ever passed in on the server side (Worker); the browser builds an empty chain.
+// Every call goes through http.js: a timeout, one retry on 429 / 5xx, and the run's call budget.
+import { resilientFetch } from "./http.js";
 
 export class ProviderError extends Error {
   constructor(provider, status, message) {
@@ -18,7 +20,8 @@ export class NoProviderAvailable extends Error {
   }
 }
 
-function openAICompatible({ name, url, apiKey, model, fetchImpl }) {
+function openAICompatible({ name, url, apiKey, model, fetchImpl, budget, sleep }) {
+  const call = resilientFetch(fetchImpl, { budget, sleep });
   return {
     name,
     model,
@@ -27,7 +30,7 @@ function openAICompatible({ name, url, apiKey, model, fetchImpl }) {
       if (json) body.response_format = { type: "json_object" };
       let res;
       try {
-        res = await (fetchImpl || fetch)(url, {
+        res = await call(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify(body),
@@ -50,12 +53,12 @@ function openAICompatible({ name, url, apiKey, model, fetchImpl }) {
 
 // Default model: openai/gpt-oss-120b — verified available on the team's Groq key
 // (llama-3.3-70b-versatile is NOT on that account; override with GROQ_MODEL var).
-export function groqBackend({ apiKey, model = "openai/gpt-oss-120b", fetchImpl } = {}) {
-  return openAICompatible({ name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", apiKey, model, fetchImpl });
+export function groqBackend({ apiKey, model = "openai/gpt-oss-120b", fetchImpl, budget, sleep } = {}) {
+  return openAICompatible({ name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", apiKey, model, fetchImpl, budget, sleep });
 }
 
-export function mistralBackend({ apiKey, model = "mistral-small-latest", fetchImpl } = {}) {
-  return openAICompatible({ name: "mistral", url: "https://api.mistral.ai/v1/chat/completions", apiKey, model, fetchImpl });
+export function mistralBackend({ apiKey, model = "mistral-small-latest", fetchImpl, budget, sleep } = {}) {
+  return openAICompatible({ name: "mistral", url: "https://api.mistral.ai/v1/chat/completions", apiKey, model, fetchImpl, budget, sleep });
 }
 
 // routes: { default: [backend...], extract: [...], classify: [...], objector: [...] }
@@ -85,9 +88,10 @@ export function createLLM(routes = {}, trace = null) {
 }
 
 // Build the route table from environment-style keys. Only call this server-side.
-export function routesFromEnv(env = {}, fetchImpl) {
-  const groq = env.GROQ_API_KEY ? groqBackend({ apiKey: env.GROQ_API_KEY, model: env.GROQ_MODEL || undefined, fetchImpl }) : null;
-  const mistral = model => (env.MISTRAL_API_KEY ? mistralBackend({ apiKey: env.MISTRAL_API_KEY, model, fetchImpl }) : null);
+// opts: { budget, sleep } shared by every backend of one run (http.js).
+export function routesFromEnv(env = {}, fetchImpl, { budget, sleep } = {}) {
+  const groq = env.GROQ_API_KEY ? groqBackend({ apiKey: env.GROQ_API_KEY, model: env.GROQ_MODEL || undefined, fetchImpl, budget, sleep }) : null;
+  const mistral = model => (env.MISTRAL_API_KEY ? mistralBackend({ apiKey: env.MISTRAL_API_KEY, model, fetchImpl, budget, sleep }) : null);
   const small = mistral(env.MISTRAL_SMALL_MODEL || "mistral-small-latest");
   const strong = mistral(env.MISTRAL_OBJECTOR_MODEL || "mistral-medium-latest");
   const chain = (...bs) => bs.filter(Boolean);

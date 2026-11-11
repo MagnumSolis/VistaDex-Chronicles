@@ -6,14 +6,17 @@
 // implementing the same two methods.
 
 import { ProviderError } from "./llm.js";
+import { resilientFetch } from "./http.js";
 
-export function tinyfishRetrieval({ apiKey, fetchImpl } = {}) {
-  const f = fetchImpl || fetch;
+// Search 15 s, fetch 25 s per attempt; one retry on 429 / 5xx; every attempt counts against the run's budget.
+export function tinyfishRetrieval({ apiKey, fetchImpl, budget, sleep } = {}) {
+  const f = resilientFetch(fetchImpl, { budget, sleep, timeoutMs: 25000 });
+  const fs = resilientFetch(fetchImpl, { budget, sleep, timeoutMs: 15000 });
   return {
     name: "tinyfish",
     async search(query, { limit = 5 } = {}) {
       const url = `https://agent.tinyfish.ai/v1/search?query=${encodeURIComponent(query)}&num_results=${limit}`;
-      const res = await f(url, { headers: { "X-API-Key": apiKey } }).catch(err => {
+      const res = await fs(url, { headers: { "X-API-Key": apiKey } }).catch(err => {
         throw new ProviderError("tinyfish-search", 0, err.message);
       });
       if (!res.ok) throw new ProviderError("tinyfish-search", res.status, `HTTP ${res.status}`);
@@ -45,6 +48,6 @@ export function mockRetrieval() {
   };
 }
 
-export function retrievalFromEnv(env = {}, fetchImpl) {
-  return env.TINYFISH_API_KEY ? tinyfishRetrieval({ apiKey: env.TINYFISH_API_KEY, fetchImpl }) : mockRetrieval();
+export function retrievalFromEnv(env = {}, fetchImpl, { budget, sleep } = {}) {
+  return env.TINYFISH_API_KEY ? tinyfishRetrieval({ apiKey: env.TINYFISH_API_KEY, fetchImpl, budget, sleep }) : mockRetrieval();
 }

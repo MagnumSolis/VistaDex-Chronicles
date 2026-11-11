@@ -35,8 +35,9 @@ export const REGISTRIES = {
 };
 
 const PROMPT = `You read numbered web pages for an idea-screening tool. List the laws, regulations, licences or
-approvals that a page NAMES as applying to products like the idea below in the market given. Use only what the
-pages say: no outside knowledge, no guesses, and never say whether the idea is allowed. For each rule give the
+approvals that a page NAMES as applying to products like the idea below in the market given. List only rules that
+apply in the market given: a page about another country's law (HIPAA or the FDA for an EU or India search, say)
+does not count. Use only what the pages say: no outside knowledge, no guesses, and never say whether the idea is allowed. For each rule give the
 source number, the rule's name exactly as written on the page, one short sentence on what it covers in the
 page's words, and the exact sentence from the page that contains the rule's name.
 Return a JSON object: {"rules": [{"source": 1, "rule": "...", "summary": "...", "quote": "..."}]}.
@@ -56,16 +57,30 @@ export function legalQuery(market, ideaText, input) {
   return `${what} regulations ${MARKET_NAME[market]}`.slice(0, 200);
 }
 
+// Rules whose name ties them to one market. A rule tied to another market is never listed under this one
+// (live searches for the EU and India returned US pages, and HIPAA was listed under the EU). A rule tied to
+// no market (an ISO standard, say) is kept.
+const MARKET_MARKERS = {
+  USA: /\b(HIPAA|HITECH|FDA|FTC|CCPA|CPRA|CMS|ONC|U\.?S\.?|United States|federal|state (recording|privacy|consent|laws?)|states? (have|require))\b/i,
+  EU: /\b(GDPR|EU|European|MDR|IVDR|AI Act|ePrivacy|CE mark\w*)\b/i,
+  India: /\b(India\w*|DPDP|CDSCO|ICMR|NMC|IT Act|ABDM|MeitY|Telemedicine Practice Guidelines)\b/i,
+};
+export function ruleBelongsTo(rule, market) {
+  const tied = Object.keys(MARKET_MARKERS).filter(m => MARKET_MARKERS[m].test(rule));
+  return !tied.length || tied.includes(market);
+}
+
 const ruleKey = r => norm(r).replace(/[^a-z0-9 ]/g, " ").replace(/\b(the|of|and|act|regulation|regulations|rules?)\b/g, " ").replace(/\s+/g, " ").trim();
 
 // The model's rules → those named in a verbatim sentence, grouped by rule across independent sites.
-export function keepRules(raw, pages) {
+export function keepRules(raw, pages, market = null) {
   const groups = new Map();
   for (const x of Array.isArray(raw) ? raw : []) {
     const page = pages[Number(x?.source) - 1];
     const rule = String(x?.rule ?? "").trim().slice(0, 160);
     const quote = String(x?.quote ?? "").trim();
     if (!page || rule.length < 3 || !isVerbatim(page.text, quote) || !namedIn(quote, rule)) continue;
+    if (market && !ruleBelongsTo(rule, market)) continue;
     const key = ruleKey(rule);
     const domain = registrableDomain(page.url);
     if (!key || !domain) continue;
@@ -102,7 +117,7 @@ export async function searchLegal({ ideaText, input }, { llm, retrieval, trace }
       ];
       try {
         const raw = await completeWrapped(llm, messages, "rules");
-        if (raw) { requirements = keepRules(raw, pages); trace.log("legal_rules", { market, returned: raw.length, kept: requirements.length }); }
+        if (raw) { requirements = keepRules(raw, pages, market); trace.log("legal_rules", { market, returned: raw.length, kept: requirements.length }); }
         else trace.log("legal", { market, router: "llm", error: "malformed output" });
       } catch (err) {
         if (!(err instanceof NoProviderAvailable)) throw err;

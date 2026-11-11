@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-7 (report "Your read", claim reading time, channels: CURRENT)
+## study_version 2026-11-study-8 (Home problem cards; console Insights: CURRENT)
+
+Bumped because the visitor-facing Home page changed (decision: 2026-11-11). Telemetry is unchanged: same events, payloads and controls as study-7.
+
+- **Home.** The "The problem" and "Who it's for" cards carry a line icon next to their number; the empty band between the number and the title is gone.
+- **Research Console (not visitor-facing).** A new Insights view and analysis-ready exports, from the same code as `analysis/study_analysis.mjs` (`analyzeStudy` in `worker/src/research-join.js`). **Evidence opened** now counts every evidence link in a report: claim sources (`source_clicked`) plus graveyard, competitor, Big Tech, legal and market links (`control_pressed` with those control ids, joined to the run open at the time). Before, only claim sources counted, so the Participants "Sources" column was blank for nearly everyone. H4 uses evidence of any kind. This applies to all past data, since those control presses were already logged.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-7 (report "Your read", claim reading time, channels)
 
 Bumped because the report, the study page and the telemetry changed (decision: 2026-11-11, before sharing the public demo on LinkedIn and X and with investors).
 

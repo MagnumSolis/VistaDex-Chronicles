@@ -110,3 +110,66 @@ export async function checkSources(tf, urls, companyName) {
   }
   return out.map(c => ({ ...c, checked_at: new Date() }));
 }
+
+// ── Discovery pre-filter (cheap, before any fetch or LLM call) ─────────────
+// A search hit is worth extracting only if its title or snippet puts a proper noun
+// next to a shutdown phrase ("Bench shuts down", "the shutdown of Quibi"). Advice and
+// statistics pages ("When to shut down your startup", "Startup shutdowns rose 25%")
+// name no company and are skipped. This only routes LLM calls: it is never evidence,
+// and the Death Watcher still needs 2 fetched pages that state the death.
+const LEAD = `${DEATH}|acqui-?hires|files? for bankruptcy|filed for bankruptcy|filing for bankruptcy|lays? off (?:all|its entire|entire)|laid off (?:all|its entire)|pulls? the plug|(?:goes|went|entered|enters|placed) into administration|announc(?:es|ed) (?:its )?shutdown|to close|closes|closing`;
+const LEAD_RE = new RegExp(`\\b(?:${LEAD})\\b`, "giu");
+const LEAD_OF = /\b(?:shutdown|closure|demise|collapse|liquidation|dissolution|acquisition|acqui-?hire)s? of\b/giu;
+const BREAK = /[.!?](?:\s|$)|\s[|–—-]\s|[:;\n]/gu;
+const TOKEN = /(?<![\p{L}\p{N}])(?:\p{Lu}|\p{N}+\p{L}{2}|\p{Ll}+\p{Lu})[\p{L}\p{N}&'’.]*(?<!\.)/gu;
+const NOT_NAMES = new Set(`a an the this that these those it its their our your my we you i he she they here there if as so
+why when how what who which where should can could would will must may might do does did is are was were be been has have had
+not no to of in on for and or with by from at after before into over amid despite just also again now then
+more most many some every all another other few top best worst big real reason reasons signs ways steps things lessons guide
+startup startups company companies founder founders ceo cto firm firms business businesses team teams brand brands app apps
+tech fintech edtech healthtech proptech insurtech climate ai saas crypto web3 ev d2c b2b b2c vc vcs venture capital backed funded unicorn unicorns
+report reports data study survey analysis list record number rate rates share percent
+time year years month months week weeks day days today yesterday new update breaking exclusive news opinion watch video live podcast
+january february march april may june july august september october november december monday tuesday wednesday thursday friday saturday sunday
+india indian europe european uk us usa u.s. america american germany german berlin london british israel israeli africa african
+australia australian asia asian southeast latin china chinese global local world y combinator yc silicon valley
+officially abruptly suddenly quietly finally reportedly formally soon shut shuts shutting shutdown shutdowns down winds wind
+ceases closes closing close files bankruptcy acquired acquihired inc ltd llc corp
+but yet still never nearly roughly eventually sadly sometimes even only once take make let ask hn hated anything than
+one two three four five six seven eight nine ten first last next service services united states government federal congress
+mental health post mortem postmortem failure failures failed fail dead death`.split(/\s+/));
+// A capitalised common word, a contraction ("We're") or a two-letter code ("CA") is not a name.
+const isName = t => !NOT_NAMES.has(t.toLowerCase().replace(/['’]s$/, "")) && !/-based$/i.test(t)
+  && !/['’](?:re|m|ve|ll|d|t)$/i.test(t) && !/^\p{Lu}{1,2}$/u.test(t);
+
+// Proper nouns found next to a shutdown phrase in a search hit's title/snippet ([] when none).
+export function shutdownLeads(text) {
+  const t = String(text || "").replace(/\s+/g, " ");
+  const names = new Set();
+  const segment = (from, to) => t.slice(from, to);
+  const lastBreak = end => { let b = 0; for (const m of t.slice(0, end).matchAll(BREAK)) b = m.index + m[0].length; return b; };
+  for (const m of t.matchAll(LEAD_RE)) {
+    const start = Math.max(lastBreak(m.index), m.index - 80);
+    for (const tok of segment(start, m.index).match(TOKEN) || []) if (isName(tok)) names.add(tok);
+  }
+  for (const m of t.matchAll(LEAD_OF)) {
+    const after = segment(m.index + m[0].length, m.index + m[0].length + 60).split(BREAK)[0];
+    for (const tok of after.match(TOKEN) || []) if (isName(tok)) names.add(tok);
+  }
+  return [...names];
+}
+
+// Round-ups of shutdowns name many companies in the body, none in the title:
+// "All the startups that shut down in 2026", "10 companies that folded this year".
+const SHUT = "(?:shut down|shuttered|closed|folded|died|collapsed|went bust|went under|wound down)";
+const LIST_RE = new RegExp(`\\b(?:list|all the|every)\\b[^.?!]{0,50}\\b(?:startups|companies|apps)\\b(?: that| which| to have)? ${SHUT}\\b`
+  + `|\\b\\d+ (?:[\\p{L}-]+ ){0,2}(?:startups|companies|apps) (?:that|which) ${SHUT}\\b`
+  + `|\\b(?:startups|companies|apps) (?:that|which) ${SHUT}\\b[^.?!]{0,40}\\b(?:list|in \\d{4}|this year|this month)\\b`
+  + `|\\b(?:closed|defunct|dead|shuttered) (?:companies|startups)\\b|\\bcompanies (?:disestablished|dissolved) in \\d{4}\\b|\\bfailed startups of \\d{4}\\b`, "iu");
+export const isShutdownList = text => LIST_RE.test(String(text || "").replace(/\s+/g, " "));
+
+// null when a search hit is worth an extraction call, otherwise why it is skipped.
+export function leadSkipReason(title, snippet) {
+  const text = `${title || ""}. ${snippet || ""}`;
+  return shutdownLeads(text).length || isShutdownList(text) ? null : "no-named-shutdown";
+}

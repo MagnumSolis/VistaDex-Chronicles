@@ -16,8 +16,9 @@ export const MARKET_SOURCES = 6;
 const MIN_MARKET_USD = 1e6; // smaller amounts are prices, revenues or rounds, not a market
 
 const PROMPT = `You read numbered web pages for an idea-screening tool. List the market-size figures that a page
-STATES for the market the idea below sells into (total market value or revenue, in money). Use only what the
-pages say: no outside knowledge, no estimates of your own. For each figure give the source number, the figure
+STATES for the market the idea below sells into, or for the broader market it belongs to (for an AI medical scribe,
+"AI in healthcare" counts): total market value or revenue, in money. Say in "market" which market the figure
+measures, in the page's words. Use only what the pages say: no outside knowledge, no estimates of your own. For each figure give the source number, the figure
 exactly as written on the page, the market it measures in the page's words, the year it refers to if the page
 gives one, and the exact sentence from the page that contains the figure.
 Return a JSON object: {"figures": [{"source": 1, "figure": "$4.2 billion", "market": "...", "year": 2024, "quote": "..."}]}.
@@ -30,10 +31,15 @@ export function formatUsd(usd) {
   return `$${v >= 100 ? Math.round(v) : Math.round(v * 10) / 10}${u}`;
 }
 
+// What the idea is, for a search: the one-line pitch (the title is usually an invented brand no page mentions),
+// else the title, else the idea text.
+export function searchSubject(ideaText, input) {
+  const pitch = String(input?.pitch ?? "").trim().replace(/[.!]+$/, "");
+  return (pitch || String(input?.title ?? "").trim() || ideaText.slice(0, 120)).slice(0, 140);
+}
+
 export function marketQueries(ideaText, input) {
-  const field = (input?.industries || []).join(" ");
-  const what = [input?.title, field].filter(Boolean).join(" ").trim() || ideaText.slice(0, 120);
-  return [`${what} market size`.slice(0, 200)];
+  return [`${searchSubject(ideaText, input)} market size`.slice(0, 200)];
 }
 
 // Figures from quotes that support confirmed market-size claims.
@@ -118,8 +124,11 @@ export async function searchMarket({ ideaText, input, claims }, { llm, retrieval
     ];
     try {
       const raw = await completeWrapped(llm, messages, "figures");
-      if (raw) figures.push(...keepFigures(raw, read));
-      else trace.log("market", { router: "llm", error: "malformed output" });
+      if (raw) {
+        const kept = keepFigures(raw, read);
+        trace.log("market_figures", { returned: raw.length, kept: kept.length });
+        figures.push(...kept);
+      } else trace.log("market", { router: "llm", error: "malformed output" });
     } catch (err) {
       if (!(err instanceof NoProviderAvailable)) throw err;
       trace.log("market", { router: "skipped", reason: "reader unavailable" });

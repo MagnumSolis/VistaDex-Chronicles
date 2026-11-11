@@ -4,6 +4,8 @@
 
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
+import { sourceBlockReason, checkSourceText } from "./sources.js";
+import { verifyEntry } from "./fleet.js";
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.error(`✗ ${name}`); } };
@@ -74,6 +76,58 @@ check("found fields are marked found", sparse.search_status.failure_reason !== "
 check("cause_of_death aliases failure_reason", (() => { const e = newGraveyardEntry({ company_name: "Z", what_they_tried: "x".repeat(20), cause_of_death: "died of test", year_closed: 2021, source_urls: ["https://a.com/1"] }); return e.failure_reason === "died of test"; })());
 check("bad funding round date rejected", !validateEntry({ ...good, funding_rounds: [{ date: "not-a-date", amount: "$1M" }] }).ok);
 check("blank stays blank (null, not guessed)", sparse.registry_record === null && sparse.closure_date === null);
+
+// 5. Source quality: a second source must be a real page that names the company and states the death
+check("dictionary blocked", sourceBlockReason("https://www.merriam-webster.com/dictionary/shut") === "dictionary");
+check("outage checker blocked (any country)", sourceBlockReason("https://downdetector.com/") === "outage-checker" && sourceBlockReason("https://downdetector.co.uk/status/x") === "outage-checker");
+check("video site blocked", sourceBlockReason("https://www.youtube.com/watch?v=1") === "video" && sourceBlockReason("https://youtu.be/1") === "video");
+check("forum blocked", sourceBlockReason("https://www.reddit.com/r/x/comments/1") === "forum" && sourceBlockReason("https://www.quora.com/Why") === "forum");
+check("derivative graveyard aggregator blocked", sourceBlockReason("https://ideaproof.io/failure/plenty-unlimited") === "aggregator");
+check("ToS-restricted platform blocked", sourceBlockReason("https://www.linkedin.com/posts/x") === "restricted");
+check("news site allowed", sourceBlockReason("https://techcrunch.com/2020/10/21/quibi-is-dead/") === null);
+check("bad url blocked", sourceBlockReason("not a url") === "bad-url");
+const article = "LOS ANGELES - Quibi, the short-form video app, said on Wednesday it would shut down six months after launch. Investors had put in $1.75 billion.";
+check("names company + states shutdown -> ok", checkSourceText(article, "Quibi").ok);
+check("ok check keeps the evidence sentence", checkSourceText(article, "Quibi").quote.includes("shut down"));
+check("company not named -> rejected", checkSourceText("Many startups shut down every year.", "Quibi").reason === "company-not-named");
+check("named but no death statement -> rejected", checkSourceText("Quibi launched a new show with famous actors today.", "Quibi").reason === "no-death-statement");
+check("death words far from the name do not count", !checkSourceText("Quibi launched today. " + "x ".repeat(400) + "Another firm shut down.", "Quibi").ok);
+check("dictionary page for a common word -> rejected", !checkSourceText("plenty (noun): a full supply. Example: the shop shut down.", "Plenty Unlimited").ok);
+check("acquisition counts", checkSourceText("Atrium was acquired by a rival in 2020.", "Atrium").ok);
+check("dissolution counts", checkSourceText("The board voted to dissolve Testco Inc. and the company was dissolved in 2021.", "Testco Inc").ok);
+check("corporate suffix optional", checkSourceText("Testco wound down operations last year.", "Testco Inc.").ok);
+check("bankruptcy restructuring alone is not a death", !checkSourceText("Plenty Unlimited filed for Chapter 11 and emerged from bankruptcy.", "Plenty Unlimited").ok);
+check("same sentence: death words in the next line do not count", !checkSourceText("Aetech Guardian gas safety valve\nAutomatic shutdown of the gas supply when a leak is found.", "Aetech").ok);
+check("customs 'liquidated' is not a death", !checkSourceText("The entries by Dingli importers will be liquidated without regard to antidumping duties.", "Dingli").ok);
+check("liquidation of the company counts", checkSourceText("Dingli went into voluntary liquidation in 2023.", "Dingli").ok);
+check("headline 'X is dead' counts", checkSourceText("# Quibi is dead\nThe app launched in April.", "Quibi").ok);
+check("the acquirer is not the one that died", !checkSourceText("Kuailexue (acquired by 17zuoye in 2016) is one example.", "17zuoye").ok);
+check("others shutting down is not this company", !checkSourceText("Some ESL companies have already shut down their services, while others such as Magic Ears have vowed to stay.", "Magic Ears").ok);
+check("object form 'the shutdown of X' counts", checkSourceText("Investors reacted to the shutdown of Quibi last week.", "Quibi").ok);
+check("object form 'Y acquired X' counts", checkSourceText("In 2020 a rival acquired Atrium and closed the app.", "Atrium").ok);
+check("lowercase common word still does not match the name", !checkSourceText("A plenty unlimited supply shut down the market.", "Plenty Unlimited").ok);
+check("empty page -> rejected", checkSourceText("", "Quibi").reason === "empty-page");
+
+// 6. Death Watcher with a fake TinyFish (no network)
+const fakeTf = (pages, searchResults = []) => ({
+  search: async () => searchResults.map(url => ({ url, title: "", snippet: "" })),
+  fetchPages: async urls => Object.fromEntries(urls.filter(u => u in pages).map(u => [u, { content: pages[u] }])),
+});
+const lootEntry = () => ({ company_name: "Quibi", primary_source: "loot-drop.io", death_status: "confirmed",
+  source_urls: ["https://www.loot-drop.io/startup/1-quibi", "https://downdetector.com/", "https://www.merriam-webster.com/dictionary/shut"] });
+let v = await verifyEntry(fakeTf({}), lootEntry());
+check("junk second sources -> back to candidate", v.death_status === "candidate" && v.source_urls.length === 1);
+check("junk sources recorded as rejected with a reason", v.rejected_sources.length === 2 && v.rejected_sources.every(r => r.reason));
+v = await verifyEntry(fakeTf({ "https://variety.com/quibi": article }, ["https://variety.com/quibi", "https://www.youtube.com/watch?v=q"]), lootEntry());
+check("one fetched page stating the death -> confirmed", v.death_status === "confirmed" && v.source_urls.includes("https://variety.com/quibi"));
+check("good source keeps its evidence quote", v.source_checks.find(c => c.url === "https://variety.com/quibi").quote.includes("shut down"));
+v = await verifyEntry(fakeTf({ "https://variety.com/a": article, "https://variety.com/b": article }, ["https://variety.com/a", "https://variety.com/b"]),
+  { company_name: "Quibi", primary_source: "variety.com", death_status: "candidate", source_urls: ["https://variety.com/a"], source_checks: [{ url: "https://variety.com/a", ok: true }] });
+check("two pages on one domain are one source", v.death_status === "candidate");
+v = await verifyEntry(fakeTf({ "https://variety.com/q": "Quibi is a video app." }, ["https://variety.com/q"]), lootEntry());
+check("page that names but does not state the death -> still candidate", v.death_status === "candidate");
+const down = { search: async () => { throw new Error("rate limited"); }, fetchPages: async () => { throw new Error("rate limited"); } };
+check("TinyFish failure throws, so the caller leaves the entry unchanged", await verifyEntry(down, lootEntry()).then(() => false, () => true));
 
 console.log(`\nSmoke: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

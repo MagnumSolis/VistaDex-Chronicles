@@ -47,6 +47,7 @@ const DEATH = [
   "liquidation proceedings", "chapter 7", "went (?:out of business|bankrupt|under|bust)", "out of business",
   "defunct", "acquired by", "acqui-?hired?", "folded", "(?:is|was) dead",
   "sunset(?:ted|ting)? (?:its|the) (?:product|app|service|platform)",
+  "collapsed", "ceased to exist", "stopped (?:all )?operat(?:ions|ing)", "pulled the plug",
 ].join("|");
 const DEATH_OF = "(?:shutdown|closure|liquidation|dissolution|demise|acquisition|acqui-?hire) of (?:the )?(?:[\\p{L}\\p{N}-]+ ){0,4}?";
 const ACQUIRED = "(?:acquired|acquires|acquiring|bought|buys) ";
@@ -55,13 +56,25 @@ const SUBJECT_GAP = 120;
 const SUFFIX = /[\s,]+(?:inc\.?|llc|l\.l\.c\.|ltd\.?|limited|corp\.?|corporation|co\.?|gmbh|s\.a\.|pvt\.? ltd\.?|plc)$/i;
 const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+// A bracketed part is an alias ("Kuaibo (Qvod)", "Feiliao (Flipchat)") when it looks like a name: starts
+// with a capital or a digit, at most three words, no full stop. "(Intl. Ops)" is a descriptor, not a name.
+const ALIAS = /^[\p{Lu}\p{N}][\p{L}\p{N}&'-]*(?: [\p{L}\p{N}&'-]+){0,2}$/u;
+
 export function nameVariants(name) {
   const n = String(name || "").trim();
   const out = new Set([n]);
-  const bare = n.replace(SUFFIX, "").trim();
-  if (bare.length >= 2) out.add(bare);
-  const noTld = bare.replace(/\.(?:com|io|ai|co|app|net|org)$/i, "");
-  if (noTld.length >= 2) out.add(noTld);
+  const add = v => {
+    const bare = v.replace(SUFFIX, "").trim();
+    if (bare.length >= 2) out.add(bare);
+    const noTld = bare.replace(/\.(?:com|io|ai|co|app|net|org)$/i, "");
+    if (noTld.length >= 2) out.add(noTld);
+  };
+  add(n);
+  const m = /^(.+?)\s*\(([^()]+)\)\s*$/.exec(n);
+  if (m) {
+    add(m[1].trim());
+    if (ALIAS.test(m[2].trim())) add(m[2].trim());
+  }
   return [...out].filter(Boolean);
 }
 

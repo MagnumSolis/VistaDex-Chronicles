@@ -866,7 +866,7 @@ export const RESEARCH_PAGE = `<!doctype html>
 
   function load() {
     fetch("/research/data?full=1", { cache: "no-store" }).then(function (r) {
-      if (r.status === 401) { $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Session expired — <a href="/research?t=YOUR_TOKEN" style="color:var(--accent)">log in again</a>.</div>'; return null; }
+      if (r.status === 401) { $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Session expired: <a href="/research" style="color:var(--accent)">log in again</a>.</div>'; return null; }
       if (r.status !== 200) {
         return r.text().then(function (b) {
           $("kpis").innerHTML = '<div class="err-box" style="grid-column:1/-1">Data fetch failed: HTTP ' + r.status + " — " + esc(b.slice(0, 250)) + "</div>";

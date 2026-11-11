@@ -5,7 +5,7 @@
 import { newGraveyardEntry, validateEntry, isIndependentSource, registrableDomain } from "./schemas.js";
 import { parseStartupPage } from "./ingest-lootdrop.js";
 import { sourceBlockReason, checkSourceText } from "./sources.js";
-import { verifyEntry, pickQueries, DISCOVERY_QUERIES } from "./fleet.js";
+import { verifyEntry, pickQueries, DISCOVERY_QUERIES, PHRASES, SUBJECTS, EXTRAS, buildQueryBank, fillQuery } from "./fleet.js";
 import { readFileSync, readdirSync } from "fs";
 import { validateExtraction } from "./schemas.js";
 import { parseExtraction, runSignalExtraction } from "./extract-signals.js";
@@ -176,12 +176,19 @@ const nov = new Date("2026-11-11T00:00:00Z");
 const r1 = pickQueries(0, 4, nov), r1b = pickQueries(0, 4, nov);
 check("same cursor + date -> same queries", JSON.stringify(r1) === JSON.stringify(r1b));
 check("next run starts where this one stopped", pickQueries(r1.next, 4, nov).queries[0].query !== r1.queries[0].query && r1.next === 4);
-check("month and year filled from the run date", r1.queries[0].query === "startup shutting down November 2026");
+check("month and year filled from the run date", r1.queries[0].query === 'startup "shuts down" November 2026');
+check("{prev} is the month before, across a year end", fillQuery("{prev}", new Date("2026-01-05T00:00:00Z")) === "December 2025" && fillQuery("{prev}", nov) === "October 2026");
+const pairs = new Set(DISCOVERY_QUERIES.filter(e => e.agent === "news-scout" && !e.q.includes("{company}")).map(e => e.q));
+check("every phrasing is paired with every sector/region subject", pairs.size === PHRASES.length * SUBJECTS.length);
+check("lists and {company} templates are interleaved", DISCOVERY_QUERIES.length === PHRASES.length * SUBJECTS.length + Math.floor(PHRASES.length * SUBJECTS.length / 8) && EXTRAS.every(x => DISCOVERY_QUERIES.includes(x)));
+check("news queries use shutdown phrasing that names a company", PHRASES.every(p => /shut|wind|cease|bankrupt|acquihire/i.test(p)));
+check("bank lengths must be coprime", (() => { try { buildQueryBank(["a {subject}", "b {subject}"], ["x", "y"]); return false; } catch { return true; } })());
 let cur = 0; const covered = new Set();
-for (let k = 0; k < 10; k++) { const r = pickQueries(cur, 4, nov); r.queries.forEach(q => covered.add(q.query)); cur = r.next; }
-check("rotation covers the whole bank (minus {company} templates)", covered.size === DISCOVERY_QUERIES.filter(q => !q.q.includes("{company}")).length);
+for (let k = 0; k < Math.ceil(DISCOVERY_QUERIES.length / 4); k++) { const r = pickQueries(cur, 4, nov); r.queries.forEach(q => covered.add(q.query)); cur = r.next; }
+check("rotation covers the whole bank (minus {company} templates)", covered.size === new Set(DISCOVERY_QUERIES.filter(q => !q.q.includes("{company}")).map(q => fillQuery(q.q, nov))).size);
 check("{company} templates skipped without KNOWN_COMPANIES", [...covered].every(q => !q.includes("{company}") && !q.includes("undefined")));
-check("{company} templates use KNOWN_COMPANIES when given", pickQueries(17, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
+const companyAt = DISCOVERY_QUERIES.findIndex(e => e.q === "{company} shutting down");
+check("{company} templates use KNOWN_COMPANIES when given", pickQueries(companyAt, 1, nov, ["Quibi"]).queries[0].query === "Quibi shutting down");
 const srcDir = new URL(".", import.meta.url);
 check("no Math.random in backend/src", readdirSync(srcDir).filter(f => f.endsWith(".js") && f !== "smoke.js").every(f => !readFileSync(new URL(f, srcDir), "utf8").includes("Math.random")));
 

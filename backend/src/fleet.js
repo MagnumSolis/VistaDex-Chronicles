@@ -11,30 +11,60 @@ import { makeExtractorLLM, runSignalExtraction } from "./extract-signals.js";
 
 // Discovery query bank. Each run takes the next DISCOVERY_QUERIES queries in a fixed
 // order (a cursor stored in fleet_state), so successive runs cover the whole bank and
-// a run is reproducible from its cursor. {month} and {year} come from the run date;
-// {company} templates use KNOWN_COMPANIES and are skipped when it is empty.
-export const DISCOVERY_QUERIES = [
-  { agent: "news-scout", q: "startup shutting down {month} {year}" },
-  { agent: "post-mortem-miner", q: "startup post-mortem why we failed" },
-  { agent: "news-scout", q: "startup shuts down operations {year}" },
-  { agent: "post-mortem-miner", q: "startups that shut down in {year}" },
-  { agent: "news-scout", q: "startup winding down announcement {month} {year}" },
-  { agent: "post-mortem-miner", q: "why our startup failed lessons shutting down" },
-  { agent: "news-scout", q: "startup ceases operations after raising funding {year}" },
-  { agent: "post-mortem-miner", q: "failed startups list {year}" },
-  { agent: "news-scout", q: "startup acquired product shut down {year}" },
-  { agent: "news-scout", q: "startup files for chapter 7 liquidation {year}" },
-  { agent: "post-mortem-miner", q: "founder announces company is shutting down" },
-  { agent: "news-scout", q: "fintech startup shuts down {year}" },
-  { agent: "news-scout", q: "AI startup shuts down {year}" },
-  { agent: "news-scout", q: "edtech startup shuts down {year}" },
-  { agent: "news-scout", q: "healthtech startup shuts down {year}" },
-  { agent: "news-scout", q: "India startup shuts down {year}" },
-  { agent: "news-scout", q: "Europe startup closes doors {year}" },
-  { agent: "news-scout", q: "{company} shutting down" },
-  { agent: "registry-reviewer", q: "{company} dissolution filing" },
+// a run is reproducible from its cursor and date.
+// The bank asks for news pages that name a company next to its death ("X shuts down",
+// "X files for bankruptcy"), not advice or statistics pages, which name none (the
+// 2026-11-11 run read 7 such pages and found 0 companies). Each news phrasing is
+// paired with each sector or region subject: with coprime list lengths, entry i uses
+// PHRASES[i % P] and SUBJECTS[i % S], which visits every pair once per P*S entries.
+// Every EXTRA_EVERY entries one EXTRAS query follows (lists of shutdowns, {company}
+// templates). Tokens: {month} {year} the run month, {now} "November 2026", {prev}
+// the month before ("October 2026"); {company} uses KNOWN_COMPANIES and is skipped
+// when it is empty.
+export const PHRASES = [
+  '{subject} "shuts down" {now}',
+  '{subject} "is shutting down" {year}',
+  '{subject} "winds down" operations {prev}',
+  '{subject} "ceases operations" {year}',
+  '{subject} "files for bankruptcy" {now}',
+  '{subject} acquihired team joins {year}',
+  '{subject} "shutting down" announcement {prev}',
 ];
+export const SUBJECTS = [
+  "startup", "fintech startup", "AI startup", "edtech startup", "healthtech startup", "crypto startup",
+  "climate tech startup", "SaaS startup", "ecommerce startup", "EV startup", "proptech startup",
+  "India startup", "Europe startup", "UK startup", "Germany startup", "Southeast Asia startup",
+  "Africa startup", "Latin America startup", "Israel startup", "Australia startup",
+];
+export const EXTRAS = [
+  { agent: "post-mortem-miner", q: '"startups that shut down" {year}' },
+  { agent: "post-mortem-miner", q: "startup shutdowns this month {now}" },
+  { agent: "news-scout", q: "{company} shutting down" },
+  { agent: "post-mortem-miner", q: "tech companies that shut down {prev}" },
+  { agent: "registry-reviewer", q: "{company} dissolution filing" },
+  { agent: "post-mortem-miner", q: 'founder "we are shutting down" {year}' },
+];
+const EXTRA_EVERY = 8;
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+export function buildQueryBank(phrases = PHRASES, subjects = SUBJECTS, extras = EXTRAS, every = EXTRA_EVERY) {
+  if (gcd(phrases.length, subjects.length) !== 1) throw new Error("PHRASES and SUBJECTS lengths must be coprime");
+  const bank = [];
+  for (let i = 0, x = 0; i < phrases.length * subjects.length; i++) {
+    bank.push({ agent: "news-scout", q: phrases[i % phrases.length].replace("{subject}", subjects[i % subjects.length]) });
+    if (extras.length && i % every === every - 1) bank.push(extras[x++ % extras.length]);
+  }
+  return bank;
+}
+export const DISCOVERY_QUERIES = buildQueryBank();
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+export function fillQuery(q, date = new Date(), company = "") {
+  const m = date.getUTCMonth(), y = date.getUTCFullYear();
+  const prev = m === 0 ? `December ${y - 1}` : `${MONTHS[m - 1]} ${y}`;
+  return q.replaceAll("{now}", `${MONTHS[m]} ${y}`).replaceAll("{prev}", prev)
+    .replaceAll("{month}", MONTHS[m]).replaceAll("{year}", String(y)).replaceAll("{company}", company);
+}
 
 // Pure: the queries for one run, starting at `cursor`. Returns the next cursor too.
 export function pickQueries(cursor, n, date = new Date(), knownCompanies = [], bank = DISCOVERY_QUERIES) {
@@ -43,9 +73,7 @@ export function pickQueries(cursor, n, date = new Date(), knownCompanies = [], b
   for (let tries = 0; out.length < n && tries < bank.length; tries++, i++) {
     const { agent, q } = bank[i % bank.length];
     if (q.includes("{company}") && !knownCompanies.length) continue;
-    const query = q.replace("{month}", MONTHS[date.getUTCMonth()]).replace("{year}", String(date.getUTCFullYear()))
-      .replace("{company}", knownCompanies[i % (knownCompanies.length || 1)]);
-    out.push({ agent, query });
+    out.push({ agent, query: fillQuery(q, date, knownCompanies[i % (knownCompanies.length || 1)] || "") });
   }
   return { queries: out, next: i % bank.length };
 }

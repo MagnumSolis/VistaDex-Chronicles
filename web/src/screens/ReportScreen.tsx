@@ -49,12 +49,9 @@ export function ReportScreen({ param }: { param: string | null }) {
       <PageTitle eyebrow={entry.kind === "demo" ? `Demo idea · ${entry.category ?? ""}` : entry.kind === "sample" ? `Sample report · ${entry.report.input?.industries.join(", ") ?? ""}` : "Screening report"} title={entry.kind === "session" ? "Your report" : entry.title}>
         The score, the evidence behind it, the leads and the objections. Every number can be taken apart; the decision is yours.
       </PageTitle>
-      <Report key={entry.id} entry={entry} />
-      {entry.kind === "session" && entry.report && entry.runId && (
-        <div className="mt-4 md:mt-5">
-          <ReportStudyPanel report={entry.report} runId={entry.runId} condition="vistadex" onDone={finishVistaDexCondition} />
-        </div>
-      )}
+      <Report key={entry.id} entry={entry} closing={entry.kind === "session" && entry.report && entry.runId
+        ? <ReportStudyPanel report={entry.report} runId={entry.runId} condition="vistadex" onDone={finishVistaDexCondition} />
+        : undefined} />
     </div>
   );
 }

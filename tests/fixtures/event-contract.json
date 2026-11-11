@@ -286,7 +286,8 @@
       "big_tech",
       "legal",
       "market",
-      "score_breakdown"
+      "score_breakdown",
+      "rate"
     ],
     "report_time.ended_by": [
       "new_run",

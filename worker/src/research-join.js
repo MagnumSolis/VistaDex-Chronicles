@@ -406,6 +406,18 @@ export function researchJoin() {
       r.evidence = r.clicks + r.links;
       r.delta = r.pre != null && r.post != null ? r.post - r.pre : null;
     });
+    // Waiting-screen quiz (study-13): quiz events carry the run id of the run they waited for.
+    var runByKey = {};
+    runs.forEach(function (r) { r.quiz = null; if (r.runId) runByKey[r.sid + "\u0000" + r.runId] = r; });
+    ev.forEach(function (e) {
+      if (!/^quiz_/.test(e.type)) return;
+      var q = e.payload || {}, r = runByKey[e.session_id + "\u0000" + q.run_id];
+      if (!r) return;
+      if (e.type === "quiz_started") r.quiz = { source: q.source || null, answered: 0, score: 0, completed: false, ms: [] };
+      if (!r.quiz) return;
+      if (e.type === "quiz_answered") { r.quiz.answered++; if (q.correct === true) r.quiz.score++; if (typeof q.ms === "number") r.quiz.ms.push(q.ms); }
+      if (e.type === "quiz_finished") r.quiz.completed = q.completed === true;
+    });
     var finished = runs.filter(function (r) { return r.completed; });
     var withConf = runs.filter(function (r) { return r.delta != null; });
 
@@ -538,7 +550,29 @@ export function researchJoin() {
       excludedTestCodes: summary.excludedTestCodes
     };
 
-    var result = { summary: summary, pairs: pairs, h1: h1, measures: measures, orderEffect: orderEffect, h2: h2, h3: h3, h4: h4,
+    // Quiz: does anyone use the wait, and do quiz players read the graveyard section more? Only live runs:
+    // sample runs finish too fast for the quiz to be shown.
+    var liveRuns = runs.filter(function (r) { return r.mode === "live"; });
+    var quizRuns = liveRuns.filter(function (r) { return r.quiz; });
+    var done = quizRuns.filter(function (r) { return r.quiz.completed; });
+    var answerMs = [], answers = 0, right = 0;
+    quizRuns.forEach(function (r) { answerMs = answerMs.concat(r.quiz.ms); answers += r.quiz.answered; right += r.quiz.score; });
+    var liveFinished = liveRuns.filter(function (r) { return r.completed; });
+    function gy(list) {
+      var secs = list.map(function (r) { return (r.sectionMs.graveyard || 0) / 1000; });
+      return { n: list.length, medianSec: list.length ? Math.round(median(secs) * 10) / 10 : null, secs: secs,
+        linksPct: pct(list.filter(function (r) { return (r.linksBy.graveyard || 0) > 0; }).length, list.length) };
+    }
+    var gq = gy(liveFinished.filter(function (r) { return r.quiz; })), go = gy(liveFinished.filter(function (r) { return !r.quiz; }));
+    var quiz = { liveRuns: liveRuns.length, started: quizRuns.length, startPct: pct(quizRuns.length, liveRuns.length),
+      completed: done.length, abandoned: quizRuns.length - done.length,
+      fallback: quizRuns.filter(function (r) { return r.quiz.source === "fallback"; }).length,
+      meanScore: mean1(done.map(function (r) { return r.quiz.score; })),
+      correctPct: pct(right, answers), answers: answers,
+      medianAnswerSec: answerMs.length ? Math.round(median(answerMs) / 100) / 10 : null,
+      graveyard: { quizzers: gq, others: go, test: mannWhitney(gq.secs, go.secs) } };
+
+    var result = { summary: summary, quiz: quiz, pairs: pairs, h1: h1, measures: measures, orderEffect: orderEffect, h2: h2, h3: h3, h4: h4,
       direction: direction, comprehension: comprehension, attention: attention,
       reportMedianMin: reportSec.length ? Math.round(median(reportSec) / 6) / 10 : null,
       segments: segments, funnel: funnel, quality: quality, runs: runs, votes: votes };
@@ -588,6 +622,15 @@ export function researchJoin() {
     var roles = r.segments.role.filter(function (s) { return s.group !== "unknown"; });
     add("roles", "By role", roles.reduce(function (a, s) { return Math.min(a, s.runs); }, roles.length ? Infinity : 0), MIN_GROUP, "runs in the smallest role",
       roles.length ? roles.map(function (s) { return s.group + ": " + plural(s.runs, "run", "runs") + ", confidence change " + fmtNum(s.meanDelta) + ", evidence opened in " + (s.evidencePct == null ? "n/a" : s.evidencePct + "%") + ", trust " + (s.trust == null ? "n/a" : s.trust); }).join("; ") + "." : "No roles recorded yet.");
+    var qz = r.quiz, gq = qz.graveyard;
+    add("quiz", "The waiting-screen quiz and the graveyard section", Math.min(gq.quizzers.n, gq.others.n), MIN_GROUP, "finished live runs in the smaller group",
+      "The quiz was started in " + qz.started + " of " + plural(qz.liveRuns, "live run", "live runs") + " (" + (qz.startPct == null ? "n/a" : qz.startPct + "%") + "); " +
+      qz.completed + " finished all three questions, " + qz.abandoned + " stopped when the report arrived or the visitor left. " +
+      (qz.answers ? qz.correctPct + "% of " + plural(qz.answers, "answer was", "answers were") + " right, median " + qz.medianAnswerSec + " s per answer. " : "") +
+      "Time on the graveyard section (median): " + (gq.quizzers.medianSec == null ? "n/a" : gq.quizzers.medianSec + " s") + " after playing (" + plural(gq.quizzers.n, "run", "runs") + "), " +
+      (gq.others.medianSec == null ? "n/a" : gq.others.medianSec + " s") + " without (" + plural(gq.others.n, "run", "runs") + "); Mann-Whitney p = " + fmtPv(gq.test) +
+      ". A graveyard link was opened in " + (gq.quizzers.linksPct == null ? "n/a" : gq.quizzers.linksPct + "%") + " vs " + (gq.others.linksPct == null ? "n/a" : gq.others.linksPct + "%") +
+      ". Visitors choose to play, so this shows an association, not a cause.");
     var q = r.quality;
     add("quality", "Data quality", q.beforeAnswers, 1, "before answers",
       q.untouchedBefore + " of " + plural(q.beforeAnswers, "\"before\" answer was", "\"before\" answers were") + " left at the slider's start (50): report them, or rerun H1 without them. " +
@@ -614,13 +657,16 @@ export function researchJoin() {
     var kinds = ["graveyard", "competitors", "big_tech", "legal", "market"];
     t["runs.csv"] = toCSV(["session_id", "run_id", "label", "track", "role", "channel", "industries", "mode", "sample", "completed", "pre", "pre_moved", "post", "delta",
       "claim_links_opened", "other_links_opened"].concat(kinds.map(function (k) { return k + "_links"; })).concat(["evidence_opened", "votes", "agrees", "disagrees", "not_sure", "agree_pct",
-      "trust", "usefulness", "helpfulness", "effort", "sources_checked_self_report", "comprehension", "report_seconds", "claim_reading_seconds", "matched_by_start_order"]),
+      "trust", "usefulness", "helpfulness", "effort", "sources_checked_self_report", "comprehension", "report_seconds", "claim_reading_seconds", "matched_by_start_order",
+      "quiz_started", "quiz_source", "quiz_answered", "quiz_score", "quiz_completed", "quiz_median_answer_seconds"]),
       result.runs.map(function (r) {
         var s = r.survey || {};
         return [r.sid, r.runId, r.label, r.track, r.role, r.channel, r.industries, r.mode, r.sample, r.completed, r.pre, r.preMoved, r.post, r.delta, r.clicks, r.links]
           .concat(kinds.map(function (k) { return r.linksBy[k] || 0; }))
           .concat([r.evidence, r.votes, r.agrees, r.disagrees, r.notSure, agreePct(r), s.trust, s.usefulness, s.helpfulness, s.effort, s.sources_checked, r.comp,
-            Math.round(r.reportMs / 100) / 10, Math.round(r.dwell / 100) / 10, r.inferred]);
+            Math.round(r.reportMs / 100) / 10, Math.round(r.dwell / 100) / 10, r.inferred,
+            !!r.quiz, r.quiz ? r.quiz.source : null, r.quiz ? r.quiz.answered : null, r.quiz ? r.quiz.score : null, r.quiz ? r.quiz.completed : null,
+            r.quiz && r.quiz.ms.length ? Math.round(median(r.quiz.ms) / 100) / 10 : null]);
       }));
     t["attention.csv"] = toCSV(["session_id", "run_id", "track", "role"].concat(SECTIONS.map(function (s) { return s + "_seconds"; })), result.runs.filter(function (r) { return r.completed; }).map(function (r) {
       return [r.sid, r.runId, r.track, r.role].concat(SECTIONS.map(function (s) { return Math.round((r.sectionMs[s] || 0) / 100) / 10; }));

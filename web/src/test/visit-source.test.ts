@@ -25,4 +25,8 @@ describe("visit source", () => {
   });
   it("other sites keep their name, without www", () => expect(visit("", "https://www.producthunt.com/posts/x")).toBe("ref:producthunt"));
   it("no referrer is direct", () => expect(visit("", "")).toBe("direct"));
+  it("the LinkedIn post's redirect page counts as LinkedIn, even if extra query text dropped the tag", () => {
+    expect(visit("?trk=feed", "https://vistadex-study.github.io/")).toBe("linkedin");
+    expect(visit("?utm_source=x", "https://vistadex-study.github.io/")).toBe("x");
+  });
 });

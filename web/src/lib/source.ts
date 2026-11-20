@@ -5,7 +5,9 @@ const KEY = "vistadex.source";
 
 // Channels the team shares on: their own domains and the link wrappers they put on shared links.
 const CHANNELS: [RegExp, string][] = [
-  [/(^|\.)(linkedin\.com|lnkd\.in)$/, "linkedin"],
+  // vistadex-study.github.io is the redirect page behind the LinkedIn post's link (LinkedIn rejects the
+  // pages.dev address): it adds ?utm_source=linkedin, but a link that arrives with other query text loses it.
+  [/(^|\.)(linkedin\.com|lnkd\.in|vistadex-study\.github\.io)$/, "linkedin"],
   [/(^|\.)(x\.com|twitter\.com|t\.co)$/, "x"],
 ];
 

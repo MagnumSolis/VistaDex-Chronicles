@@ -50,6 +50,7 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 Bumped because the Home page changed (decision: 2026-11-20). Telemetry is unchanged.
 
 - **Home counter.** Under the hero text, the live graveyard size ("924 shut-down startups in the graveyard, each confirmed by two independent sources. Updated 3 h ago."), counted up from 0 in about 1.6 s (shown at once under reduced motion). It comes from a new public Worker route, `GET /graveyard/stats`, which returns only the count and the export time.
+- **Channel for the LinkedIn post's link** (same version, 20 Nov): the post links to `vistadex-study.github.io`, a redirect page that adds `?utm_source=linkedin`. A visit arriving from that page without a channel tag (for example when extra query text replaced it) is now recorded as `linkedin` instead of `ref:vistadex-study`. A `utm_source` still wins.
 - **Time limit 240 s** (was 150 s). On 18 Nov two live runs hit the 150 s limit and failed with "network"; successful runs took 47 to 144 s. Runs before study-12 may include such failures.
 - **The bump resets consent**, as every bump does.
 

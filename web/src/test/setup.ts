@@ -15,7 +15,7 @@ window.matchMedia ??= ((q: string) => ({ matches: false, media: q, onchange: nul
 // fail any test whose code sent a request off localhost, even if the app caught the error.
 import { afterEach, expect, vi } from "vitest";
 // The Home counter fetches the live graveyard size from the Worker: off in tests (a test passes its own loader).
-vi.mock("@/lib/graveyardStats", () => ({ fetchGraveyardStats: async () => null }));
+vi.mock("@/lib/graveyardStats", () => ({ fetchGraveyardStats: async () => null, fetchQuizPool: async () => null }));
 (globalThis as { __vistadexCurrentTest?: () => string | undefined }).__vistadexCurrentTest = () => expect.getState().currentTestName;
 afterEach(() => {
   const blocked = (globalThis as { __vistadexBlocked?: string[] }).__vistadexBlocked?.splice(0) ?? [];

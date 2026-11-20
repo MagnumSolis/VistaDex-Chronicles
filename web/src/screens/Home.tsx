@@ -6,6 +6,7 @@
 import { useMemo, type ReactNode } from "react";
 import { ArrowRight, ClipboardList, GitMerge, History, Layers, Lightbulb, ScanSearch, ShieldCheck, ThumbsUp, Unlink, Rocket, Briefcase, GraduationCap, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GraveyardCounter } from "@/components/GraveyardCounter";
 import { StatusTag } from "@/components/status";
 import { Report } from "@/components/report/Report";
 import { features } from "@/edition";
@@ -35,6 +36,7 @@ export function Home() {
           <p className="mt-6 max-w-[52ch] text-[1.0625rem] leading-relaxed text-on-page-muted">
             VistaDex checks each claim in a startup idea against independent sources and startups that already failed, then gives a score you can take apart.
           </p>
+          <GraveyardCounter />
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" variant="lime" onClick={() => navigate(PATHS.screen)} data-control="home_try_demo">Try the demo <ArrowRight aria-hidden /></Button>
             <Button size="lg" variant="outline-page" onClick={() => navigate(PATHS.how)} data-control="home_how_it_works">See how it works</Button>

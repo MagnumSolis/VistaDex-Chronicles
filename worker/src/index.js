@@ -83,6 +83,10 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
   if (!isExport && origin && !cors) return json({ error: "origin not allowed" }, 403);
 
   try {
+    // The live graveyard's size, for the Home counter. Public: two numbers, no entries, no study data.
+    if (request.method === "GET" && url.pathname === "/graveyard/stats") {
+      return json({ confirmed: graveyardSnapshot.count || 0, updated_at: graveyardSnapshot.exported_at || null }, 200, { ...cors, "Cache-Control": "public, max-age=300" });
+    }
     if (request.method === "POST" && url.pathname === "/screen") return await screen(request, env, { store, fetchImpl, now, cors });
     if (request.method === "POST" && url.pathname === "/events") return await saveEvents(request, env, { store, now, cors });
     const del = url.pathname.match(/^\/session\/([^/]+)$/);
@@ -326,7 +330,7 @@ function corsHeaders(origin, env) {
   if (!origin || !allowed.includes(origin)) return null;
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-VistaDex-Access, X-VistaDex-Record",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",

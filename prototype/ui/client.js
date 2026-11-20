@@ -42,7 +42,7 @@ function refusalCode(status, body) {
   return "http";
 }
 
-export const SCREEN_TIMEOUT_MS = 150000;
+export const SCREEN_TIMEOUT_MS = 240000; // live runs took 47 to 144 s in Nov 2026; two hit an earlier 150 s limit
 
 async function screenViaProxy(ideaOrInput, onStage = async () => {}, signal) {
   // The proxy runs all stages server-side and does not report them one by one; the UI says so and

@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-11 (launch fixes: graveyard cap, roles, live wording: CURRENT)
+## study_version 2026-11-study-12 (Home graveyard counter; longer time limit: CURRENT)
+
+Bumped because the Home page changed (decision: 2026-11-20). Telemetry is unchanged.
+
+- **Home counter.** Under the hero text, the live graveyard size ("924 shut-down startups in the graveyard, each confirmed by two independent sources. Updated 3 h ago."), counted up from 0 in about 1.6 s (shown at once under reduced motion). It comes from a new public Worker route, `GET /graveyard/stats`, which returns only the count and the export time.
+- **Time limit 240 s** (was 150 s). On 18 Nov two live runs hit the 150 s limit and failed with "network"; successful runs took 47 to 144 s. Runs before study-12 may include such failures.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-11 (launch fixes: graveyard cap, roles, live wording)
 
 Bumped because a score and a telemetry enum changed (decision: 2026-11-12, docs/LAUNCH-PLAN.md P0-4 and P0-5).
 

@@ -254,8 +254,8 @@ export const RESEARCH_PAGE = `<!doctype html>
         </div></div>
       <div class="tbl-wrap"><table id="participants"></table></div>
       <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
-        <button class="btn danger" id="purgeBtn">Delete ticked sessions</button>
-        <span class="msg" id="purgeMsg"></span>
+        <button class="btn danger purge" id="purgeBtn">Delete ticked sessions</button>
+        <span class="msg purge-msg"></span>
       </div>
     </section>
 
@@ -296,6 +296,10 @@ export const RESEARCH_PAGE = `<!doctype html>
     <section class="view" id="v-sessions">
       <div class="phead"><h1>Sessions</h1><span class="sub">all recorded sessions, including pre-study test data</span></div>
       <div class="tbl-wrap"><table id="sessions"></table></div>
+      <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+        <button class="btn danger purge" id="purgeBtn2">Delete ticked sessions</button>
+        <span class="msg purge-msg"></span>
+      </div>
       <details class="raw"><summary>Debug: raw JSON of the latest 50 events</summary><pre class="feed" id="raw" style="max-height:260px"></pre></details>
     </section>
 
@@ -320,6 +324,7 @@ export const RESEARCH_PAGE = `<!doctype html>
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
+  var picked = {}; // session ids ticked for deletion
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -451,7 +456,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       "<td>" + conf + "</td><td>" + ag + "</td><td>" + evid + "</td>" +
       "<td>" + sv + "</td><td class='num' style='color:var(--ink-3)'>" + esc(p.industries || "—") + "</td>" +
       "<td class='num'>" + p.runs + "</td><td class='num'>" + p.n + "</td>" +
-      "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'></td></tr>";
+      "<td><input type='checkbox' class='sel' value='" + esc(p.sid) + "'" + (picked[p.sid] ? " checked" : "") + "></td></tr>";
   }
   // Full session id, copy-to-clipboard on click — researchers must be able to
   // tell participants apart (the 8-char truncation made that impossible).
@@ -1003,7 +1008,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       d.sessions.map(function (s) {
         var top = Object.keys(s.types).sort(function (a, b) { return s.types[b] - s.types[a]; }).slice(0, 3)
           .map(function (t) { return t + "\u00b7" + s.types[t]; }).join("  ");
-        return "<tr><td><input type='checkbox' class='sel' value='" + esc(s.session_id) + "'></td>" +
+        return "<tr><td><input type='checkbox' class='sel' value='" + esc(s.session_id) + "'" + (picked[s.session_id] ? " checked" : "") + "></td>" +
           sidCell(s.session_id) + "<td class='num'>" + s.events + "</td>" +
           "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.first).slice(0, 16).replace("T", " ")) + "</td>" +
           "<td class='num' style='color:var(--ink-2)'>" + esc(String(s.last).slice(0, 16).replace("T", " ")) + "</td>" +
@@ -1050,19 +1055,32 @@ export const RESEARCH_PAGE = `<!doctype html>
     a.click();
     URL.revokeObjectURL(a.href);
   };
-  $("purgeBtn").onclick = function () {
-    var ids = Array.prototype.slice.call(document.querySelectorAll(".sel:checked")).map(function (c) { return c.value; });
-    if (!ids.length) { $("purgeMsg").textContent = "tick sessions first"; $("purgeMsg").className = "msg"; return; }
-    if (!window.confirm("Permanently delete " + ids.length + " session(s) and their linked traces?")) return;
-    $("purgeMsg").textContent = "deleting…"; $("purgeMsg").className = "msg";
-    fetch("/research/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_ids: ids }) })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.ok) { $("purgeMsg").textContent = "✓ deleted " + d.purged + " session(s)"; $("purgeMsg").className = "msg ok"; }
-        else { $("purgeMsg").textContent = "failed: " + JSON.stringify(d); $("purgeMsg").className = "msg err"; }
-        load();
-      });
-  };
+  // Ticks live here, not in the DOM, so the 30-second refresh keeps them; a tick on Sessions and on
+  // Participants is the same tick.
+  document.addEventListener("change", function (e) {
+    var c = e.target;
+    if (!c.classList || !c.classList.contains("sel")) return;
+    if (c.checked) picked[c.value] = true; else delete picked[c.value];
+    Array.prototype.forEach.call(document.querySelectorAll(".sel"), function (o) { if (o.value === c.value) o.checked = c.checked; });
+  });
+  function purgeMsg(text, cls) {
+    Array.prototype.forEach.call(document.querySelectorAll(".purge-msg"), function (m) { m.textContent = text; m.className = "msg purge-msg" + (cls ? " " + cls : ""); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".purge"), function (btn) {
+    btn.onclick = function () {
+      var ids = Object.keys(picked);
+      if (!ids.length) { purgeMsg("tick sessions first"); return; }
+      if (!window.confirm("Permanently delete " + ids.length + " session(s) and their linked traces? This cannot be undone.")) return;
+      purgeMsg("deleting…");
+      fetch("/research/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_ids: ids }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.ok) { purgeMsg("✓ deleted " + d.purged + " session(s)", "ok"); picked = {}; }
+          else purgeMsg("failed: " + JSON.stringify(d), "err");
+          load();
+        });
+    };
+  });
   load();
   window.setInterval(load, 30000);
 })();

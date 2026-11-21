@@ -80,7 +80,7 @@ export function Running() {
             A claim only gets a status when at least two independent websites back it up or contradict it. Otherwise it is <span className="font-semibold">unverified</span>, which is a normal result.
           </p>
           <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">Cancelling keeps your idea text so you can edit and run again.</p>
-          <GraveyardQuiz running={run.status === "running"} />
+          <GraveyardQuiz running={run.status === "running"} runId={run.runId} />
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" variant="outline" onClick={cancelRun} data-control="run_cancel">Cancel</Button>
             <Button size="lg" variant="ghost" onClick={() => navigate(PATHS.screen)} data-control="running_back_to_edit">Back to the idea</Button>

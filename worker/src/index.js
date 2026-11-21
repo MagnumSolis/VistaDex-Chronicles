@@ -27,6 +27,7 @@ import { withIds } from "./graveyard-live.js";
 import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
+import { quizPool } from "./graveyard-quiz.js";
 import { createBudget } from "../../prototype/core/providers/http.js";
 
 const MAX_BODY_BYTES = 256 * 1024;
@@ -86,6 +87,12 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     // The live graveyard's size, for the Home counter. Public: two numbers, no entries, no study data.
     if (request.method === "GET" && url.pathname === "/graveyard/stats") {
       return json({ confirmed: graveyardSnapshot.count || 0, updated_at: graveyardSnapshot.exported_at || null }, 200, { ...cors, "Cache-Control": "public, max-age=300" });
+    }
+    // Fresh entries for the waiting-screen quiz (public: names, years, causes, never study data).
+    if (request.method === "GET" && url.pathname === "/graveyard/quiz") {
+      const all = graveyardSnapshot.count > 0 ? graveyardSnapshot.entries : GRAVEYARD_DB;
+      const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+      return json({ entries: quizPool(all, 12, rand) }, 200, { ...cors, "Cache-Control": "no-store" });
     }
     if (request.method === "POST" && url.pathname === "/screen") return await screen(request, env, { store, fetchImpl, now, cors });
     if (request.method === "POST" && url.pathname === "/events") return await saveEvents(request, env, { store, now, cors });

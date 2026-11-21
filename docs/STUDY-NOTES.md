@@ -45,7 +45,19 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-12 (Home graveyard counter; longer time limit: CURRENT)
+## study_version 2026-11-study-13 (graveyard quiz: fresh questions and engagement events: CURRENT)
+
+Bumped because the waiting-screen quiz and the telemetry changed (decision: 2026-11-20).
+
+- **Fresh questions.** While a live run is working, the quiz now asks 3 startups drawn at random from the whole graveyard (a new public Worker route, `GET /graveyard/quiz`, returns 12 usable entries per request, never cached). Each clue is the first sentence of what the startup tried with its name masked as "This startup"; the four answer choices are the right name plus three other names from the same draw. If the route cannot be reached, the old fixed three (Vine, Juicero, Quibi) are used and the event says so.
+- **New events** (no idea text, no answer text):
+  - `quiz_started` {run_id, source: live | fallback} when the visitor presses Start.
+  - `quiz_answered` {run_id, question 1 to 3, correct, ms from the question appearing to the answer}.
+  - `quiz_finished` {run_id, score, answered, total, completed}. `completed` is false when the run ended or the visitor left before the last question; that record is still sent once.
+- **For the paper.** Whether visitors use the wait at all (start rate among live runs), how they do (scores, answer times), and whether playing the graveyard quiz goes with more attention to the report's graveyard section (time on "Leads to check", graveyard links opened), quizzers vs non-quizzers. This is correlational: visitors choose to play.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-12 (Home graveyard counter; longer time limit)
 
 Bumped because the Home page changed (decision: 2026-11-20). Telemetry is unchanged.
 

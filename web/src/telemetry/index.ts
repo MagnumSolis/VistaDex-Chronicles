@@ -7,7 +7,7 @@
 
 import * as tm from "@proto/ui/telemetry.js";
 import { currentParticipant, registerFieldParticipant } from "@/study/participant";
-import { visitSource } from "@/lib/source";
+import { visitSource, sourceChangedThisLoad } from "@/lib/source";
 import { features } from "@/edition";
 import type { ClaimStatus, ClaimType, IdeaInput, Report, RunMode } from "@/types";
 import { isControl, type ControlId } from "./controls";
@@ -49,6 +49,15 @@ export function acceptNotice(choice: "walkthrough" | "skip") {
   track("participant_registered", { code: p.code, role: p.role, track: p.track, source: visitSource() });
   changed();
 }
+// A visitor who accepted the notice earlier and now arrives from a tagged link (say, the LinkedIn post)
+// registers again with the new channel; the analysis uses a session's latest registration.
+export function registerChannelChange() {
+  if (!recording() || !sourceChangedThisLoad()) return;
+  const p = currentParticipant() ?? registerFieldParticipant(null);
+  track("participant_registered", { code: p.code, role: p.role, track: p.track, source: visitSource() });
+}
+registerChannelChange();
+
 /** "Use without recording": remembered locally, nothing is ever logged or sent. */
 export function declineRecording() {
   tm.declineConsent();

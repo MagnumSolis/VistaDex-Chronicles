@@ -21,14 +21,26 @@ function referrerChannel(referrer: string): string {
   return `ref:${host.split(".")[0].slice(0, 30)}`;
 }
 
+// Which channel a browser is counted under. A tagged link (utm_source) is the clearest evidence of how
+// someone arrived, so it always replaces what an earlier visit stored: a person who once typed the address
+// and later came from the LinkedIn post counts as LinkedIn. A LinkedIn or X referrer replaces only an
+// earlier "direct". Anything else (reloads, typed addresses, other sites) never erases a stored channel.
+const KNOWN = new Set(CHANNELS.map(([, name]) => name));
+let changedThisLoad = false;
+/** True when this page load replaced an earlier visit's channel (telemetry then registers again). */
+export const sourceChangedThisLoad = () => changedThisLoad;
 export function captureSource() {
   try {
     const params = new URLSearchParams(location.search);
     const utm = (params.get("utm_source") || "").trim().toLowerCase().slice(0, 30);
     const ref = utm ? "" : referrerChannel(document.referrer || "");
     const source = utm || ref || "direct";
-    // First-touch wins: don't overwrite an earlier capture this visit-chain
-    if (!localStorage.getItem(KEY)) localStorage.setItem(KEY, JSON.stringify({ source, at: new Date().toISOString() }));
+    const stored = visitSource();
+    const replace = stored === "unknown" || (utm && utm !== stored) || (!utm && KNOWN.has(ref) && stored === "direct");
+    if (replace) {
+      changedThisLoad = stored !== "unknown";
+      localStorage.setItem(KEY, JSON.stringify({ source, at: new Date().toISOString() }));
+    }
   } catch { /* storage unavailable */ }
 }
 

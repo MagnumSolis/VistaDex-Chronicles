@@ -401,7 +401,9 @@ export const RESEARCH_PAGE = `<!doctype html>
     JOIN.latestVotes(events, JOIN.joinRuns(events)).forEach(function (v) { (votesBySid[v.sid] = votesBySid[v.sid] || []).push(v); });
     Object.keys(by).forEach(function (sid) {
       var evs = by[sid];
-      var reg = evs.find(function (e) { return e.type === "participant_registered"; });
+      // The latest registration: a visitor who returns from a tagged link registers again with the new channel.
+      var regs = evs.filter(function (e) { return e.type === "participant_registered"; });
+      var reg = regs.length ? regs[regs.length - 1] : null;
       // Sessions without an explicit registration still count if they ran a
       // screening (pre-fix field visits): derive identity from run_started.
       var ran = evs.some(function (e) { return e.type === "run_started"; });

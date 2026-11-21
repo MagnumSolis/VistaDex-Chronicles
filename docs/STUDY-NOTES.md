@@ -55,6 +55,7 @@ Bumped because the waiting-screen quiz and the telemetry changed (decision: 2026
   - `quiz_answered` {run_id, question 1 to 3, correct, ms from the question appearing to the answer}.
   - `quiz_finished` {run_id, score, answered, total, completed}. `completed` is false when the run ended or the visitor left before the last question; that record is still sent once.
 - **For the paper.** Whether visitors use the wait at all (start rate among live runs), how they do (scores, answer times), and whether playing the graveyard quiz goes with more attention to the report's graveyard section (time on "Leads to check", graveyard links opened), quizzers vs non-quizzers. This is correlational: visitors choose to play.
+- **Channel from a later tagged visit** (same version, 21 Nov): the channel was first-touch per browser, so a person who had once opened the site directly and later came from the LinkedIn post (or the X / WhatsApp link) stayed `direct`. Now a `utm_source` link always replaces the stored channel, and a LinkedIn or X referrer replaces a stored `direct`; untagged return visits keep it. A visitor who had already accepted the notice registers again (`participant_registered` with the new `source`), and the analysis and the Participants table use a session's latest registration. Sessions before this fix may show `direct` for returning visitors who came from a post.
 - **The bump resets consent**, as every bump does.
 
 ## study_version 2026-11-study-12 (Home graveyard counter; longer time limit)

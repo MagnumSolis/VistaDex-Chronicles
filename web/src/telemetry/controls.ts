@@ -38,7 +38,7 @@ export const CONTROLS = [
   "walkthrough_next", "walkthrough_back", "walkthrough_skip", "walkthrough_done", "walkthrough_how_it_works", "walkthrough_resume",
   // study (registration, baseline condition, report study panel)
   "study_track_study", "study_track_field", "study_code_field", "study_role_chip", "study_idea_pick",
-  "study_start", "study_continue_field",
+  "study_start", "study_continue_field", "study_new_participant", "study_resume",
   "baseline_conf_pre", "baseline_start", "baseline_copy_idea", "baseline_tool_field", "baseline_conf_post", "baseline_continue",
   "baseline_likert", "baseline_minutes_field", "baseline_open_field", "baseline_submit",
   "study_claim_agree", "study_claim_disagree", "study_claim_not_sure", "study_objection_agree", "study_objection_disagree", "study_objection_not_sure",

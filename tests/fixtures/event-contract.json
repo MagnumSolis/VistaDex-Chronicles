@@ -543,6 +543,8 @@
     "study_idea_pick",
     "study_start",
     "study_continue_field",
+    "study_new_participant",
+    "study_resume",
     "baseline_conf_pre",
     "baseline_start",
     "baseline_copy_idea",

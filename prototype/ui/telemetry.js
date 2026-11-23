@@ -202,6 +202,19 @@ export async function flush({ beacon = false } = {}) {
   } catch { /* offline: retried on the next event or page hide */ }
 }
 
+// A new person at this browser (study track: a new participant code). Uploads what this tab still holds,
+// then forgets the notice answer and the session id, so the next person answers the notice themselves and
+// is recorded under a session of their own. Other tabs of the browser follow the reset (sync()).
+export async function startOver() {
+  if (disabled) return;
+  for (let i = 0; i < 10 && meta.consent === "given" && sent < mine.length; i++) {
+    const before = sent;
+    await flush();
+    if (sent === before) break; // offline or refused: nothing more will go now
+  }
+  answer({ session_id: null, consent: null, consent_at: null, consent_version: null });
+}
+
 // Deletes local data and asks the server to delete this session. Returns the
 // server outcome so the UI can tell the participant what happened.
 export async function withdraw() {

@@ -63,6 +63,12 @@ export function declineRecording() {
   tm.declineConsent();
   changed();
 }
+/** Study track, a new participant at this browser: their own notice answer and their own session. */
+export async function newVisitor() {
+  if (!features.telemetry) return;
+  await tm.startOver();
+  changed();
+}
 /** Deletes this browser's events and asks the server to delete the session (and its linked traces). */
 export async function deleteSession() {
   endReport("withdrawn");

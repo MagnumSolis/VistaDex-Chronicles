@@ -28,8 +28,9 @@ export function reportSnapshot(report: Report) {
 }
 
 /** After a study participant's VistaDex run of their assigned idea. */
-export function logStudyReport(runId: string, report: Report) {
+// trace_id: the server's id for this run, so the Worker can store the full report next to the snapshot.
+export function logStudyReport(runId: string, report: Report, traceId: string | null) {
   const a = assignedStudyIdea();
   if (!a) return;
-  track("vistadex_report_snapshot", { run_id: runId, idea_key: a.key, report: reportSnapshot(report) });
+  track("vistadex_report_snapshot", { run_id: runId, idea_key: a.key, trace_id: traceId, report: reportSnapshot(report) });
 }

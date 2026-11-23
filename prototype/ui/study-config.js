@@ -9,7 +9,8 @@
 // study-7 = "Your read" in the report, claim reading time, LinkedIn/X channels, graveyard lead sources.
 // study-16 = chatbot part with a fixed prompt and the pasted answer, fixed order, comparison page, fresh start per code.
 // study-17 = a study participant always starts with their next part (Start with walkthrough no longer opens Screen an idea first).
-export const STUDY_VERSION = "2026-11-study-17";
+// study-18 = the report snapshot carries the run's trace_id; the Worker keeps each participant's chatbot answer and report side by side (study_comparisons).
+export const STUDY_VERSION = "2026-11-study-18";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

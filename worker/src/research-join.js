@@ -873,7 +873,7 @@ export function researchJoin() {
 
   return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct,
     pairedParticipants: pairedParticipants, wilcoxon: wilcoxon, mannWhitney: mannWhitney, analyzeStudy: analyzeStudy,
-    chatbotComparison: chatbotComparison, textFeatures: textFeatures, signTest: signTest,
+    chatbotComparison: chatbotComparison, textFeatures: textFeatures, signTest: signTest, reportText: reportText,
     exportTables: exportTables, toCSV: toCSV, EVIDENCE_CONTROLS: EVIDENCE_CONTROLS, SECTIONS: SECTIONS };
 }
 

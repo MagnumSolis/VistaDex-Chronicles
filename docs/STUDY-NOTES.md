@@ -45,7 +45,16 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-17 (study track: the next part comes first, whatever the Welcome choice: CURRENT)
+## study_version 2026-11-study-18 (the chatbot answer and the report side by side in the database: CURRENT)
+
+Bumped because a payload changed (decision: 2026-11-24).
+
+- **`vistadex_report_snapshot` gains `trace_id`**, the server's id for the run, so the Worker can store the full report next to the snapshot.
+- **New D1 table `study_comparisons`** (worker/schema.sql, worker/src/comparisons.js): one row per study-track session with the pasted chatbot answer (tool, model, web search), the report snapshot, the full report the server generated (copied from `report_cache` by trace id; empty when the run was not cached, e.g. mock mode in the browser), and the `tool_preference` answers. `POST /events` updates it as those events arrive; field visitors never get a row. It is derived data: the events stay the source, `POST /research/comparisons/rebuild` (console: Chatbot vs VistaDex, "Rebuild from events") recreates it, and withdrawal and the 12-month retention delete it.
+- **Exports:** `/export?table=comparisons&format=csv` (answer and report as text, side by side, with the preferences) and `/export?table=comparisons&full=1` (JSON, with the snapshot and the full report). TEST codes are left out unless `include_test=1`. Rows from study-16 and study-17 have the snapshot only (their snapshots had no trace id).
+- **End-to-end check:** `npm --prefix web run study-e2e` takes two participants and a field visitor through the app against a local Worker and checks the rows, the exports and the analysis.
+
+## study_version 2026-11-study-17 (study track: the next part comes first, whatever the Welcome choice)
 
 Bumped because the study flow changed (decision: 2026-11-23). No new events or payload keys.
 

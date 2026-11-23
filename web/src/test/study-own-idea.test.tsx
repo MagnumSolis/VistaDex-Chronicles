@@ -89,6 +89,7 @@ describe("a new participant in a browser that already took part", () => {
   it("Screen an idea refills when the assigned idea changes, even within one page load", async () => {
     setOwnIdea(mine);
     registerStudyParticipant("P14", null, OWN_IDEA);
+    localStorage.setItem("vistadex_participant_done_baseline", "true"); // Screen an idea comes after the chatbot part
     await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
     go("/screen");
@@ -96,6 +97,7 @@ describe("a new participant in a browser that already took part", () => {
     cleanup();
     setOwnIdea({ ...mine, title: "Second idea" });
     registerStudyParticipant("P16", null, OWN_IDEA);
+    localStorage.setItem("vistadex_participant_done_baseline", "true"); // Screen an idea comes after the chatbot part
     await loadApp();
     go("/screen");
     expect((await screen.findByLabelText(/^Idea title/) as HTMLInputElement).value).toBe("Second idea");

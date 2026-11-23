@@ -93,7 +93,12 @@ function Screen({ route }: { route: Route }) {
       return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); navigate(conditionDone(p, "vistadex") ? PATHS.compare : PATHS.screen); }} />;
     }
     case "compare": return <ComparePage />;
-    case "screen": return <ScreenIdea />;
+    case "screen": {
+      // Study track: the chatbot part comes before VistaDex (whatever led here: the nav, a link, the tour).
+      const p = currentParticipant();
+      if (p?.track === "study" && nextCondition(p) === "baseline") { navigate(PATHS.baseline, { replace: true }); return null; }
+      return <ScreenIdea />;
+    }
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;
     case "reports": return <Reports />;

@@ -45,7 +45,13 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-16 (study track: chatbot answer pasted in, fixed order, comparison page, fresh start: CURRENT)
+## study_version 2026-11-study-17 (study track: the next part comes first, whatever the Welcome choice: CURRENT)
+
+Bumped because the study flow changed (decision: 2026-11-23). No new events or payload keys.
+
+- **Bug fixed: "Start with walkthrough" ran VistaDex first.** The tour opens Screen an idea, which for a study participant is pre-filled with their idea, so a participant who chose the walkthrough on the Welcome notice did VistaDex first and the chatbot part second. Now a study participant who still has a part to do goes straight to it (the choice is still logged as `welcome_choice: walkthrough`), and opening Screen an idea before the chatbot part leads back to the chatbot part. **In study-16 data, check `condition_started.order_position`:** a participant with `vistadex` at position 1 took this path; analyse them as VistaDex first (their chatbot answer is unaffected, their judgements are not).
+
+## study_version 2026-11-study-16 (study track: chatbot answer pasted in, fixed order, comparison page, fresh start)
 
 Bumped because the study flow and the telemetry changed (decision: 2026-11-23, the team asked for the chatbot's answer to be captured and compared with the report).
 

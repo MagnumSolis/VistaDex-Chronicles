@@ -9,6 +9,7 @@ import { Panel } from "@/components/ui-vd";
 import { STATUS, STATUS_ORDER, StatusTag } from "@/components/status";
 import { liveMode, studyConfig } from "@/proto";
 import { href, navigate, PATHS } from "@/router";
+import { currentParticipant, nextCondition } from "@/study/participant";
 import * as telemetry from "@/telemetry";
 import { takeTarget } from "@/lib/gate";
 
@@ -21,7 +22,14 @@ export function Welcome({ onStartWalkthrough }: { onStartWalkthrough: () => void
   const [confirming, setConfirming] = useState(false);
   const [deleted, setDeleted] = useState<string | null>(null);
 
-  const start = () => { telemetry.acceptNotice("walkthrough"); onStartWalkthrough(); };
+  // A study participant goes straight to their next part: the tour runs on Screen an idea, which would
+  // start VistaDex before the chatbot part.
+  const start = () => {
+    telemetry.acceptNotice("walkthrough");
+    const p = currentParticipant();
+    if (p?.track === "study" && nextCondition(p)) navigate(takeTarget());
+    else onStartWalkthrough();
+  };
   const skip = () => { telemetry.acceptNotice("skip"); navigate(takeTarget()); };
   const noRecording = () => { telemetry.declineRecording(); navigate(takeTarget()); };
 

@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-14 (study track: own idea option: CURRENT)
+## study_version 2026-11-study-15 (study track: Copy idea button; fresh start for a new code: CURRENT)
+
+Bumped because the chatbot part changed (decision: 2026-11-23).
+
+- **Copy idea.** The AI chatbot part has a "Copy idea" button under the idea paragraph (preset or own idea), so participants paste it instead of selecting or retyping it. Only the idea is copied, no prompt wording: they still ask the chatbot in their own words. New control `baseline_copy_idea` (logged as `control_pressed`), so the data shows who copied the idea.
+- **A new code starts fresh.** Registering a different code or idea in a browser that already took part used to keep the earlier participant's finished parts, skipping the new person's and leaving Screen an idea empty. Now a different code or idea clears that progress; the same code and idea still resume. Sessions before study-15 that reused a browser may have a part missing (Paired study shows Complete "no").
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-14 (study track: own idea option)
 
 Bumped because the study page changed (decision: 2026-11-23). No new events or payload keys.
 

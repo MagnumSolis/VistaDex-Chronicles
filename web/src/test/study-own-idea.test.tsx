@@ -60,3 +60,42 @@ describe("own idea in the study", () => {
     expect(JSON.stringify(events)).not.toContain("drone");
   }, 30000);
 });
+
+describe("a new participant in a browser that already took part", () => {
+  const earlier = () => {
+    localStorage.setItem("vistadex_participant", JSON.stringify({ track: "study", code: "P01", role: null, ideaKey: "A", order: ["baseline", "vistadex"], registered_at: "2026-11-22T00:00:00Z" }));
+    localStorage.setItem("vistadex_participant_done_baseline", "true");
+    localStorage.setItem("vistadex_participant_done_vistadex", "true");
+  };
+
+  it("a different code starts both parts fresh, so the own idea is filled in again", () => {
+    earlier();
+    setOwnIdea(mine);
+    registerStudyParticipant("P04", null, OWN_IDEA);
+    expect(localStorage.getItem("vistadex_participant_done_vistadex")).toBe(null);
+    expect(localStorage.getItem("vistadex_participant_done_baseline")).toBe(null);
+    expect(assignedStudyIdea()!.input).toEqual(mine);
+  });
+
+  it("the same code and idea resumes: finished parts stay finished", () => {
+    earlier();
+    localStorage.removeItem("vistadex_participant_done_vistadex");
+    registerStudyParticipant("P01", null, "A");
+    expect(localStorage.getItem("vistadex_participant_done_baseline")).toBe("true");
+  });
+
+  it("Screen an idea refills when the assigned idea changes, even within one page load", async () => {
+    setOwnIdea(mine);
+    registerStudyParticipant("P14", null, OWN_IDEA);
+    await loadApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
+    go("/screen");
+    expect((await screen.findByLabelText(/^Idea title/) as HTMLInputElement).value).toBe(mine.title);
+    cleanup();
+    setOwnIdea({ ...mine, title: "Second idea" });
+    registerStudyParticipant("P16", null, OWN_IDEA);
+    await loadApp();
+    go("/screen");
+    expect((await screen.findByLabelText(/^Idea title/) as HTMLInputElement).value).toBe("Second idea");
+  }, 30000);
+});

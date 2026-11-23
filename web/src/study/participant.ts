@@ -128,6 +128,11 @@ export function isValidRole(role: string | null): boolean {
 /** Study track: register with a code; order counterbalanced by code parity. */
 export function registerStudyParticipant(code: string, role: string | null, ideaKey?: string): Participant {
   const clean = code.trim().slice(0, 12);
+  // A different code or idea is a new participant: the parts an earlier participant finished in this
+  // browser must not count (they would skip the new person's parts and leave Screen an idea empty).
+  const prev = currentParticipant();
+  const chosen = ideaKey || "";
+  if (!prev || prev.track !== "study" || prev.code !== clean || (chosen && prev.ideaKey !== chosen)) clearProgress();
   const num = parseInt(clean.replace(/\D/g, ""), 10);
   const baselineFirst = Number.isFinite(num) && num > 0 ? num % 2 === 1 : Date.now() % 2 === 0;
   const p: Participant = {
@@ -174,6 +179,7 @@ export function currentParticipant(): Participant | null {
 
 export function clearParticipant() {
   try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(OWN_KEY); } catch { /* ignore */ }
+  clearProgress();
 }
 
 /** Study track: which conditions are done (from persisted progress flags). */
@@ -181,6 +187,10 @@ export function conditionDone(p: Participant, c: Condition): boolean {
   try {
     return localStorage.getItem(`${STORAGE_KEY}_done_${c}`) === "true";
   } catch { return false; }
+}
+
+function clearProgress() {
+  try { (["baseline", "vistadex"] as Condition[]).forEach(c => localStorage.removeItem(`${STORAGE_KEY}_done_${c}`)); } catch { /* ignore */ }
 }
 
 export function markConditionDone(c: Condition) {

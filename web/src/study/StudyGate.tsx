@@ -91,9 +91,10 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">A. Compare two tools (~20 min)</h2>
               <p className="mt-2 text-sm text-foreground/75">
-                You'll screen the same idea twice — once with an AI chatbot of your choice
-                (ChatGPT, Claude, Gemini…) and once with VistaDex — and rate both.
-                For recruited participants (you may have a participant code).
+                You'll judge the same idea twice: first with an AI chatbot you normally use
+                (ChatGPT, Claude, Gemini...), then with VistaDex, and say which helped you more.
+                You paste the chatbot's answer here; it is stored with your answers so the two can be compared.
+                For recruited participants (you have a participant code).
               </p>
               <Button className="mt-4" data-control="study_track_study" onClick={() => setMode("study")}>I have a participant code</Button>
             </div>
@@ -164,7 +165,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
             {ideaKey === OWN_IDEA && (
               <div className="space-y-3 rounded-card bg-card p-4">
                 <p className="text-sm text-foreground/75">
-                  Write it once here; the same text is given to the AI chatbot and to VistaDex. It stays in this browser and is never stored in usage records.
+                  Write it once here; the same text goes into the chatbot prompt and into VistaDex. Because you take part in the comparison, the chatbot's answer you paste and your VistaDex report (both mention the idea) are stored with your study answers.
                 </p>
                 {OWN_FIELDS.map(f => (
                   <label key={f.id} className="block">

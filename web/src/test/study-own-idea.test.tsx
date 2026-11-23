@@ -1,6 +1,6 @@
 // Study track with the participant's own idea: typed once on the study page, the same text goes to the
-// AI chatbot (as one paragraph to copy) and into Screen an idea. The idea text stays in this browser;
-// telemetry only says idea_key "own", and the run is never marked as a study sample.
+// AI chatbot prompt and into Screen an idea. Usage events only say idea_key "own" (the idea reaches the
+// server only in the comparison records), and the run is never marked as a study sample.
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { go, loadApp, reportShown } from "./helpers";
@@ -57,7 +57,9 @@ describe("own idea in the study", () => {
     const events = tm.events() as Ev[];
     expect(events.find(e => e.type === "run_started")!.payload.sample).toBe(null);
     expect(events.find(e => e.type === "condition_started")!.payload.idea_key).toBe(OWN_IDEA);
-    expect(JSON.stringify(events)).not.toContain("drone");
+    // The idea appears only in the comparison record of the report; every usage event stays content-free.
+    expect(events.find(e => e.type === "vistadex_report_snapshot")!.payload.idea_key).toBe(OWN_IDEA);
+    expect(JSON.stringify(events.filter(e => e.type !== "vistadex_report_snapshot"))).not.toContain("drone");
   }, 30000);
 });
 

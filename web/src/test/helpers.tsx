@@ -50,3 +50,15 @@ export function stubFetch(handler: (url: string, init?: RequestInit) => Response
 
 export const json = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...headers } });
+
+/** Study track, AI chatbot part (study-16): prompt sent, the four questions, the answer pasted. Leaves the
+ *  participant on the ratings step. */
+export const CHATBOT_ANSWER = "Here is my assessment of the idea. ".repeat(10);
+export async function chatbotPartToRatings({ tool = "Claude", answer = CHATBOT_ANSWER }: { tool?: string; answer?: string } = {}) {
+  fireEvent.click(await screen.findByRole("button", { name: /I've sent it/ }));
+  fireEvent.click(await screen.findByRole("button", { name: /Next: read the answer/ }));
+  fireEvent.click(await screen.findByRole("radio", { name: tool }));
+  fireEvent.change(screen.getByLabelText("The chatbot's answer"), { target: { value: answer } });
+  fireEvent.click(screen.getByRole("button", { name: /Save the answer/ }));
+  await screen.findByRole("heading", { name: "Rate what you just read" });
+}

@@ -106,6 +106,39 @@ for (const [name, viewport, isMobile] of VIEWPORTS) {
   await both(page, `${name} report not found`);
   await go(page, "#/nowhere");
   await both(page, `${name} not found`);
+  // Study track (study-16): the study page, each step of the AI chatbot part, and the comparison.
+  await go(page, "#/study");
+  await page.getByRole("button", { name: "I have a participant code" }).click();
+  await page.getByLabel("Participant code").fill("A11Y1");
+  await page.locator("[data-control=study_idea_pick][data-control-value=own]").click();
+  await both(page, `${name} study page, own idea`);
+  await page.locator("[data-control=study_idea_pick][data-control-value=A]").click();
+  await page.locator("[data-control=study_start]").click();
+  await page.getByRole("button", { name: "Skip to the tool" }).click();
+  await page.getByRole("button", { name: "Copy prompt" }).waitFor();
+  await both(page, `${name} chatbot: prompt`);
+  await page.locator("[data-control=baseline_sent]").click();
+  await page.locator("[data-control=baseline_start]").waitFor();
+  await both(page, `${name} chatbot: four questions`);
+  await page.locator("[data-control=baseline_start]").click();
+  await page.locator("[data-control=baseline_save_answer]").click();
+  await page.getByRole("alert").waitFor();
+  await both(page, `${name} chatbot: paste, error`);
+  await page.locator("label:has([data-control=baseline_tool_pick])").first().click();
+  await page.getByLabel("The chatbot's answer").fill("An answer from the chatbot. ".repeat(12));
+  await page.locator("[data-control=baseline_save_answer]").click();
+  await page.getByRole("heading", { name: "Rate what you just read" }).waitFor();
+  await both(page, `${name} chatbot: ratings`);
+  await page.evaluate(() => localStorage.setItem("vistadex_participant_done_vistadex", "true"));
+  await page.locator("[data-control=baseline_submit]").click();
+  await page.getByRole("heading", { name: "The AI chatbot or VistaDex?" }).waitFor();
+  await page.locator("[data-control=compare_submit]").click();
+  await page.getByRole("alert").waitFor();
+  await both(page, `${name} compare, error`);
+  await page.locator("label:has([data-control=compare_pick_same])").first().click();
+  await page.locator("[data-control=compare_submit]").click();
+  await page.getByRole("heading", { name: "You've finished both parts" }).waitFor();
+  await both(page, `${name} compare, done`);
   await ctx.close();
 }
 

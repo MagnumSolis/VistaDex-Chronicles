@@ -9,6 +9,7 @@ import * as telemetry from "@/telemetry";
 import { Welcome } from "@/screens/Welcome";
 import { StudyGate } from "@/study/StudyGate";
 import { BaselineSession } from "@/study/BaselineSession";
+import { ComparePage } from "@/study/ComparePage";
 import { currentParticipant, nextCondition, conditionDone, markConditionDone } from "@/study/participant";
 import { ScreenIdea } from "@/screens/ScreenIdea";
 import { Running } from "@/screens/Running";
@@ -89,8 +90,9 @@ function Screen({ route }: { route: Route }) {
     case "baseline": {
       const p = currentParticipant();
       if (!p || p.track !== "study") { navigate("/study"); return null; }
-      return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); if (!conditionDone(p, "vistadex")) navigate("/screen"); }} />;
+      return <BaselineSession participant={p} onDone={() => { markConditionDone("baseline"); navigate(conditionDone(p, "vistadex") ? PATHS.compare : PATHS.screen); }} />;
     }
+    case "compare": return <ComparePage />;
     case "screen": return <ScreenIdea />;
     case "running": return <Running />;
     case "report": return <ReportScreen param={route.param} />;

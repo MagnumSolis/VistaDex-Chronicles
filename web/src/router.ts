@@ -3,16 +3,16 @@
 // routes (#edition=…, #code=…) are read and scrubbed by edition.ts / access.js before the app renders.
 import { useSyncExternalStore } from "react";
 
-export type RouteName = "home" | "welcome" | "study" | "baseline" | "screen" | "running" | "report" | "reports" | "how" | "contact" | "feedback" | "notfound";
+export type RouteName = "home" | "welcome" | "study" | "baseline" | "compare" | "screen" | "running" | "report" | "reports" | "how" | "contact" | "feedback" | "notfound";
 export interface Route { name: RouteName; param: string | null; path: string }
 
 const TABLE: Record<string, RouteName> = {
-  "": "home", welcome: "welcome", study: "study", baseline: "baseline", screen: "screen", running: "running", report: "report",
+  "": "home", welcome: "welcome", study: "study", baseline: "baseline", compare: "compare", screen: "screen", running: "running", report: "report",
   reports: "reports", dashboard: "reports", "how-it-works": "how", contact: "contact", feedback: "feedback",
 };
 
 export const PATHS: Record<Exclude<RouteName, "home" | "notfound">, string> = {
-  welcome: "/welcome", study: "/study", baseline: "/baseline", screen: "/screen", running: "/running", report: "/report",
+  welcome: "/welcome", study: "/study", baseline: "/baseline", compare: "/compare", screen: "/screen", running: "/running", report: "/report",
   reports: "/reports", how: "/how-it-works", contact: "/contact", feedback: "/feedback",
 };
 

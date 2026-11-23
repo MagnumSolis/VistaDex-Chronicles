@@ -4,7 +4,7 @@
 // and condition_ended, all under one run id per condition.
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { go, loadApp, reportShown } from "./helpers";
+import { chatbotPartToRatings, go, loadApp, reportShown } from "./helpers";
 
 afterEach(() => { cleanup(); localStorage.clear(); });
 
@@ -24,19 +24,25 @@ describe("AI chatbot condition", () => {
   it("asks for confidence before the chatbot steps, and logs every measure under one run id", async () => {
     participant(["baseline", "vistadex"]);
     const { tm } = await start("/baseline");
-    await screen.findByText(/Before you open the chatbot: how confident/);
-    expect(screen.queryByText(/Open ChatGPT, Claude, Gemini/)).toBe(null);
-    fireEvent.click(screen.getByRole("button", { name: /Next: ask the chatbot/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /I've sent it/ }));
     const evs = () => tm.events() as Ev[];
     expect(of(evs(), "condition_started", "baseline")[0].payload).toEqual({ condition: "baseline", idea_key: "C", order_position: 1 });
+    // Confidence before is answered while the chatbot writes, before its answer is pasted (and read).
+    expect(of(evs(), "confidence_pre", "baseline")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: /Next: read the answer/ }));
     const pre = of(evs(), "confidence_pre", "baseline");
     expect(pre).toHaveLength(1);
     const runId = pre[0].payload.run_id as string;
     expect(runId).toMatch(/^b_[0-9a-f]{12}$/);
+    expect(of(evs(), "chatbot_answer")).toHaveLength(0);
 
-    expect(screen.getByText(/Open ChatGPT, Claude, Gemini/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /I've read the AI's answer/ }));
-    fireEvent.click(screen.getByRole("radio", { name: "1-2" }));
+    {
+      fireEvent.click(screen.getByRole("radio", { name: "Gemini" }));
+      fireEvent.change(screen.getByLabelText("The chatbot's answer"), { target: { value: "x".repeat(300) } });
+      fireEvent.click(screen.getByRole("button", { name: /Save the answer/ }));
+    }
+    expect(of(evs(), "chatbot_answer")[0].payload.run_id).toBe(runId);
+    fireEvent.click(await screen.findByRole("radio", { name: "1-2" }));
     fireEvent.click(screen.getByRole("button", { name: /Submit and continue to VistaDex/ }));
 
     expect(of(evs(), "confidence_post", "baseline")[0].payload.run_id).toBe(runId);
@@ -48,7 +54,7 @@ describe("AI chatbot condition", () => {
     participant(["vistadex", "baseline"]);
     localStorage.setItem("vistadex_participant_done_vistadex", "true");
     const { tm } = await start("/baseline");
-    fireEvent.click(await screen.findByRole("button", { name: /Next: ask the chatbot/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /I've sent it/ }));
     expect(of(tm.events() as Ev[], "condition_started", "baseline")[0].payload.order_position).toBe(2);
   }, 30000);
 });

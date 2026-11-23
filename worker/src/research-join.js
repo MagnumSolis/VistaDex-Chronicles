@@ -575,9 +575,152 @@ export function researchJoin() {
     var result = { summary: summary, quiz: quiz, pairs: pairs, h1: h1, measures: measures, orderEffect: orderEffect, h2: h2, h3: h3, h4: h4,
       direction: direction, comprehension: comprehension, attention: attention,
       reportMedianMin: reportSec.length ? Math.round(median(reportSec) / 6) / 10 : null,
-      segments: segments, funnel: funnel, quality: quality, runs: runs, votes: votes };
+      segments: segments, funnel: funnel, quality: quality, runs: runs, votes: votes, comparison: chatbotComparison(ev) };
     result.findings = findings(result);
     return result;
+  }
+
+  // ── Chatbot vs VistaDex (study-16): the pasted chatbot answer next to the participant's VistaDex report ──
+  // Everything here is counted in code from the two texts, so the same input always gives the same numbers.
+  // These are features for the paper's comparison, not judgements of quality: the coding sheet
+  // (chatbot-answers.csv) is for human raters. Links: chatbots often drop their citation links when an
+  // answer is copied, so "links" counts only URLs that survived the paste.
+  var URL_RE = /https?:\/\/[^\s<>()"'\]]+/gi;
+  var FIGURE_RE = /(?:[$€£₹]\s?\d[\d,.]*(?:\s?(?:k|m|bn|b|billion|million|thousand|trillion)\b)?|\b\d[\d,.]*\s?(?:%|percent\b|billion\b|million\b|bn\b))/gi;
+  var HEDGE_RE = /\b(may|might|could|unclear|uncertain|not sure|cannot be verified|can't verify|could not verify|couldn't verify|unable to verify|not verifiable|unverified|no reliable|limited data|as of my|i don't have access|i do not have access|estimated?|approximately|roughly)\b/gi;
+  var VERDICT_RE = /\b(good idea|great idea|bad idea|promising|strong potential|high potential|worth pursuing|not worth pursuing|not viable|highly viable|go for it|i would invest|i would not invest)\b|\b\d{1,2}(?:\.\d)?\s?\/\s?10\b/gi;
+  // Does the text take up each of VistaDex's sections? (a word list per section, case-insensitive)
+  var SECTION_WORDS = {
+    claims: ["claim", "true", "false", "accurate", "inaccurate", "verify", "verified", "evidence"],
+    competitors: ["competitor", "competition", "alternative", "rival", "similar product", "existing product", "incumbent"],
+    graveyard: ["shut down", "shutdown", "failed", "defunct", "closed down", "went out of business", "folded", "post-mortem", "postmortem"],
+    big_tech: ["google", "amazon", "microsoft", "apple", "meta", "big tech"],
+    objections: ["risk", "challenge", "concern", "objection", "weakness", "downside"],
+    legal: ["regulat", "legal", "licen", "compliance", "gdpr", "hipaa", "fda", "liability"]
+  };
+  var STOP = { about: 1, after: 1, their: 1, there: 1, these: 1, those: 1, which: 1, while: 1, would: 1, could: 1, should: 1, other: 1, every: 1, being: 1, where: 1, people: 1, today: 1, building: 1 };
+  function matches(text, re) { var m = String(text || "").match(re); return m ? m.length : 0; }
+  function host(u) { var m = /^https?:\/\/([^\/?#]+)/i.exec(u); return m ? m[1].toLowerCase().replace(/^www\./, "") : ""; }
+  function uniq(xs) { var seen = {}, out = []; xs.forEach(function (x) { if (x && !seen[x]) { seen[x] = 1; out.push(x); } }); return out; }
+  function normFig(f) { return String(f).toLowerCase().replace(/[\s,]/g, "").replace(/percent$/, "%").replace(/billion$/, "b").replace(/bn$/, "b").replace(/million$/, "m"); }
+  function textFeatures(text) {
+    var t = String(text || ""), low = t.toLowerCase();
+    var urls = uniq((t.match(URL_RE) || []).map(function (u) { return u.replace(/[.,;:]+$/, ""); }));
+    var sections = {};
+    Object.keys(SECTION_WORDS).forEach(function (k) { sections[k] = SECTION_WORDS[k].some(function (w) { return low.indexOf(w) >= 0; }); });
+    return { chars: t.length, words: (t.match(/\S+/g) || []).length, links: urls.length, domains: uniq(urls.map(host)).length,
+      figures: matches(t, FIGURE_RE), hedges: matches(t, HEDGE_RE), verdicts: matches(t, VERDICT_RE),
+      sections: sections, sectionsCovered: Object.keys(sections).filter(function (k) { return sections[k]; }).length };
+  }
+  // A name from the report that the chatbot's text also names (case-insensitive, whole name).
+  function named(low, name) { var n = String(name || "").toLowerCase().replace(/^\s+|\s+$/g, ""); return n.length >= 3 && low.indexOf(n) >= 0; }
+  // A report claim the chatbot's text takes up: one of the claim's figures appears, or most of its content words.
+  function claimMentioned(low, claim) {
+    var c = String(claim || ""), figs = (c.match(FIGURE_RE) || []).map(normFig);
+    var lowFigs = (low.match(FIGURE_RE) || []).map(normFig);
+    if (figs.some(function (f) { return lowFigs.indexOf(f) >= 0; })) return true;
+    var words = uniq((c.toLowerCase().match(/[a-z]{5,}/g) || []).filter(function (w) { return !STOP[w]; }));
+    if (!words.length) return false;
+    var hit = words.filter(function (w) { return low.indexOf(w) >= 0; }).length;
+    return hit / words.length >= 0.6;
+  }
+  function reportFeatures(r) {
+    var by = { confirmed: 0, contradicted: 0, disputed: 0, unverified: 0 };
+    (r.claims || []).forEach(function (c) { if (by[c.status] != null) by[c.status]++; });
+    return { claims: (r.claims || []).length, confirmed: by.confirmed, contradicted: by.contradicted, disputed: by.disputed, unverified: by.unverified,
+      sources: r.sources == null ? null : r.sources, domains: r.domains == null ? null : r.domains,
+      competitors: (r.competitors || []).length, graveyard: (r.graveyard || []).length, objections: (r.objections || []).length,
+      bigTech: r.big_tech ? r.big_tech.level : null, legal: r.legal ? r.legal.length : 0, score: r.score == null ? null : r.score,
+      sampleFields: (r.sample_fields || []).join(";") };
+  }
+  // The report as plain text, for the coding sheet (raters read both answers side by side).
+  function reportText(r) {
+    var L = [];
+    L.push("VistaDex Score: " + (r.score == null ? "not enough data" : r.score) + ((r.sample_fields || []).length ? " (sample data in: " + r.sample_fields.join(", ") + ")" : ""));
+    L.push("Claims:");
+    (r.claims || []).forEach(function (c) { L.push("- [" + c.status + "] " + c.claim + " (" + (c.urls || []).length + " sources)"); });
+    L.push("Competitors: " + ((r.competitors || []).map(function (c) { return c.name; }).join(", ") || "none found"));
+    L.push("Leads to check (startups that shut down):");
+    (r.graveyard || []).forEach(function (g) { L.push("- " + g.company + " (" + (g.cause || "cause unknown") + (g.year ? ", " + g.year : "") + ")"); });
+    if (r.big_tech) L.push("Big Tech risk: " + r.big_tech.level + ((r.big_tech.companies || []).length ? " (" + r.big_tech.companies.join(", ") + ")" : ""));
+    L.push("Objections:");
+    (r.objections || []).forEach(function (o) { L.push("- [" + o.severity + "] " + o.objection); });
+    (r.legal || []).forEach(function (j) { L.push("Legal, " + j.jurisdiction + ": " + ((j.requirements || []).join("; ") || "nothing found")); });
+    if (r.market && r.market.tam) L.push("Market (TAM): " + r.market.tam);
+    return L.join("\n");
+  }
+  // Two-sided exact sign test: how often one tool was picked over the other ("same" left out).
+  function signTest(a, b) {
+    var n = a + b;
+    if (!n) return { n: 0, p: null };
+    var k = Math.min(a, b), tail = 0, c = 1;
+    for (var i = 0; i <= n; i++) { if (i > 0) c = c * (n - i + 1) / i; if (i <= k) tail += c; }
+    return { n: n, p: Math.min(1, 2 * tail / Math.pow(2, n)) };
+  }
+  var PREF_KEYS = ["overall", "accuracy", "evidence", "risks", "honesty", "decision"];
+  function chatbotComparison(ev) {
+    var codeBySid = {};
+    ev.forEach(function (e) { var q = e.payload || {}; if (e.type === "participant_registered" && q.track === "study" && normCode(q.code)) codeBySid[e.session_id] = normCode(q.code); });
+    var people = {}, codes = [];
+    ev.forEach(function (e) {
+      var code = codeBySid[e.session_id];
+      if (!code) return;
+      if (!people[code]) { people[code] = { answer: null, snapshot: null, pref: null, profile: null, idea: null }; codes.push(code); }
+      var p = people[code], q = e.payload || {};
+      // The latest of each counts (a participant who pasted twice: the second paste).
+      if (e.type === "chatbot_answer") p.answer = q;
+      if (e.type === "vistadex_report_snapshot") { p.snapshot = q; p.idea = q.idea_key || p.idea; }
+      if (e.type === "tool_preference") p.pref = q;
+      if (e.type === "participant_profile") p.profile = q;
+      if (e.type === "condition_started" && !p.idea) p.idea = q.idea_key || null;
+    });
+    var rows = codes.sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); }).map(function (code) {
+      var p = people[code], a = p.answer, r = p.snapshot ? p.snapshot.report || {} : null;
+      var cf = a ? textFeatures(a.text) : null, low = a ? String(a.text || "").toLowerCase() : "";
+      var overlap = null;
+      if (a && r) {
+        var names = function (xs, f) { var list = (xs || []).map(f); return { of: list.length, named: list.filter(function (n) { return named(low, n); }).length }; };
+        overlap = {
+          competitors: names(r.competitors, function (c) { return c.name; }),
+          graveyard: names(r.graveyard, function (g) { return g.company; }),
+          bigTech: names(r.big_tech ? r.big_tech.companies : [], function (n) { return n; }),
+          claims: { of: (r.claims || []).length, named: (r.claims || []).filter(function (c) { return claimMentioned(low, c.claim); }).length }
+        };
+      }
+      return { code: code, idea: p.idea, tool: a ? a.tool : null, model: a ? a.model || null : null, webSearch: a ? a.web_search : null,
+        chatbotText: a ? String(a.text || "") : null, chatbot: cf, vistadex: r ? reportFeatures(r) : null, reportText: r ? reportText(r) : null,
+        overlap: overlap, preference: p.pref, profile: p.profile, both: !!(a && r) };
+    });
+    var both = rows.filter(function (x) { return x.both; });
+    function paired(fc, fv) {
+      var ps = both.filter(function (x) { return fc(x) != null && fv(x) != null; });
+      var t = wilcoxon(ps.map(function (x) { return fv(x) - fc(x); }));
+      return { n: ps.length, chatbotMedian: ps.length ? median(ps.map(fc)) : null, vistadexMedian: ps.length ? median(ps.map(fv)) : null, test: t };
+    }
+    var features = [
+      ["sources", "Distinct sources (links in the chatbot answer / sources in the report)", function (x) { return x.chatbot.links; }, function (x) { return x.vistadex.sources; }],
+      ["domains", "Distinct websites", function (x) { return x.chatbot.domains; }, function (x) { return x.vistadex.domains; }]
+    ].map(function (f) { var t = paired(f[2], f[3]); t.id = f[0]; t.label = f[1]; return t; });
+    // What the report found that the chatbot also named: the mean share per participant, over those whose
+    // report found any (a report with no competitors says nothing about the chatbot's coverage).
+    var coverage = {};
+    ["claims", "competitors", "graveyard", "bigTech"].forEach(function (k) {
+      var ps = both.filter(function (x) { return x.overlap[k].of > 0; });
+      coverage[k] = { n: ps.length, meanPct: ps.length ? Math.round(100 * ps.reduce(function (a, x) { return a + x.overlap[k].named / x.overlap[k].of; }, 0) / ps.length) : null };
+    });
+    var prefs = {};
+    var answered = rows.filter(function (x) { return x.preference; });
+    PREF_KEYS.forEach(function (k) {
+      var c = { chatbot: 0, vistadex: 0, same: 0, unanswered: 0 };
+      answered.forEach(function (x) { var v = x.preference[k]; if (c[v] != null) c[v]++; else c.unanswered++; });
+      c.test = signTest(c.vistadex, c.chatbot);
+      prefs[k] = c;
+    });
+    var tools = {};
+    rows.forEach(function (x) { if (x.tool) tools[x.tool] = (tools[x.tool] || 0) + 1; });
+    return { rows: rows, n: { participants: rows.length, answers: rows.filter(function (x) { return x.tool; }).length, both: both.length, preferences: answered.length },
+      tools: tools, features: features, coverage: coverage, preferences: prefs,
+      chatbotVerdictPct: both.length ? Math.round(100 * both.filter(function (x) { return x.chatbot.verdicts > 0; }).length / both.length) : null };
   }
 
   function fmtNum(v) { return v == null ? "n/a" : (v > 0 ? "+" : "") + v; }
@@ -593,6 +736,17 @@ export function researchJoin() {
     add("h1_paired", "H1 · Confidence: VistaDex vs the AI chatbot", p.n, MIN_PAIRS, "complete pairs",
       "With the AI chatbot, confidence in the idea changed by " + fmtNum(r.h1.chatbot.meanDelta) + " points on average; with VistaDex by " +
       fmtNum(r.h1.vistadex.meanDelta) + ". Per participant, VistaDex minus chatbot: median " + fmtNum(p.test.median) + ", Wilcoxon p = " + fmtPv(p.test) + ".");
+    var cmp = r.comparison;
+    if (cmp) {
+      var po = cmp.preferences.overall;
+      add("preference", "Which helped more: the AI chatbot or VistaDex", cmp.n.preferences, MIN_PAIRS, "participants",
+        "Asked which helped them more to judge the idea, " + po.vistadex + " chose VistaDex, " + po.chatbot + " the AI chatbot and " + po.same +
+        " said about the same (sign test over those who chose one, p = " + fmtPv(po.test) + ").");
+      var fs = cmp.features[0];
+      add("sources", "Sources: the pasted chatbot answer vs the VistaDex report", fs.n, MIN_PAIRS, "pairs of answers",
+        "Median distinct sources: " + (fs.chatbotMedian == null ? "n/a" : fs.chatbotMedian) + " links in the chatbot answer as pasted, " +
+        (fs.vistadexMedian == null ? "n/a" : fs.vistadexMedian) + " in the VistaDex report (Wilcoxon p = " + fmtPv(fs.test) + "). Links a chatbot showed but that did not survive copying are not counted.");
+    }
     var dir = r.direction;
     add("direction", "Confidence before and after a VistaDex report", dir.n, MIN_GROUP, "runs",
       "Across " + plural(dir.n, "run", "runs") + " with both answers, confidence went down in " + dir.lower + ", stayed the same in " + dir.same +
@@ -685,11 +839,41 @@ export function researchJoin() {
       ["role", "channel", "track"].reduce(function (rows, by) {
         return rows.concat(result.segments[by].map(function (s) { return [by, s.group, s.runs, s.confN, s.meanDelta, s.evidencePct, s.surveyN, s.trust, s.usefulness, s.votes, s.agreePct]; }));
       }, []));
+    var cmp = result.comparison || chatbotComparison(events);
+    var sec = Object.keys(SECTION_WORDS);
+    t["comparison.csv"] = toCSV(["code", "idea", "tool", "model", "web_search", "both",
+      "chatbot_words", "chatbot_links", "chatbot_domains", "chatbot_figures", "chatbot_hedges", "chatbot_verdict_phrases", "chatbot_sections_covered"]
+      .concat(sec.map(function (k) { return "chatbot_mentions_" + k; }))
+      .concat(["report_claims", "report_confirmed", "report_contradicted", "report_disputed", "report_unverified", "report_sources", "report_domains",
+        "report_competitors", "report_graveyard_leads", "report_objections", "report_big_tech", "report_big_tech_companies", "report_legal_markets", "report_score", "report_sample_fields",
+        "claims_chatbot_mentioned", "competitors_chatbot_named", "graveyard_chatbot_named", "big_tech_chatbot_named",
+        "pref_overall", "pref_accuracy", "pref_evidence", "pref_risks", "pref_honesty", "pref_decision", "pref_options_order", "pref_why",
+        "market_familiarity", "ai_trust", "ai_use"]),
+      cmp.rows.map(function (x) {
+        var c = x.chatbot || { sections: {} }, v = x.vistadex || {}, o = x.overlap, pf = x.preference || {}, pr = x.profile || {};
+        var k = function (part) { return o ? o[part].named : null; };
+        return [x.code, x.idea, x.tool, x.model, x.webSearch, x.both, c.words, c.links, c.domains, c.figures, c.hedges, c.verdicts, c.sectionsCovered]
+          .concat(sec.map(function (s2) { return x.chatbot ? c.sections[s2] : null; }))
+          .concat([v.claims, v.confirmed, v.contradicted, v.disputed, v.unverified, v.sources, v.domains, v.competitors, v.graveyard, v.objections, v.bigTech, o ? o.bigTech.of : null, v.legal, v.score, v.sampleFields,
+            k("claims"), k("competitors"), k("graveyard"), k("bigTech"),
+            pf.overall, pf.accuracy, pf.evidence, pf.risks, pf.honesty, pf.decision, pf.options_order, pf.why,
+            pr.market_familiarity, pr.ai_trust, pr.ai_use]);
+      }));
+    // For human coding: both answers in full, with empty columns per rater (codebook: docs/STUDY-PROTOCOL.md).
+    var DIMS = ["claim_accuracy", "evidence", "risk_coverage", "calibration", "actionability"];
+    var codingHead = ["code", "idea", "tool", "chatbot_answer", "vistadex_report"];
+    ["chatbot", "vistadex"].forEach(function (side) { DIMS.forEach(function (d) { codingHead.push(side + "_" + d + "_1to5"); }); });
+    t["chatbot-answers.csv"] = toCSV(codingHead.concat(["rater", "notes"]), cmp.rows.filter(function (x) { return x.chatbotText != null || x.reportText != null; }).map(function (x) {
+      var row = [x.code, x.idea, x.tool, x.chatbotText, x.reportText];
+      DIMS.forEach(function () { row.push(null, null); });
+      return row.concat([null, null]);
+    }));
     return t;
   }
 
   return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct,
     pairedParticipants: pairedParticipants, wilcoxon: wilcoxon, mannWhitney: mannWhitney, analyzeStudy: analyzeStudy,
+    chatbotComparison: chatbotComparison, textFeatures: textFeatures, signTest: signTest,
     exportTables: exportTables, toCSV: toCSV, EVIDENCE_CONTROLS: EVIDENCE_CONTROLS, SECTIONS: SECTIONS };
 }
 
@@ -704,3 +888,6 @@ export const wilcoxon = join.wilcoxon;
 export const mannWhitney = join.mannWhitney;
 export const analyzeStudy = join.analyzeStudy;
 export const exportTables = join.exportTables;
+export const chatbotComparison = join.chatbotComparison;
+export const textFeatures = join.textFeatures;
+export const signTest = join.signTest;

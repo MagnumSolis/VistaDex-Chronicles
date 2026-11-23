@@ -38,7 +38,7 @@ const STUDY_IDEAS: Record<string, string> = {
 // with the same idea screens the same input. Every sentence of the paragraph above appears verbatim
 // (the "We are building..." sentence is the solution); the one-line pitch is the only added text.
 // TODO(team): approve the added pitch lines.
-type StudyInput = { title: string; pitch: string; problem: string; solution: string; moat: string };
+export type StudyInput = { title: string; pitch: string; problem: string; solution: string; moat: string };
 const STUDY_INPUTS: Record<string, StudyInput> = {
   "A": {
     title: "AI meal-planning for diabetics",
@@ -70,14 +70,34 @@ const STUDY_INPUTS: Record<string, StudyInput> = {
   },
 };
 
+// The participant's own idea (study track): typed once on the study page, then used for both parts, the
+// chatbot (as one paragraph to copy) and VistaDex (the same fields). Kept only in this browser's storage,
+// never in telemetry, which records idea_key "own" instead of a preset letter.
+export const OWN_IDEA = "own";
+const OWN_KEY = `${STORAGE_KEY}_own_idea`;
+export function setOwnIdea(input: StudyInput) {
+  try { localStorage.setItem(OWN_KEY, JSON.stringify(input)); } catch { /* storage unavailable */ }
+}
+export function ownIdeaInput(): StudyInput | null {
+  try {
+    const raw = localStorage.getItem(OWN_KEY);
+    const v = raw ? JSON.parse(raw) as StudyInput : null;
+    return v && typeof v.title === "string" ? v : null;
+  } catch { return null; }
+}
+const paragraphOf = (i: StudyInput) => [i.title.trim() + ".", i.pitch, i.problem, i.solution, i.moat]
+  .map(x => x.trim()).filter(Boolean).map(x => (/[.!?]$/.test(x) ? x : `${x}.`)).join(" ");
+
 export function studyIdeaInput(key: string): StudyInput {
   return STUDY_INPUTS[key] || STUDY_INPUTS["A"];
 }
 
 /** Study track, VistaDex condition not done yet: the assigned idea to fill into Screen an idea. */
-export function assignedStudyIdea(): { key: string; sample: string; input: StudyInput; baselineDone: boolean } | null {
+export function assignedStudyIdea(): { key: string; sample: string | null; input: StudyInput; baselineDone: boolean } | null {
   const p = currentParticipant();
   if (!p || p.track !== "study" || conditionDone(p, "vistadex")) return null;
+  const own = p.ideaKey === OWN_IDEA ? ownIdeaInput() : null;
+  if (own) return { key: OWN_IDEA, sample: null, input: own, baselineDone: conditionDone(p, "baseline") };
   const key = STUDY_INPUTS[p.ideaKey] ? p.ideaKey : "A";
   return { key, sample: `study_${key}`, input: STUDY_INPUTS[key], baselineDone: conditionDone(p, "baseline") };
 }
@@ -89,6 +109,8 @@ export function studyIdeaKeys(): string[] {
 }
 
 export function studyIdea(key: string): string {
+  const own = key === OWN_IDEA ? ownIdeaInput() : null;
+  if (own) return paragraphOf(own);
   return STUDY_IDEAS[key] || STUDY_IDEAS["A"];
 }
 
@@ -151,7 +173,7 @@ export function currentParticipant(): Participant | null {
 }
 
 export function clearParticipant() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(OWN_KEY); } catch { /* ignore */ }
 }
 
 /** Study track: which conditions are done (from persisted progress flags). */

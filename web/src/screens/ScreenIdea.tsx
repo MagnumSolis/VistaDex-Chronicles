@@ -147,8 +147,8 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
           {assigned && (
             <p className="mt-4 rounded-inner bg-muted p-4 text-[0.9375rem] text-foreground">
               {same(input, { ...empty(), ...assigned.input })
-                ? <>Your assigned idea (Idea {assigned.key}) is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.</>
-                : <>You changed your assigned idea (Idea {assigned.key}). Please run it as it was given: reload this page to fill it in again.</>}
+                ? <>{assigned.sample ? `Your assigned idea (Idea ${assigned.key})` : "Your own idea"} is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.</>
+                : <>You changed {assigned.sample ? `your assigned idea (Idea ${assigned.key})` : "your own idea"}. Please run it as {assigned.sample ? "it was given" : "you wrote it at the start"}: reload this page to fill it in again.</>}
             </p>
           )}
           {errors.length > 0 && (

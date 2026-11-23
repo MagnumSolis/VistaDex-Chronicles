@@ -47,7 +47,8 @@ members agree on from their own research. TODO(team): decide whether to add the 
 3. **Prepare the codes and ideas.** `P01`, `P02`, ... up to the number you recruit, each with an assigned
    idea, rotated so every idea appears in both orders: P01 A, P02 A, P03 B, P04 B, P05 C, P06 C, P07 D,
    P08 D, then again from A. Keep this sheet *outside the repository*, with the date, who ran the session
-   and anything unusual. Never put names in the app.
+   and anything unusual. Note on the sheet when a participant used their own idea instead (idea "own");
+   decide as a team how many own-idea sessions you want, since they are analysed separately too. Never put names in the app.
 4. **Decide the sample size now.** A paired Wilcoxon test cannot reach p < 0.05 with fewer than 6
    complete pairs, and only large effects show with 10 to 15. Aim for **at least 20 complete pairs**, and
    recruit about 25 to allow for drop-outs. Write the analysis plan (section 7) down before you start.
@@ -59,7 +60,8 @@ help with the task itself: answer only questions about the procedure.
 
 1. Give the participant their code and open `https://vistadex-app.pages.dev/#/study`.
 2. They accept the Welcome notice, choose "I have a participant code", enter the code and their role, and
-   pick the idea from your sheet under "Your assigned idea". The order of the two parts follows the code.
+   pick the idea from your sheet under "The idea you'll judge", or "My own idea" if the participant brings
+   one (they type it once there; it is used for both parts). The order of the two parts follows the code.
 3. **Chatbot part.** Confidence before (slider) → they paste the idea into the chatbot they normally use
    and read its answer → confidence after → ratings and "how many sources did you check".
 4. **VistaDex part.** Confidence before → they run the assigned idea (it is pre-filled) and read the

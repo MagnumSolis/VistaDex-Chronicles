@@ -4,7 +4,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
-import { ROLES, registerStudyParticipant, registerFieldParticipant, studyIdeaKeys, studyIdeaInput, currentParticipant } from "./participant";
+import { ROLES, OWN_IDEA, registerStudyParticipant, registerFieldParticipant, setOwnIdea, studyIdeaKeys, studyIdeaInput, currentParticipant, type StudyInput } from "./participant";
+import { FIELD_LIMITS, REQUIRED_FIELDS } from "@proto/core/input.js";
+
+// The participant's own idea: the same fields as Screen an idea, so both parts get exactly this text.
+const OWN_FIELDS: { id: keyof StudyInput; label: string; rows: number }[] = [
+  { id: "title", label: "Idea title", rows: 1 },
+  { id: "pitch", label: "One-line pitch", rows: 2 },
+  { id: "problem", label: "Problem", rows: 3 },
+  { id: "solution", label: "Solution", rows: 3 },
+  { id: "moat", label: "What makes yours different / moat (optional)", rows: 2 },
+];
+const emptyOwn = (): StudyInput => ({ title: "", pitch: "", problem: "", solution: "", moat: "" });
 import { logParticipantRegistered } from "./studyEvents";
 
 export function StudyGate({ onDone }: { onDone: () => void }) {
@@ -13,10 +24,18 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState(existing?.code ?? "");
   const [role, setRole] = useState<string | null>(existing?.role ?? null);
   const [ideaKey, setIdeaKey] = useState<string>(studyIdeaKeys()[0]);
+  const [own, setOwn] = useState<StudyInput>(emptyOwn);
   const [err, setErr] = useState("");
 
   const startStudy = () => {
     if (code.trim().length < 2) { setErr("Pick a participant code (e.g. P07 — anything you'll remember)."); return; }
+    if (ideaKey === OWN_IDEA) {
+      if ((REQUIRED_FIELDS as string[]).some(f => !own[f as keyof StudyInput].trim())) {
+        setErr("Fill in the idea's title, one-line pitch, problem and solution (the moat is optional).");
+        return;
+      }
+      setOwnIdea(own);
+    }
     const p = registerStudyParticipant(code, role, ideaKey);
     logParticipantRegistered(p);
     onDone();
@@ -88,7 +107,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
               </div>
             </div>
             <div>
-              <span className="text-sm font-medium">Your assigned idea (for both tools)</span>
+              <span className="text-sm font-medium">The idea you'll judge (the same for both tools)</span>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {studyIdeaKeys().map(k => (
                   <button
@@ -101,8 +120,36 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     <b className="font-mono">Idea {k}</b>: {studyIdeaInput(k).title}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  data-control="study_idea_pick" data-control-value={OWN_IDEA}
+                  onClick={() => { setIdeaKey(OWN_IDEA); setErr(""); }} aria-pressed={ideaKey === OWN_IDEA}
+                  className={`min-h-11 rounded-control border-2 p-3 text-left text-sm leading-relaxed transition-colors sm:col-span-2 ${ideaKey === OWN_IDEA ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent"}`}
+                >
+                  <b>My own idea</b>: type an idea you are actually considering
+                </button>
               </div>
             </div>
+            {ideaKey === OWN_IDEA && (
+              <div className="space-y-3 rounded-card bg-card p-4">
+                <p className="text-sm text-foreground/75">
+                  Write it once here; the same text is given to the AI chatbot and to VistaDex. It stays in this browser and is never stored in usage records.
+                </p>
+                {OWN_FIELDS.map(f => (
+                  <label key={f.id} className="block">
+                    <span className="text-sm font-medium">{f.label}</span>
+                    <textarea
+                      rows={f.rows}
+                      data-control={`idea_${f.id}`}
+                      maxLength={(FIELD_LIMITS as Record<string, number>)[f.id]}
+                      value={own[f.id]}
+                      onChange={e => { const v = e.target.value; setOwn(o => ({ ...o, [f.id]: v })); setErr(""); }}
+                      className="mt-1 w-full rounded-control border-2 border-input bg-background px-3 py-2 text-[0.9375rem] outline-none focus:border-foreground"
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
             {err && <p role="alert" className="text-sm font-medium text-foreground">{err}</p>}
             <Button data-control="study_start" onClick={startStudy}>Start part 1 →</Button>
           </div>

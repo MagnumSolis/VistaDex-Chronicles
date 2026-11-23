@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-13 (graveyard quiz: fresh questions and engagement events: CURRENT)
+## study_version 2026-11-study-14 (study track: own idea option: CURRENT)
+
+Bumped because the study page changed (decision: 2026-11-23). No new events or payload keys.
+
+- **Own idea.** Besides ideas A to D, a study participant can pick "My own idea" and type it once on the study page (title, one-line pitch, problem, solution, optional moat: the Screen an idea fields). The same text is the paragraph they copy into the AI chatbot and the input filled into Screen an idea, so both parts still judge one identical idea. The text stays in the browser (localStorage, removed with the participant record); telemetry records `condition_started.idea_key = "own"` and the run's `sample` is null.
+- **For the analysis.** Each own-idea pair is still within-subject (same person, same idea, both tools), so H1 holds. But own ideas differ between people and the participant knows them well, so report preset (A to D) and own-idea pairs separately as well as together; `paired.csv` has `idea = own` for them. An answer key cannot cover own ideas.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-13 (graveyard quiz: fresh questions and engagement events)
 
 Bumped because the waiting-screen quiz and the telemetry changed (decision: 2026-11-20).
 

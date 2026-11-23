@@ -49,6 +49,12 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
   const [minutes, setMinutes] = useState("");
 
   const idea = studyIdea(participant.ideaKey);
+  // One tap copies the idea paragraph (preset or the participant's own); no prompt is added, they ask in
+  // their own words. If the browser refuses the clipboard, the text stays selectable in the box.
+  const [copied, setCopied] = useState<"" | "ok" | "failed">("");
+  const copyIdea = async () => {
+    try { await navigator.clipboard.writeText(idea); setCopied("ok"); } catch { setCopied("failed"); }
+  };
 
   // Confidence before the participant sees the chatbot's answer (H1), then the chatbot steps.
   const begin = () => {
@@ -88,6 +94,12 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <ol className="mt-4 space-y-3 text-sm leading-relaxed">
             <li><b>1.</b> Copy this idea:
               <div className="mt-2 rounded-inner border-2 border-foreground/10 bg-card p-3 text-xs leading-relaxed">{idea}</div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <Button size="sm" variant="outline" data-control="baseline_copy_idea" onClick={copyIdea}>Copy idea</Button>
+                <span role="status" className="text-xs text-foreground/75">
+                  {copied === "ok" ? "Copied: paste it into your chatbot." : copied === "failed" ? "Copying is blocked here: select the text above and copy it." : ""}
+                </span>
+              </div>
             </li>
             <li><b>2.</b> Open ChatGPT, Claude, Gemini: whichever you normally use.</li>
             <li><b>3.</b> Ask it to evaluate this startup idea, in your own words.</li>

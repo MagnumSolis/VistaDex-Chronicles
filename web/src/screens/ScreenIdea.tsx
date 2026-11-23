@@ -45,10 +45,13 @@ export function clearDraft() { draft.input = empty(); draft.sample = null; draft
 // participant's edits are kept. The run is marked "study_<key>" only if it is run unedited.
 function prefillAssigned() {
   const assigned = assignedStudyIdea();
-  if (!assigned || draft.assignedKey === assigned.key) return;
+  // Keyed by the idea itself, so a new participant (or a new own idea) in the same page load refills it.
+  if (!assigned) return;
+  const key = `${assigned.key}:${JSON.stringify(assigned.input)}`;
+  if (draft.assignedKey === key) return;
   draft.input = { ...empty(), ...assigned.input };
   draft.sample = assigned.sample;
-  draft.assignedKey = assigned.key;
+  draft.assignedKey = key;
 }
 function sampleInput(id: string | null): IdeaInput | undefined {
   const assigned = assignedStudyIdea();

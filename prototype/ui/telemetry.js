@@ -14,6 +14,7 @@ const KEY = "vistadex.study.v1";
 // Batch uploads: at most one request per FLUSH_DELAY_MS while events arrive (the Worker allows 60
 // /events requests per minute per IP) and at most MAX_BATCH events per request (Worker limit 200).
 export const FLUSH_DELAY_MS = 10000;
+const KEEPALIVE_MAX_BYTES = 60000; // under the browsers' 64 KB limit for keepalive requests and beacons
 export const MAX_BATCH = 200;
 
 // Several tabs of one browser share one session (one localStorage record), and D1 keeps only the
@@ -183,13 +184,16 @@ export async function flush({ beacon = false } = {}) {
   // access_code rides in the upload body (beacons cannot set headers); it is never part of an event.
   const code = getAccessCode();
   const body = JSON.stringify({ session_id: session, events: batch, ...(code ? { access_code: code } : {}) });
-  if (beacon && navigator.sendBeacon) {
+  // Browsers refuse beacons and keepalive requests over 64 KB (a study participant's pasted chatbot answer
+  // can be that long): a larger upload goes as a normal request, and a beacon is not tried for it.
+  const small = new Blob([body]).size <= KEEPALIVE_MAX_BYTES;
+  if (beacon && small && navigator.sendBeacon) {
     if (navigator.sendBeacon(`${base}/events`, new Blob([body], { type: "text/plain" }))) markSent(session, start + batch.length);
     return;
   }
   try {
     // text/plain keeps this a "simple" CORS request (no preflight); the Worker parses JSON.
-    const res = await fetch(`${base}/events`, { method: "POST", headers: { "Content-Type": "text/plain" }, body, keepalive: true });
+    const res = await fetch(`${base}/events`, { method: "POST", headers: { "Content-Type": "text/plain" }, body, keepalive: small });
     if (res.ok) {
       markSent(session, start + batch.length);
       if (sent < mine.length) scheduleFlush(); // more than one batch waiting

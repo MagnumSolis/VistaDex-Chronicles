@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-15). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts). The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-11-study-15",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-16). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts), with one exception: a study-track participant (with a participant code) sends the AI chatbot answer they paste (chatbot_answer) and a snapshot of their VistaDex report (vistadex_report_snapshot), for the chatbot vs VistaDex comparison; the study page says so. The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-11-study-16",
   "envelope": [
     "session_id",
     "seq",
@@ -193,6 +193,35 @@
       "ms",
       "question",
       "run_id"
+    ],
+    "participant_profile": [
+      "ai_trust",
+      "ai_use",
+      "market_familiarity",
+      "run_id"
+    ],
+    "chatbot_answer": [
+      "chars",
+      "model",
+      "run_id",
+      "text",
+      "tool",
+      "web_search"
+    ],
+    "vistadex_report_snapshot": [
+      "idea_key",
+      "report",
+      "run_id"
+    ],
+    "tool_preference": [
+      "accuracy",
+      "decision",
+      "evidence",
+      "honesty",
+      "options_order",
+      "overall",
+      "risks",
+      "why"
     ]
   },
   "optional_keys": {
@@ -220,7 +249,8 @@
       "reports",
       "contact",
       "study",
-      "baseline"
+      "baseline",
+      "compare"
     ],
     "screen_time.screen": [
       "home",
@@ -234,7 +264,8 @@
       "reports",
       "contact",
       "study",
-      "baseline"
+      "baseline",
+      "compare"
     ],
     "screen_time.ended_by": [
       "navigate",
@@ -442,6 +473,60 @@
     "quiz_started.source": [
       "live",
       "fallback"
+    ],
+    "chatbot_answer.tool": [
+      "ChatGPT",
+      "Claude",
+      "Gemini",
+      "Copilot",
+      "Perplexity",
+      "Other"
+    ],
+    "chatbot_answer.web_search": [
+      "yes",
+      "no",
+      "not_sure",
+      null
+    ],
+    "tool_preference.overall": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.accuracy": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.evidence": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.risks": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.honesty": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.decision": [
+      "chatbot",
+      "vistadex",
+      "same",
+      null
+    ],
+    "tool_preference.options_order": [
+      "chatbot_first",
+      "vistadex_first"
     ]
   },
   "controls": [
@@ -543,12 +628,30 @@
     "study_idea_pick",
     "study_start",
     "study_continue_field",
+    "study_new_participant",
+    "study_resume",
+    "study_next_participant",
+    "compare_pick_chatbot",
+    "compare_pick_vistadex",
+    "compare_pick_same",
+    "compare_why_field",
+    "compare_submit",
+    "compare_back",
+    "baseline_copy_prompt",
+    "baseline_sent",
     "baseline_conf_pre",
+    "baseline_profile_familiarity",
+    "baseline_profile_trust",
+    "baseline_profile_use",
     "baseline_start",
-    "baseline_copy_idea",
-    "baseline_tool_field",
+    "baseline_tool_pick",
+    "baseline_model_field",
+    "baseline_web_yes",
+    "baseline_web_no",
+    "baseline_web_not_sure",
+    "baseline_answer_field",
+    "baseline_save_answer",
     "baseline_conf_post",
-    "baseline_continue",
     "baseline_likert",
     "baseline_minutes_field",
     "baseline_open_field",

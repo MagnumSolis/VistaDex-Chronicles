@@ -16,6 +16,7 @@ evidence it shows?
 | **H2** | Do people open the evidence? | Evidence links opened (claim sources, graveyard, competitors, Big Tech, legal, market) and the "how many sources did you check" self-report |
 | **H3** | Do people agree with every verdict alike, or tell the statuses apart? | Agree / disagree / not sure per claim, by the claim's status (contradicted, disputed, unverified, confirmed) |
 | **H4** | Is opening evidence associated with a different confidence change? | Confidence change in runs with and without evidence opened |
+| **H5** | How do the chatbot's answer and the VistaDex report differ, and which do people prefer? | The pasted chatbot answer next to the participant's VistaDex report (counted features and human ratings, section 7a), and the six comparison questions (study-16 on) |
 
 Also measured, for context: which report sections people read and for how long, trust / usefulness /
 "helped me see what to verify" / effort ratings (1 to 7), whether people read "unverified" correctly,
@@ -29,24 +30,25 @@ members agree on from their own research. TODO(team): decide whether to add the 
 ## 2. Two tracks
 
 - **Study track (controlled, within subjects).** Recruited participants (students, founders, anyone you
-  sit with) do both parts on the same assigned idea: an AI chatbot of their choice, and VistaDex. The
-  order is counterbalanced by the participant code: odd codes do the chatbot first, even codes VistaDex
-  first. This is where H1 is tested.
+  sit with) do both parts on the same idea: an AI chatbot of their choice with one fixed prompt, then
+  VistaDex, then a comparison of the two. From study-16 the order is fixed (chatbot first), because the
+  comparison needs both answers; up to study-15 it was counterbalanced by the code's parity. This is where
+  H1 and H5 are tested.
 - **Field track (observational).** Everyone who opens the public link (LinkedIn, X, investors) and accepts
   the Welcome notice, screening their own idea. Self-selected, so use it for descriptive findings (who
   reads what, who opens evidence, how ratings differ by role), not for causal claims.
 
 ## 3. Before the first participant
 
-1. **Pilot with TEST codes.** Run two full sessions yourselves with codes `TEST01` and `TEST02`, one in
-   each order. Check that both show "yes" under Complete in **Paired study**. TEST codes are left out of
+1. **Pilot with TEST codes.** Run two full sessions yourselves with codes `TEST01` and `TEST02`, one after
+   the other in the same browser (press "Next participant" at the end of the first). Check that both show
+   "yes" under Complete in **Paired study** and a row in **Chatbot vs VistaDex**. TEST codes are left out of
    Insights, the exports and the analysis script automatically (tick "include TEST codes" to see them).
 2. **Freeze the version.** Every visitor-facing change bumps `study_version` and resets consent. Do not
    deploy UI changes while the study runs; if you must, note the date and analyse by version (Insights,
    Data quality, and `summary.json` list the versions).
 3. **Prepare the codes and ideas.** `P01`, `P02`, ... up to the number you recruit, each with an assigned
-   idea, rotated so every idea appears in both orders: P01 A, P02 A, P03 B, P04 B, P05 C, P06 C, P07 D,
-   P08 D, then again from A. Keep this sheet *outside the repository*, with the date, who ran the session
+   idea, rotated: P01 A, P02 B, P03 C, P04 D, then again from A. Keep this sheet *outside the repository*, with the date, who ran the session
    and anything unusual. Note on the sheet when a participant used their own idea instead (idea "own");
    decide as a team how many own-idea sessions you want, since they are analysed separately too. Never put names in the app.
 4. **Decide the sample size now.** A paired Wilcoxon test cannot reach p < 0.05 with fewer than 6
@@ -58,18 +60,24 @@ members agree on from their own research. TODO(team): decide whether to add the 
 The study page tells participants about 20 minutes; time your pilot to check. One laptop, a quiet room, and do not
 help with the task itself: answer only questions about the procedure.
 
-1. Give the participant their code and open `https://vistadex-app.pages.dev/#/study`.
-2. They accept the Welcome notice, choose "I have a participant code", enter the code and their role, and
-   pick the idea from your sheet under "The idea you'll judge", or "My own idea" if the participant brings
-   one (they type it once there; it is used for both parts). The order of the two parts follows the code.
-3. **Chatbot part.** Confidence before (slider) → they paste the idea into the chatbot they normally use
-   and read its answer → confidence after → ratings and "how many sources did you check".
-4. **VistaDex part.** Confidence before → they run the assigned idea (it is pre-filled) and read the
-   report as long as they like → **Your read** at the end of the report: confidence after, agree /
-   disagree / not sure per claim and objection, ratings, and the "what does unverified mean" question.
-5. The app moves them to the other part when one ends. When both are done, check **Paired study**: their
-   row should say Complete "yes". If not, note which part is missing on your sheet.
-6. Debrief: what the study was about, and the withdrawal contact on the notice.
+1. Open `https://vistadex-app.pages.dev/#/study`. If the page says the browser was last used by another
+   participant, press **Start a new participant** (or use a fresh private window). Give the participant their code.
+2. They choose "I have a participant code", enter the code and their role, and pick the idea from your
+   sheet under "The idea you'll judge", or "My own idea" if they bring one (typed once, used for both
+   parts). Then **Start part 1** and they answer the Welcome notice themselves.
+3. **Chatbot part.** Copy the prompt (one button) → paste it into a new chat in the chatbot they normally
+   use and send it → while it writes, four sliders: confidence before, market familiarity, trust in AI
+   chatbots, how often they use them → read the answer as they normally would (follow-ups allowed) → paste
+   the whole answer back, with the chatbot used, the model if known and whether it searched the web →
+   confidence after, ratings and "how many sources did you check".
+4. **VistaDex part.** Confidence before → they run the idea (pre-filled) and read the report as long as
+   they like → **Your read** at the end of the report: confidence after, agree / disagree / not sure per
+   claim and objection, ratings, and the "what does unverified mean" question.
+5. **Comparison.** Six questions, each "the AI chatbot / VistaDex / about the same", and why.
+6. Check **Paired study** (Complete "yes") and **Chatbot vs VistaDex** (their row has both answers). If
+   not, note what is missing on your sheet.
+7. Debrief: what the study was about, and the withdrawal contact on the notice. Then press **Next
+   participant** on the last page before the next person sits down.
 
 ## 5. Field track: sharing the link
 
@@ -110,6 +118,8 @@ data, with TEST codes left out:
 | `attention.csv` | finished run | seconds each report section was in view |
 | `segments.csv` | group | the Insights tables by role, channel and track |
 | `open-answers.csv` | written answer | qualitative coding |
+| `comparison.csv` | study code (study-16 on) | H5: counted features of the chatbot answer and the report side by side, what the report found that the chatbot also named, the six preferences and why, the profile covariates |
+| `chatbot-answers.csv` | study code (study-16 on) | H5: both answers in full, with empty columns for raters (section 7a) |
 | `participants.csv` | session | the Participants view |
 | `insights.json` | | every number in Insights, for scripts |
 
@@ -138,6 +148,33 @@ goes into the repository: the script refuses an output folder inside it.
 6. **H4:** report as an association only (people choose to open links).
 7. **Field track:** descriptive, by role and channel, with every n.
 8. **Open answers:** two people code them into themes independently, then compare.
+9. **H5, preference:** for each of the six questions, how many chose VistaDex, the chatbot or about the
+   same; two-sided exact sign test over those who chose one tool (console and `comparison.csv`). Check
+   whether the first-shown option was picked more often (`pref_options_order`).
+10. **H5, answer content:** paired Wilcoxon on distinct sources (links that survived the paste vs the
+    report's sources). Describe the rest per participant: verdict words in the chatbot answer, which of
+    the six sections it took up, and the share of the report's claims, competitors, shut-down startups and
+    Big Tech companies the chatbot also named. These are counts from fixed word lists, not quality.
+11. **H5, answer quality:** the human ratings from section 7a, Wilcoxon per dimension (Holm-corrected),
+    with inter-rater agreement (weighted Cohen's kappa or ICC) reported before any test.
+
+## 7a. Rating the two answers (codebook for `chatbot-answers.csv`)
+
+Two raters, independently, each with their own copy of the sheet. Rate every row's chatbot answer and
+VistaDex report on each dimension, 1 (poor) to 5 (excellent). For ideas A to D, agree on the facts first
+(the answer key in section 1, if the team writes one); for own ideas, rate from what you can check in ten
+minutes. Raters can tell the tools apart from their style, so say in the paper that rating was not blind.
+
+| Dimension | 5 means | 1 means |
+|---|---|---|
+| `claim_accuracy` | Every factual claim it makes about the idea and its market is right, and it says which of the idea's own claims are false or unsupported | Several wrong facts, or the idea's claims repeated as true |
+| `evidence` | Each important statement has a source you can open and that says what it is cited for | No sources, or sources that do not support the statement |
+| `risk_coverage` | Real competitors, startups that tried and failed, Big Tech and legal risks, the strongest objections | Generic risks that would fit any idea |
+| `calibration` | Says what it could not verify and does not overstate; no verdict beyond the evidence | Confident verdict ("great idea", "8/10") with little support |
+| `actionability` | Leaves the reader knowing what to check next and how | Nothing a founder could act on |
+
+Average the two raters per row after the agreement check; settle differences of 2 or more points by
+discussion and report how many there were.
 
 ## 8. What would be worth finding
 
@@ -153,7 +190,12 @@ goes into the repository: the script refuses an output folder inside it.
 
 ## 9. Limits to state in the paper
 
-Confidence change is not calibration (section 1). The field track is self-selected. The chatbot's answer
-is not captured (only the ratings around it). The four study ideas are fixed and hand-written. Small
+Confidence change is not calibration (section 1). The field track is self-selected. From study-16 the
+order is fixed (chatbot first, then VistaDex), so an order effect cannot be told apart from the tool
+effect; the confidence before VistaDex is already after the chatbot. The chatbot got one fixed prompt that
+asks for what VistaDex does, which is fairer for the comparison but not how everyone uses a chatbot.
+Chatbot answers vary by tool, model, plan and whether it searched the web (recorded, but the groups will be
+small). Copying an answer often drops its citation links, so link counts undercount the chatbot. The
+counted features are word-list heuristics; the human ratings are the quality measure. The four study ideas are fixed and hand-written. Small
 samples: give n and effect sizes with every p. Data from different `study_version`s may not be comparable
 (STUDY-NOTES.md says what changed in each).

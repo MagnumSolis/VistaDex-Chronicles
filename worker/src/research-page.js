@@ -216,6 +216,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     <button class="nav" data-view="insights"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Insights</button>
     <button class="nav" data-view="participants"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><circle cx="17" cy="9" r="3"/><path d="M22 21v-1a6 6 0 0 0-6-6"/></svg>Participants <span class="cnt" id="cnt-p">–</span></button>
     <button class="nav" data-view="pairs"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h7M4 12h7M4 18h7M14 6h6M14 12h6M14 18h6"/></svg>Paired study <span class="cnt" id="cnt-pairs">–</span></button>
+    <button class="nav" data-view="compare"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"/></svg>Chatbot vs VistaDex <span class="cnt" id="cnt-compare">–</span></button>
     <button class="nav" data-view="funnel"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-6 9v7l-6-2v-5z"/></svg>Funnel</button>
     <div class="nav-l">Data</div>
     <button class="nav" data-view="events"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Events <span class="cnt" id="cnt-e">–</span></button>
@@ -263,6 +264,11 @@ export const RESEARCH_PAGE = `<!doctype html>
       <div class="phead"><h1>Paired study</h1><span class="sub">study track, within subjects: each participant's AI chatbot and VistaDex conditions side by side</span>
         <div class="right"><button class="btn acc" id="pairsCsvBtn">↓ paired.csv</button></div></div>
       <div id="pairs-content"><div class="skel" style="height:200px"></div></div>
+    </section>
+
+    <section class="view" id="v-compare">
+      <div class="phead"><h1>Chatbot vs VistaDex</h1><span class="sub">study track (study-16): the chatbot answer each participant pasted, next to their VistaDex report, and which helped them more. Counted in code from the two texts; quality is for human raters (chatbot-answers.csv in Export).</span></div>
+      <div id="compare-content"><div class="skel" style="height:200px"></div></div>
     </section>
 
     <section class="view" id="v-funnel">
@@ -348,6 +354,10 @@ export const RESEARCH_PAGE = `<!doctype html>
     confidence_pre: "prior confidence (H1)",
     confidence_post: "post confidence (H1 calibration)",
     condition_survey: "trust / usefulness / effort likerts",
+    participant_profile: "study-16: market familiarity, trust in AI chatbots, chatbot use (1 to 7), asked while the chatbot writes",
+    chatbot_answer: "study-16: the chatbot answer the participant pasted, verbatim, with the tool (Chatbot vs VistaDex)",
+    vistadex_report_snapshot: "study-16: what the participant's VistaDex report said, for the comparison",
+    tool_preference: "study-16: which helped more, chatbot or VistaDex, six questions and why",
     condition_started: "condition order (A/B)",
     condition_ended: "condition completion",
     graveyard_viewed: "graveyard interest",
@@ -877,6 +887,54 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += '<p class="msg" style="margin-top:18px">How to run the study and read these numbers: docs/STUDY-PROTOCOL.md in the repository. The paired test per measure is in Paired study.</p>';
     $("insights-content").innerHTML = html;
     renderExports(clean, ev);
+    renderCompare(A.comparison);
+  }
+
+  // ── Chatbot vs VistaDex (research-join.js chatbotComparison) ──
+  var PREF_LABELS = { overall: "Overall, helped more to judge the idea", accuracy: "Clearer which claims are true or false", evidence: "Evidence they could check themselves",
+    risks: "More on competitors, failed startups and risks", honesty: "More honest about what it didn't know", decision: "Would rather rely on for a real decision" };
+  function yn(b) { return b == null ? dash() : b ? "yes" : "no"; }
+  function ofN(o) { return o ? o.named + " of " + o.of : dash(); }
+  function renderCompare(C) {
+    if (!C) return;
+    $("cnt-compare").textContent = C.n.both + "/" + C.n.participants;
+    var html = '<div class="kpis">' +
+      '<div class="kpi hl"><div class="label">Answer pairs</div><div class="val">' + C.n.both + '</div><div class="note">pasted chatbot answer and a VistaDex report</div></div>' +
+      '<div class="kpi"><div class="label">Chatbot answers</div><div class="val">' + C.n.answers + '</div><div class="note">' + (Object.keys(C.tools).map(function (k) { return esc(k) + " " + C.tools[k]; }).join(" · ") || "none yet") + '</div></div>' +
+      '<div class="kpi"><div class="label">Preferences</div><div class="val">' + C.n.preferences + '</div><div class="note">finished the comparison page</div></div>' +
+      '<div class="kpi"><div class="label">Chatbot verdict words</div><div class="val">' + (C.chatbotVerdictPct == null ? "–" : C.chatbotVerdictPct + "%") + '</div><div class="note">of answers with "promising", "7/10" and the like (VistaDex never gives one)</div></div>' +
+      "</div>";
+    html += '<h2 class="sec">Which helped more</h2><p class="sec-sub">Each participant picks the chatbot, VistaDex or about the same. The tools swap places by code number (the order shown is in comparison.csv). Sign test: two-sided, over those who picked one tool.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>Question</th><th>VistaDex</th><th>AI chatbot</th><th>About the same</th><th>Not answered</th><th>p</th></tr>';
+    html += Object.keys(PREF_LABELS).map(function (k) {
+      var c = C.preferences[k];
+      return "<tr><td>" + esc(PREF_LABELS[k]) + "</td><td class='num'>" + c.vistadex + "</td><td class='num'>" + c.chatbot + "</td><td class='num'>" + c.same + "</td><td class='num'>" + c.unanswered + "</td><td class='num'>" + fmtP(c.test.p == null ? { p: null } : { p: c.test.p, method: "sign, n " + c.test.n }) + "</td></tr>";
+    }).join("") + "</table></div>";
+    html += '<h2 class="sec">Sources</h2><p class="sec-sub">Per answer pair. Chatbot links count only URLs that survived the paste (copying often drops citation chips); report sources are every distinct link in the report.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>Measure</th><th>Pairs</th><th>Chatbot median</th><th>VistaDex median</th><th>Median difference</th><th>p (Wilcoxon)</th></tr>';
+    html += C.features.map(function (f) {
+      return "<tr><td>" + esc(f.label) + "</td><td class='num'>" + f.n + "</td><td class='num'>" + cell(f.chatbotMedian) + "</td><td class='num'>" + cell(f.vistadexMedian) + "</td><td class='num'>" + (f.test.median == null ? dash() : (f.test.median > 0 ? "+" : "") + f.test.median) + "</td><td class='num'>" + fmtP(f.test) + "</td></tr>";
+    }).join("") + "</table></div>";
+    html += '<h2 class="sec">What the report found that the chatbot also named</h2><p class="sec-sub">Mean share per participant, over reports that found any. A claim counts as taken up when one of its figures or most of its content words appear in the answer; a name counts when the answer contains it.</p>';
+    html += '<div class="tbl-wrap"><table><tr><th>From the report</th><th>Participants</th><th>Mean share the chatbot named</th></tr>';
+    [["claims", "Claims"], ["competitors", "Competitors"], ["graveyard", "Shut-down startups (leads)"], ["bigTech", "Big Tech companies"]].forEach(function (k) {
+      var c = C.coverage[k[0]];
+      html += "<tr><td>" + k[1] + "</td><td class='num'>" + c.n + "</td><td class='num'>" + cell(c.meanPct, "%") + "</td></tr>";
+    });
+    html += "</table></div>";
+    html += '<h2 class="sec">Per participant</h2><div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Chatbot</th><th>Web</th><th>Words</th><th>Links</th><th>Hedges</th><th>Verdict words</th><th>Sections taken up</th><th>Report: claims (C / X / D / U)</th><th>Report sources</th><th>Claims named</th><th>Competitors named</th><th>Leads named</th><th>Overall pick</th><th>Answer</th></tr>';
+    html += C.rows.length ? C.rows.map(function (x) {
+      var c = x.chatbot, v = x.vistadex, o = x.overlap;
+      return "<tr><td class='num'>" + esc(x.code) + "</td><td class='num'>" + esc(x.idea || "?") + "</td><td>" + esc(x.tool || "–") + (x.model ? ' <span style="color:var(--ink-3);font-size:11px">' + esc(x.model) + "</span>" : "") + "</td><td>" + esc(x.webSearch || "–") + "</td>" +
+        "<td class='num'>" + (c ? c.words : dash()) + "</td><td class='num'>" + (c ? c.links : dash()) + "</td><td class='num'>" + (c ? c.hedges : dash()) + "</td><td class='num'>" + (c ? c.verdicts : dash()) + "</td><td class='num'>" + (c ? c.sectionsCovered + " of 6" : dash()) + "</td>" +
+        "<td class='num'>" + (v ? v.claims + " (" + v.confirmed + " / " + v.contradicted + " / " + v.disputed + " / " + v.unverified + ")" : dash()) + "</td><td class='num'>" + (v ? cell(v.sources) : dash()) + "</td>" +
+        "<td class='num'>" + ofN(o && o.claims) + "</td><td class='num'>" + ofN(o && o.competitors) + "</td><td class='num'>" + ofN(o && o.graveyard) + "</td>" +
+        "<td>" + esc(x.preference ? x.preference.overall || "–" : "–") + "</td>" +
+        "<td>" + (x.chatbotText ? '<details><summary>' + esc(String(x.chatbotText.length)) + ' chars</summary><div style="white-space:pre-wrap;max-width:60ch;font-size:12px">' + esc(x.chatbotText) + "</div></details>" : dash()) + "</td></tr>";
+    }).join("") : '<tr><td colspan="16" class="empty">No study-16 participants yet: they appear when a participant pastes a chatbot answer.</td></tr>';
+    html += "</table></div>";
+    html += '<p class="msg" style="margin-top:12px">C / X / D / U: confirmed, contradicted, disputed, unverified. Hedges and verdict words are counted from fixed word lists (worker/src/research-join.js); read the answers before quoting them. The coding sheet and codebook: Export → chatbot-answers.csv, docs/STUDY-PROTOCOL.md.</p>';
+    $("compare-content").innerHTML = html;
   }
   var TABLE_NOTES = {
     "paired.csv": "study track: one row per code, both parts side by side",
@@ -886,6 +944,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     "open-answers.csv": "every written answer, verbatim",
     "segments.csv": "the Insights tables by role, channel and track",
     "participants.csv": "one row per session, as in Participants",
+    "comparison.csv": "chatbot vs VistaDex: one row per participant, counted features of both answers and the preferences",
+    "chatbot-answers.csv": "both answers in full, with empty columns for human raters (codebook in docs/STUDY-PROTOCOL.md)",
     "insights.json": "every number in Insights, for scripts"
   };
   var exportFiles = {};
@@ -893,7 +953,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     exportFiles = JOIN.exportTables(A, ev);
     exportFiles["participants.csv"] = metricsCSV(window.__people || []);
     var lean = {};
-    Object.keys(A).forEach(function (k) { if (k !== "runs" && k !== "votes" && k !== "pairs") lean[k] = A[k]; });
+    Object.keys(A).forEach(function (k) { if (k !== "runs" && k !== "votes" && k !== "pairs" && k !== "comparison") lean[k] = A[k]; });
+    if (A.comparison) { lean.comparison = {}; Object.keys(A.comparison).forEach(function (k) { if (k !== "rows") lean.comparison[k] = A.comparison[k]; }); }
     exportFiles["insights.json"] = JSON.stringify(lean, null, 2);
     $("tableExports").innerHTML = Object.keys(TABLE_NOTES).map(function (name) {
       return '<button class="exp" data-file="' + esc(name) + '" style="border:none;cursor:pointer;text-align:left;font-family:var(--sans)"><span class="ic">↓</span><div><b>' + esc(name) + "</b><span>" + esc(TABLE_NOTES[name]) + "</span></div></button>";

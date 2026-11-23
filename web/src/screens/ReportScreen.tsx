@@ -14,14 +14,14 @@ import { logConditionEnded } from "@/study/studyEvents";
 import { sourceClicksIn } from "@/telemetry";
 
 // Study track: the ratings under a VistaDex report finish the VistaDex condition (logged with the evidence
-// links opened in that report). A participant who has not done the AI chatbot part yet goes on to it (as
-// the chatbot part hands over to VistaDex).
+// links opened in that report). Next comes the AI chatbot part if it is still to do, else the comparison.
 function finishVistaDexCondition(runId: string) {
   const p = currentParticipant();
   if (!p || p.track !== "study" || conditionDone(p, "vistadex")) return;
   logConditionEnded("vistadex", runId, sourceClicksIn(runId));
   markConditionDone("vistadex");
-  if (!conditionDone(p, "baseline")) navigate(PATHS.baseline);
+  // Then the other part, or (both done) the comparison of the two.
+  navigate(conditionDone(p, "baseline") ? PATHS.compare : PATHS.baseline);
 }
 
 export function ReportScreen({ param }: { param: string | null }) {

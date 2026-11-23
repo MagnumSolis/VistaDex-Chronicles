@@ -19,6 +19,7 @@ export function takeTarget() {
         const [a, b] = p.order;
         if (!done(a)) return a === "baseline" ? PATHS.baseline : PATHS.screen;
         if (!done(b)) return b === "baseline" ? PATHS.baseline : PATHS.screen;
+        return PATHS.compare;
       }
     }
   } catch { /* fall through to the plain target */ }

@@ -22,7 +22,7 @@ The pitch edition is opened with `#edition=pitch` (the `code=…` usually next t
 ## Frozen unless explicitly asked
 - Pipeline logic (`prototype/core/`), the POST /screen contract, the key-free mock path, the proxy (`worker/`). Round 2 (2026-10-20) changed them deliberately: structured input, traction claims, competitors, Big Tech risk, TAM from verified quotes, scores. Every weight and threshold lives in `prototype/core/scoring-config.js`, pinned by `tests/scoring-config.test.js`.
 - Telemetry: `tests/fixtures/event-contract.json` is the contract (event types, payload keys, enum values, control ids). The UI must reproduce it; `npm run parity` checks it in Chrome. Bump `STUDY_VERSION` (prototype/ui/study-config.js) whenever the visitor-facing UI or the telemetry changes, and record it in the fixture.
-- No idea text and no report content in telemetry; runs are described by lengths and counts. Feedback is sent under its own random id, never with the usage session.
+- No idea text and no report content in telemetry; runs are described by lengths and counts. One exception (study-16): a study-track participant (with a code) sends the chatbot answer they paste (`chatbot_answer`) and a snapshot of their VistaDex report (`vistadex_report_snapshot`) for the comparison, and the study page says so; field visitors never send either. Feedback is sent under its own random id, never with the usage session.
 - Everything must run end-to-end with zero API keys and deploy as a static site (GitHub Pages).
 - The BITS F364 study UI (consent dialog, trust sliders, per-claim rating, notes, survey) is retired to `web/src/retired/study/` (not routed). The public demo is not used for the F364 paper.
 

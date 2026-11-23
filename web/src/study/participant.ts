@@ -125,7 +125,27 @@ export function isValidRole(role: string | null): boolean {
   return role === null || (ROLES as readonly string[]).includes(role);
 }
 
-/** Study track: register with a code; order counterbalanced by code parity. */
+// The prompt every participant sends to their chatbot (study-16): the same task VistaDex does, section by
+// section, so the two answers can be compared point by point. One fixed wording for everyone.
+export function chatbotPrompt(key: string): string {
+  return [
+    "I'm considering this startup idea and want an honest, evidence-based assessment before I decide anything.",
+    "",
+    `The idea: ${studyIdea(key)}`,
+    "",
+    "Please:",
+    "1. List the idea's main factual claims (market size, \"no one does this\", traction, the moat) and say for each whether it is true, false, disputed or cannot be verified, with sources.",
+    "2. Name existing competitors and similar products.",
+    "3. Name startups that tried something similar and shut down, and why they failed.",
+    "4. Say whether big tech companies (Google, Amazon, Microsoft, Apple, Meta) already do this or could easily.",
+    "5. List the strongest objections and risks.",
+    "6. Note legal or regulatory issues in the main markets.",
+    "Give links for factual statements, and say clearly what you could not verify.",
+  ].join("\n");
+}
+
+/** Study track: register with a code. Since study-16 everyone does the AI chatbot first, then VistaDex, then
+ *  compares the two (the comparison needs both answers; the order is a stated limitation). */
 export function registerStudyParticipant(code: string, role: string | null, ideaKey?: string): Participant {
   const clean = code.trim().slice(0, 12);
   // A different code or idea is a new participant: the parts an earlier participant finished in this
@@ -133,14 +153,12 @@ export function registerStudyParticipant(code: string, role: string | null, idea
   const prev = currentParticipant();
   const chosen = ideaKey || "";
   if (!prev || prev.track !== "study" || prev.code !== clean || (chosen && prev.ideaKey !== chosen)) clearProgress();
-  const num = parseInt(clean.replace(/\D/g, ""), 10);
-  const baselineFirst = Number.isFinite(num) && num > 0 ? num % 2 === 1 : Date.now() % 2 === 0;
   const p: Participant = {
     track: "study",
     code: clean,
     role,
     ideaKey: ideaKey || randomIdeaKey(),
-    order: baselineFirst ? ["baseline", "vistadex"] : ["vistadex", "baseline"],
+    order: ["baseline", "vistadex"],
     registered_at: new Date().toISOString(),
   };
   persist(p);

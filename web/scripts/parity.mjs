@@ -126,15 +126,26 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
   await page.locator("[data-control=feedback_submit]").click();
   await page.getByText("Your answers are saved.").waitFor();
 
-  // 6. Study track in the same session: register a code, the AI chatbot part, then the VistaDex part
+  await page.evaluate(() => dispatchEvent(new Event("pagehide")));
+  await flush(page);
+  const fieldEv = await events(page);
+
+  // 6. Study track in the same browser: a participant code starts a fresh participant (the notice again, a new
+  // session), then the AI chatbot part (prompt, four questions, the pasted answer), VistaDex and the comparison.
   await go(page, "#/study");
   await page.getByRole("button", { name: "I have a participant code" }).click();
   await page.getByLabel("Participant code").fill("PARITY1");
   await page.locator("[data-control=study_idea_pick][data-control-value=A]").click();
   await page.locator("[data-control=study_start]").click();
-  await page.getByRole("button", { name: "Continue to the tool" }).click();
+  await page.getByRole("button", { name: "Skip to the tool" }).click();
+  await page.locator("[data-control=baseline_copy_prompt]").click();
+  await page.locator("[data-control=baseline_sent]").click();
   await page.locator("[data-control=baseline_start]").click();
-  await page.locator("[data-control=baseline_continue]").click();
+  await pick(page, "baseline_tool_pick");
+  await pick(page, "baseline_web_not_sure");
+  await page.getByLabel("The chatbot's answer").fill("Parity chatbot answer. ".repeat(20));
+  await page.getByLabel("The chatbot's answer").blur();
+  await page.locator("[data-control=baseline_save_answer]").click();
   await pick(page, "study_sources_0");
   await page.locator("[data-control=baseline_submit]").click();
   await page.getByText(/Your assigned idea \(Idea A\) is filled in/).waitFor();
@@ -142,12 +153,23 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
   await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 20000 });
   await pick(page, "study_sources_3p");
   await page.locator("[data-control=study_survey_submit]").click();
-  await page.getByText(/your answers are recorded/).waitFor();
+  await page.getByRole("heading", { name: "The AI chatbot or VistaDex?" }).waitFor();
+  await pick(page, "compare_pick_vistadex");
+  await page.getByLabel(/^Why\?/).fill("parity why");
+  await page.getByLabel(/^Why\?/).blur();
+  await page.locator("[data-control=compare_submit]").click();
+  await page.getByRole("heading", { name: "You've finished both parts" }).waitFor();
 
   await page.evaluate(() => dispatchEvent(new Event("pagehide")));
   await flush(page);
-
-  const ev = await events(page);
+  const studyEv = await events(page);
+  check(studyEv.length > 0 && fieldEv.length > 0 && studyEv[0].session_id !== fieldEv[0].session_id, "the participant code did not start a new session");
+  check(studyEv[0]?.type === "consent_given", "the new participant's session does not start with their own consent");
+  check(studyEv.some(e => e.type === "participant_registered" && e.payload.code === "PARITY1"), "the study session has no PARITY1 registration");
+  const ev = fieldEv.concat(studyEv);
+  // Only the study track's comparison records carry content (the pasted answer, the report snapshot).
+  const CONTENT = ["chatbot_answer", "vistadex_report_snapshot"];
+  check(!fieldEv.some(e => CONTENT.includes(e.type)), "a field visitor sent a comparison record");
   const types = ev.map(e => e.type);
   for (const e of ev) {
     check(JSON.stringify(Object.keys(e).sort()) === JSON.stringify([...contract.envelope].sort()), `envelope of ${e.type}`);
@@ -171,7 +193,7 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
   for (const s of ["profile", "big_tech", "score_breakdown"]) check(ev.some(e => e.type === "section_time" && e.payload.section === s), `no section_time for ${s}`);
   const started = ev.find(e => e.type === "run_started" && e.payload.industries?.length);
   check(started && started.payload.role === "investor" && started.payload.field_chars.moat > 0, "run_started lacks the selections or field lengths");
-  const blob = JSON.stringify(ev);
+  const blob = JSON.stringify(ev.filter(e => !CONTENT.includes(e.type)));
   for (const s of [IDEA_FIELDS.pitch.slice(0, 40), IDEA_FIELDS.problem.slice(0, 40), "Big law firms cannot", "human lawyer backstop", "parity check"]) check(!blob.includes(s), `usage events contain "${s}"`);
   const fb = seen.eventBodies.map(b => JSON.parse(b)).find(b => b.events.some(e => e.type === "feedback_submitted"));
   check(fb && fb.session_id !== ev[0].session_id, "feedback was not sent under its own id");
@@ -211,4 +233,4 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
 
 await browser.close();
 if (problems.length) { console.error(`PARITY FAILED (${problems.length})\n- ` + problems.join("\n- ")); process.exit(1); }
-console.log(`PARITY OK against ${BASE}: every event matches the ${contract.study_version} contract; nothing before the notice or after opting out; no idea, claim or feedback text in usage events; the pitch edition sent nothing.`);
+console.log(`PARITY OK against ${BASE}: every event matches the ${contract.study_version} contract; nothing before the notice or after opting out; no idea, claim or feedback text in usage events (only the study track's comparison records); a participant code starts a new session; the pitch edition sent nothing.`);

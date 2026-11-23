@@ -1,5 +1,5 @@
 // Study track: submitting the ratings under a VistaDex report finishes the VistaDex condition. A participant
-// who started with VistaDex goes on to the AI chatbot part; one who did the chatbot first is done.
+// who started with VistaDex goes on to the AI chatbot part; one who did the chatbot first goes to the comparison.
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { go, loadApp, reportShown } from "./helpers";
@@ -29,13 +29,12 @@ describe("finishing the VistaDex condition", () => {
     expect(await screen.findByRole("heading", { name: /an AI chatbot/ })).toBeTruthy();
   }, 30000);
 
-  it("chatbot first: the ratings finish the study and the report stays", async () => {
+  it("chatbot first: the ratings finish both parts and lead to the comparison", async () => {
     participant(["baseline", "vistadex"]);
     localStorage.setItem("vistadex_participant_done_baseline", "true");
     await runAndRate();
     expect(done("vistadex")).toBe("true");
-    expect(location.hash).toMatch(/^#\/report/);
-    expect(screen.getByText(/your answers are recorded/)).toBeTruthy();
+    await waitFor(() => expect(location.hash).toBe("#/compare"));
   }, 30000);
 
   it("field-track ratings do not touch study progress", async () => {

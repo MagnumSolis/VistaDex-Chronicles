@@ -80,3 +80,31 @@ export function logRunScopedSurvey(runId: string, condition: Condition, answers:
 
 /** A run id for one AI chatbot condition: "b_" + 12 random hex, like the report's "r_" ids. */
 export const newBaselineRunId = () => `b_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
+// ── Chatbot vs VistaDex comparison (study track only, study-16) ──
+// The study track is the one exception to "no idea or report content in telemetry": the participant pastes
+// their chatbot's answer to be compared with their VistaDex report, and the study page says so. Field
+// visitors never send either record.
+
+/** Asked while the chatbot writes its answer (before they read it): what they bring to the task. */
+export function logParticipantProfile(runId: string, p: { marketFamiliarity: number; aiTrust: number; aiUse: number }) {
+  track("participant_profile", { run_id: runId, market_familiarity: p.marketFamiliarity, ai_trust: p.aiTrust, ai_use: p.aiUse });
+}
+
+export type WebSearch = "yes" | "no" | "not_sure" | null;
+export const MAX_ANSWER_CHARS = 30000;
+/** The chatbot's answer as pasted (verbatim, capped), with the tool it came from. */
+export function logChatbotAnswer(runId: string, a: { tool: string; model: string; webSearch: WebSearch; text: string }) {
+  const text = a.text.slice(0, MAX_ANSWER_CHARS);
+  track("chatbot_answer", { run_id: runId, tool: a.tool, model: a.model.slice(0, 60), web_search: a.webSearch, chars: text.length, text });
+}
+
+/** "chatbot" | "vistadex" | "same" per question; null: not answered. */
+export type Pick = "chatbot" | "vistadex" | "same" | null;
+export type Preference = { overall: Pick; accuracy: Pick; evidence: Pick; risks: Pick; honesty: Pick; decision: Pick; optionsOrder: "chatbot_first" | "vistadex_first"; why: string };
+export function logToolPreference(p: Preference) {
+  track("tool_preference", {
+    overall: p.overall, accuracy: p.accuracy, evidence: p.evidence, risks: p.risks, honesty: p.honesty, decision: p.decision,
+    options_order: p.optionsOrder, why: p.why.slice(0, 2000),
+  });
+}

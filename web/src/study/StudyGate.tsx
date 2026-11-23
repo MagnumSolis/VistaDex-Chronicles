@@ -4,7 +4,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
-import { ROLES, OWN_IDEA, registerStudyParticipant, registerFieldParticipant, setOwnIdea, studyIdeaKeys, studyIdeaInput, currentParticipant, type StudyInput } from "./participant";
+import { ROLES, OWN_IDEA, registerStudyParticipant, registerFieldParticipant, setOwnIdea, studyIdeaKeys, studyIdeaInput, currentParticipant, conditionDone, type StudyInput } from "./participant";
+import { startNewParticipant } from "./fresh";
+import { takeTarget } from "@/lib/gate";
+import { navigate } from "@/router";
 import { FIELD_LIMITS, REQUIRED_FIELDS } from "@proto/core/input.js";
 
 // The participant's own idea: the same fields as Screen an idea, so both parts get exactly this text.
@@ -19,24 +22,40 @@ const emptyOwn = (): StudyInput => ({ title: "", pitch: "", problem: "", solutio
 import { logParticipantRegistered } from "./studyEvents";
 
 export function StudyGate({ onDone }: { onDone: () => void }) {
-  const existing = currentParticipant();
-  const [mode, setMode] = useState<"choose" | "study" | "field">(existing?.track === "study" ? "study" : "choose");
-  const [code, setCode] = useState(existing?.code ?? "");
-  const [role, setRole] = useState<string | null>(existing?.role ?? null);
+  // The person who used this browser last (study track). The form starts empty: a new participant types
+  // their own code, and the one before can carry on with "Continue as".
+  const [previous, setPrevious] = useState(() => { const p = currentParticipant(); return p?.track === "study" && p.code ? p : null; });
+  const [mode, setMode] = useState<"choose" | "study" | "field">(previous ? "study" : "choose");
+  const [code, setCode] = useState("");
+  const [role, setRole] = useState<string | null>(null);
   const [ideaKey, setIdeaKey] = useState<string>(studyIdeaKeys()[0]);
   const [own, setOwn] = useState<StudyInput>(emptyOwn);
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const startStudy = () => {
-    if (code.trim().length < 2) { setErr("Pick a participant code (e.g. P07 — anything you'll remember)."); return; }
-    if (ideaKey === OWN_IDEA) {
-      if ((REQUIRED_FIELDS as string[]).some(f => !own[f as keyof StudyInput].trim())) {
-        setErr("Fill in the idea's title, one-line pitch, problem and solution (the moat is optional).");
-        return;
-      }
-      setOwnIdea(own);
+  const progress = (p: NonNullable<typeof previous>) => {
+    const done = (["baseline", "vistadex"] as const).filter(c => conditionDone(p, c)).length;
+    return done === 2 ? "finished both parts" : done === 1 ? "finished one part" : "not finished a part yet";
+  };
+  const fresh = async () => { setBusy(true); await startNewParticipant(); setPrevious(null); setBusy(false); };
+  const resume = () => navigate(takeTarget());
+
+  const startStudy = async () => {
+    const clean = code.trim();
+    if (clean.length < 2) { setErr("Pick a participant code (e.g. P07, anything you'll remember)."); return; }
+    if (ideaKey === OWN_IDEA && (REQUIRED_FIELDS as string[]).some(f => !own[f as keyof StudyInput].trim())) {
+      setErr("Fill in the idea's title, one-line pitch, problem and solution (the moat is optional).");
+      return;
     }
-    const p = registerStudyParticipant(code, role, ideaKey);
+    // Anyone but the person before (another code) starts from scratch: their own notice answer and session.
+    const before = currentParticipant();
+    if (before && !(before.track === "study" && before.code === clean.slice(0, 12) && before.ideaKey === ideaKey)) {
+      setBusy(true);
+      await startNewParticipant();
+      setBusy(false);
+    }
+    if (ideaKey === OWN_IDEA) setOwnIdea(own);
+    const p = registerStudyParticipant(clean, role, ideaKey);
     logParticipantRegistered(p);
     onDone();
   };
@@ -55,14 +74,27 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
           This is also a research study on how people judge startup ideas with AI tools.
           You pick how you take part:
         </p>
+        {previous && (
+          <div className="mt-5 rounded-card bg-card p-4">
+            <p className="text-sm leading-relaxed">
+              This browser was last used by participant <b className="font-mono">{previous.code}</b> ({progress(previous)}).
+              A new participant starts fresh: their own answer to the notice, their own session and no reports from before.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button data-control="study_new_participant" onClick={fresh} disabled={busy}>Start a new participant</Button>
+              <Button variant="outline" data-control="study_resume" onClick={resume} disabled={busy}>Continue as {previous.code}</Button>
+            </div>
+          </div>
+        )}
         {mode === "choose" && (
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">A. Compare two tools (~20 min)</h2>
               <p className="mt-2 text-sm text-foreground/75">
-                You'll screen the same idea twice — once with an AI chatbot of your choice
-                (ChatGPT, Claude, Gemini…) and once with VistaDex — and rate both.
-                For recruited participants (you may have a participant code).
+                You'll judge the same idea twice: first with an AI chatbot you normally use
+                (ChatGPT, Claude, Gemini...), then with VistaDex, and say which helped you more.
+                You paste the chatbot's answer here; it is stored with your answers so the two can be compared.
+                For recruited participants (you have a participant code).
               </p>
               <Button className="mt-4" data-control="study_track_study" onClick={() => setMode("study")}>I have a participant code</Button>
             </div>
@@ -133,7 +165,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
             {ideaKey === OWN_IDEA && (
               <div className="space-y-3 rounded-card bg-card p-4">
                 <p className="text-sm text-foreground/75">
-                  Write it once here; the same text is given to the AI chatbot and to VistaDex. It stays in this browser and is never stored in usage records.
+                  Write it once here; the same text goes into the chatbot prompt and into VistaDex. Because you take part in the comparison, the chatbot's answer you paste and your VistaDex report (both mention the idea) are stored with your study answers.
                 </p>
                 {OWN_FIELDS.map(f => (
                   <label key={f.id} className="block">
@@ -151,7 +183,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
               </div>
             )}
             {err && <p role="alert" className="text-sm font-medium text-foreground">{err}</p>}
-            <Button data-control="study_start" onClick={startStudy}>Start part 1 →</Button>
+            <Button data-control="study_start" onClick={startStudy} disabled={busy}>Start part 1 →</Button>
           </div>
         )}
 

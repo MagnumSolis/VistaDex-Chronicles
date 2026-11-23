@@ -100,7 +100,7 @@ test("findings state their n and say when there is not enough data yet; no verdi
 test("exportTables: every analysis-ready table, with a header and one row per item", () => {
   const data = DATA();
   const t = exportTables(analyzeStudy(data), data);
-  assert.deepEqual(Object.keys(t).sort(), ["attention.csv", "open-answers.csv", "paired.csv", "runs.csv", "segments.csv", "votes.csv"]);
+  assert.deepEqual(Object.keys(t).sort(), ["attention.csv", "chatbot-answers.csv", "comparison.csv", "open-answers.csv", "paired.csv", "runs.csv", "segments.csv", "votes.csv"]);
   const runs = t["runs.csv"].split("\n");
   assert.equal(runs.length, 1 + 4, "header + every run (the TEST code left out)");
   const head = runs[0].split(",");

@@ -1,4 +1,4 @@
-// ── study/BaselineSession.tsx — the AI chatbot part of the study track (study-16) ──
+// ── study/BaselineSession.tsx: the AI chatbot part of the study track (study-16) ──
 // 1. Prompt: one fixed prompt with the participant's idea, copied into the chatbot they normally use.
 // 2. While it answers: four sliders, answered before they read the reply (confidence before, market
 //    familiarity, trust in AI chatbots, how often they use them).

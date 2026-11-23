@@ -1,4 +1,4 @@
-// ── study/snapshot.ts — the VistaDex report a study participant saw, for the chatbot comparison ──
+// ── study/snapshot.ts: the VistaDex report a study participant saw, for the chatbot comparison ──
 // Study track only (see studyEvents.ts): what the report said, in the same terms the analysis reads the
 // chatbot's answer in. Section by section, the claims with their status and sources, the competitors, the
 // graveyard leads, the objections, Big Tech risk, legal, market and the score. Never sent for field visitors.

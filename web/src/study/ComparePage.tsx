@@ -1,4 +1,4 @@
-// ── study/ComparePage.tsx — the study's last step: the AI chatbot's answer or the VistaDex report ──
+// ── study/ComparePage.tsx: the study's last step: the AI chatbot's answer or the VistaDex report ──
 // Shown once both parts are finished. Six forced choices (chatbot / VistaDex / about the same) and an
 // optional reason. The two tools' options swap places by the code's number (odd: chatbot first), so a
 // preference for the first option cannot pass for a preference for one tool; the order is recorded.

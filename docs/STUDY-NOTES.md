@@ -45,7 +45,22 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-15 (study track: Copy idea button; fresh start for a new code: CURRENT)
+## study_version 2026-11-study-16 (study track: chatbot answer pasted in, fixed order, comparison page, fresh start: CURRENT)
+
+Bumped because the study flow and the telemetry changed (decision: 2026-11-23, the team asked for the chatbot's answer to be captured and compared with the report).
+
+- **A new participant starts a new session.** A study machine is reused, and all tabs of a private window share one storage, so the next participant used to inherit the previous person's usage session, notice answer, finished parts and reports. Now the study page says who used the browser last and offers "Start a new participant" or "Continue as <code>"; any other code also starts fresh: queued events are uploaded, then the notice answer and session id are forgotten (the new person answers the notice and gets their own `session_id`), and the participant, own idea, saved reports and the form draft are cleared. "Next participant" on the last page does the same. Sessions before study-16 may mix two people: check `participant_registered` codes per session.
+- **Fixed order: chatbot, then VistaDex, then the comparison.** The code no longer sets the order (it was counterbalanced by parity up to study-15). The comparison page needs both answers fresh, so everyone does the chatbot part first. State this in the paper: an order effect cannot be separated from the tool effect for H1 from study-16 on. Data from study-15 and before keeps its counterbalanced order (`condition_started.order_position`).
+- **A fixed prompt.** The chatbot part gives one prompt with the idea (`chatbotPrompt` in `web/src/study/participant.ts`): the claims with true / false / disputed / cannot be verified and sources, competitors, startups that shut down, Big Tech, objections and risks, legal issues, and "say what you could not verify". It asks the chatbot for what VistaDex does, section by section, so the two answers can be compared point by point. Up to study-15 participants asked in their own words. Control `baseline_copy_prompt` replaces `baseline_copy_idea`.
+- **Four questions while the chatbot writes**, before the answer is read: confidence before (`confidence_pre`, as before), and new `participant_profile` with `market_familiarity`, `ai_trust` (trust in AI chatbots in general) and `ai_use` (how often they use them), each 1 to 7. Use them as covariates.
+- **The chatbot's answer is captured.** After reading it (follow-ups allowed) the participant pastes the whole answer: new event `chatbot_answer` with `text` (verbatim, up to 30,000 characters), `chars`, `tool` (ChatGPT, Claude, Gemini, Copilot, Perplexity, Other), `model` (free text, optional) and `web_search` (yes / no / not sure). Up to study-15 the answer was not captured.
+- **The VistaDex report is captured for study participants.** New event `vistadex_report_snapshot` (study track only, on the assigned idea's run): the claims with status and source links, competitors, graveyard leads, objections with severity, Big Tech level and companies, legal rules per market, market TAM, the score, `sample_fields`, and counts of distinct sources and websites.
+- **These two events are the only ones with content**, and only for participants with a code; the study page says so. Field visitors never send them. Withdrawal deletes them with the session.
+- **Comparison page** (route `#/compare`, after both parts): six questions, each "The AI chatbot / VistaDex / About the same" (overall; which claims are true or false; evidence to check; competitors, failed startups and risks; honesty about what it didn't know; rely on for a real decision) and an optional reason. New event `tool_preference` with the six answers, `why` and `options_order`: the two tools swap places by code parity (odd: chatbot first) to balance position bias.
+- **Analysis:** Research Console, Chatbot vs VistaDex; Export `comparison.csv` and `chatbot-answers.csv` (coding sheet). See STUDY-PROTOCOL.md sections 7 and 7a.
+- **The bump resets consent**, as every bump does.
+
+## study_version 2026-11-study-15 (study track: Copy idea button; fresh start for a new code)
 
 Bumped because the chatbot part changed (decision: 2026-11-23).
 

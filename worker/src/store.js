@@ -8,12 +8,47 @@
 //   purgeOlderThan(isoCutoff)               → { events, traces } deleted (retention cleanup)
 //   takeDailyScreen(day, cap)               → { allowed, count } (atomic increment below the cap)
 //   releaseDailyScreen(day)                 gives one slot back (a run that failed)
+//   studyCodeOf(sessionId)                  → the session's latest study-track code, or null
+//   reportByTrace(traceId)                  → the cached full report (JSON text) for that run, or null
+//   upsertComparison(sessionId, fields, now) / clearComparisons() / exportComparisons()   study_comparisons
+
+import { COMPARISON_COLUMNS } from "./comparisons.js";
+
+const COMPARISONS_SQL = "CREATE TABLE IF NOT EXISTS study_comparisons (session_id TEXT PRIMARY KEY, code TEXT NOT NULL, idea_key TEXT, study_version TEXT, " +
+  "chatbot_run_id TEXT, chatbot_tool TEXT, chatbot_model TEXT, chatbot_web_search TEXT, chatbot_text TEXT, chatbot_at TEXT, " +
+  "report_run_id TEXT, report_trace_id TEXT, report_snapshot TEXT, report_full TEXT, report_at TEXT, preference TEXT, preference_at TEXT, updated_at TEXT NOT NULL)";
 
 export function d1Store(db) {
   // The cache table is created on first use, so no manual migration is needed on the production database.
   let cacheReady = null;
   const cache = () => (cacheReady ??= db.prepare("CREATE TABLE IF NOT EXISTS report_cache (key TEXT PRIMARY KEY, title TEXT, created_at TEXT NOT NULL, frozen INTEGER NOT NULL DEFAULT 0, trace_id TEXT, report TEXT NOT NULL)").run());
+  // study_comparisons (comparisons.js), also created on first use; the same statement is in schema.sql.
+  let cmpReady = null;
+  const cmp = () => (cmpReady ??= db.prepare(COMPARISONS_SQL).run());
   return {
+    async studyCodeOf(id) {
+      const row = await db.prepare("SELECT payload FROM events WHERE session_id = ? AND type = 'participant_registered' ORDER BY seq DESC LIMIT 1").bind(id).first();
+      const p = row ? safeJSON(row.payload) : null;
+      return p && p.track === "study" && p.code ? String(p.code) : null;
+    },
+    async reportByTrace(traceId) {
+      await cache();
+      const row = await db.prepare("SELECT report FROM report_cache WHERE trace_id = ? LIMIT 1").bind(traceId).first();
+      return row ? row.report : null;
+    },
+    async upsertComparison(id, fields, now) {
+      await cmp();
+      const cols = COMPARISON_COLUMNS.filter(c => fields[c] !== undefined);
+      const sql = `INSERT INTO study_comparisons (session_id, updated_at${cols.map(c => ", " + c).join("")}) VALUES (?, ?${cols.map(() => ", ?").join("")}) ` +
+        `ON CONFLICT(session_id) DO UPDATE SET updated_at = excluded.updated_at${cols.map(c => `, ${c} = excluded.${c}`).join("")}`;
+      await db.prepare(sql).bind(id, now, ...cols.map(c => fields[c])).run();
+    },
+    async clearComparisons() { await cmp(); await db.prepare("DELETE FROM study_comparisons").run(); },
+    async exportComparisons() {
+      await cmp();
+      const { results } = await db.prepare("SELECT * FROM study_comparisons ORDER BY code, updated_at").all();
+      return results;
+    },
     async getCached(key) {
       await cache();
       return await db.prepare("SELECT key, title, created_at, frozen, trace_id, report FROM report_cache WHERE key = ?").bind(key).first();
@@ -57,14 +92,16 @@ export function d1Store(db) {
     async deleteSession(id, now) {
       const { results } = await db.prepare("SELECT payload FROM events WHERE session_id = ? AND type = 'run_completed'").bind(id).all();
       const traceIds = results.map(r => safeJSON(r.payload)?.trace_id).filter(Boolean);
+      await cmp();
       const stmts = [
         db.prepare("INSERT OR REPLACE INTO withdrawals (session_id, withdrawn_at) VALUES (?, ?)").bind(id, now),
+        db.prepare("DELETE FROM study_comparisons WHERE session_id = ?").bind(id),
         db.prepare("DELETE FROM events WHERE session_id = ?").bind(id),
         db.prepare("DELETE FROM sessions WHERE session_id = ?").bind(id),
         ...traceIds.map(t => db.prepare("DELETE FROM traces WHERE trace_id = ?").bind(t)),
       ];
       const out = await db.batch(stmts);
-      return { events: out[1].meta?.changes || 0, traces: traceIds.length };
+      return { events: out[2].meta?.changes || 0, traces: traceIds.length };
     },
     // One atomic statement: insert the day's first screen, or increment only while below the cap.
     // When the cap is reached the UPDATE's WHERE fails, nothing is returned, and the request is refused.
@@ -75,11 +112,13 @@ export function d1Store(db) {
       return row ? { allowed: true, count: row.screens } : { allowed: false, count: cap };
     },
     async purgeOlderThan(cutoff) {
+      await cmp();
       const out = await db.batch([
         db.prepare("DELETE FROM events WHERE received_at < ?").bind(cutoff),
         db.prepare("DELETE FROM traces WHERE created_at < ?").bind(cutoff),
         db.prepare("DELETE FROM sessions WHERE last_seen < ?").bind(cutoff),
         db.prepare("DELETE FROM daily_counters WHERE day < ?").bind(cutoff.slice(0, 10)),
+        db.prepare("DELETE FROM study_comparisons WHERE updated_at < ?").bind(cutoff),
       ]);
       return { events: out[0].meta?.changes || 0, traces: out[1].meta?.changes || 0 };
     },
@@ -103,8 +142,23 @@ export function memoryStore() {
   const traces = new Map();
   const withdrawn = new Set();
   const daily = new Map();
+  const comparisons = new Map(); // session_id → row
   return {
-    _events: events, _traces: traces,
+    _events: events, _traces: traces, _comparisons: comparisons,
+    async studyCodeOf(id) {
+      const regs = [...events.values()].filter(r => r.session_id === id && r.type === "participant_registered").sort((a, b) => b.seq - a.seq);
+      const p = regs.length ? safeJSON(regs[0].payload) : null;
+      return p && p.track === "study" && p.code ? String(p.code) : null;
+    },
+    async reportByTrace(traceId) { for (const r of cached.values()) if (r.trace_id === traceId) return r.report; return null; },
+    async upsertComparison(id, fields, now) {
+      const row = comparisons.get(id) || { session_id: id, ...Object.fromEntries(COMPARISON_COLUMNS.map(c => [c, null])) };
+      for (const c of COMPARISON_COLUMNS) if (fields[c] !== undefined) row[c] = fields[c];
+      row.updated_at = now;
+      comparisons.set(id, row);
+    },
+    async clearComparisons() { comparisons.clear(); },
+    async exportComparisons() { return [...comparisons.values()].sort((a, b) => String(a.code).localeCompare(String(b.code)) || a.updated_at.localeCompare(b.updated_at)); },
     async getCached(key) { return cached.get(key) || null; },
     async putCached(key, row) { if (!cached.get(key)?.frozen) cached.set(key, { key, frozen: false, ...row }); },
     async listCached(n) { return [...cached.values()].sort((a, b) => b.frozen - a.frozen || b.created_at.localeCompare(a.created_at)).slice(0, n).map(({ report, ...r }) => r); },
@@ -124,6 +178,7 @@ export function memoryStore() {
     async saveTrace(traceId, mode, trace, now) { traces.set(traceId, { trace_id: traceId, created_at: now, mode, trace: JSON.stringify(trace) }); },
     async deleteSession(id) {
       withdrawn.add(id);
+      comparisons.delete(id);
       let n = 0, t = 0;
       for (const [k, row] of events) {
         if (row.session_id !== id) continue;
@@ -144,6 +199,7 @@ export function memoryStore() {
       let e = 0, t = 0;
       for (const [k, row] of events) if (row.received_at < cutoff) { events.delete(k); e++; }
       for (const [k, row] of traces) if (row.created_at < cutoff) { traces.delete(k); t++; }
+      for (const [k, row] of comparisons) if (row.updated_at < cutoff) comparisons.delete(k);
       return { events: e, traces: t };
     },
     async releaseDailyScreen(day) { if ((daily.get(day) || 0) > 0) daily.set(day, daily.get(day) - 1); },

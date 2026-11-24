@@ -123,6 +123,14 @@ data, with TEST codes left out:
 | `participants.csv` | session | the Participants view |
 | `insights.json` | | every number in Insights, for scripts |
 
+**The chatbot answers and reports, side by side (database):** the Worker keeps one row per study
+participant in the D1 table `study_comparisons`: the pasted chatbot answer, the VistaDex report they saw
+(snapshot and full report) and their preference answers. Console → Chatbot vs VistaDex → `comparisons.csv`
+(both as text, one row per participant, ready for the raters) or `comparisons.json` (with the full
+reports, for scripts). The panel there says whether the table matches the events; "Rebuild from events"
+recreates it. From a terminal: `curl -H "Authorization: Bearer $EXPORT_TOKEN"
+"https://vistadex-proxy.vistadex-team.workers.dev/export?table=comparisons&format=csv"`.
+
 **For the paper (reproducible):** Export → `events.json`, then, with an output folder outside the repo:
 
 ```bash
@@ -175,6 +183,14 @@ minutes. Raters can tell the tools apart from their style, so say in the paper t
 
 Average the two raters per row after the agreement check; settle differences of 2 or more points by
 discussion and report how many there were.
+
+## 7b. Testing the study end to end (no production data)
+
+`npm --prefix web run study-e2e` (with the dev server running) takes two participants and a field visitor
+through the real app against a local copy of the Worker and database (mock pipeline, no keys), then checks
+the `study_comparisons` rows, both exports and the console analysis. `npm run parity` checks every event
+against the contract; `npm test` covers the table's SQL (real SQLite) and the analysis. Run these after any
+change to the study; never test against the live site with recording on.
 
 ## 8. What would be worth finding
 

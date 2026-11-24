@@ -27,6 +27,7 @@ import { withIds } from "./graveyard-live.js";
 import { RESEARCH_PAGE } from "./research-page.js";
 import { FIELD_LIMITS, MAX_IDEA_CHARS, TEXT_FIELDS, normalizeInput, validateInput } from "../../prototype/core/input.js";
 import { d1Store } from "./store.js";
+import { exportComparisonRows, rebuildComparisons, recordComparisons } from "./comparisons.js";
 import { quizPool } from "./graveyard-quiz.js";
 import { createBudget } from "../../prototype/core/providers/http.js";
 
@@ -104,6 +105,10 @@ export async function handle(request, env, { store, fetchImpl, now = () => new D
     if (url.pathname === "/research/data" && request.method === "GET") return await researchData(request, url, env, { store });
     if (url.pathname === "/research/qualitative" && request.method === "GET") return await researchQualitative(request, url, env);
     if (url.pathname === "/research/purge" && request.method === "POST") return await researchPurge(request, env, { store });
+    if (url.pathname === "/research/comparisons/rebuild" && request.method === "POST") {
+      if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
+      return json({ ok: true, rows: await rebuildComparisons(store, now()) });
+    }
     if (url.pathname === "/research/cache" && request.method === "GET") {
       if (!researchAuthed(request, url, env)) return json({ error: "unauthorized" }, 401);
       return json({ entries: await store.listCached(200) });
@@ -215,6 +220,9 @@ async function saveEvents(request, env, { store, now, cors }) {
     if (!ok) return json({ error: "malformed event" }, 400, cors);
   }
   const stored = await store.saveEvents(id, list.map(e => ({ seq: e.seq, ts: e.ts, type: e.type, study_version: e.study_version, payload: e.payload })), now());
+  // Study track: the participant's chatbot vs VistaDex row (study_comparisons). Never fails the upload:
+  // the events are stored, and the row can be rebuilt from them.
+  try { await recordComparisons(store, id, list, now()); } catch (err) { console.warn(`study_comparisons update failed: ${err?.message || err}`); }
   // Research-qualitative mirror: feedback and survey answers also land in MongoDB
   // Atlas (durable, console-visible) — best-effort, never blocks the response.
   mirrorQualitativeToAtlas(env, id, list).catch(() => {});
@@ -233,6 +241,15 @@ async function exportData(request, url, env, { store }) {
   // research console's session cookie (browser download links on /research).
   const cookieOk = researchAuthed(request, url, env);
   if (!env.EXPORT_TOKEN || (!cookieOk && !timingSafeEqual(auth, `Bearer ${env.EXPORT_TOKEN}`))) return json({ error: "unauthorized" }, 401);
+  // The chatbot vs VistaDex pairs, one row per study participant (TEST codes with include_test=1; the
+  // snapshot and full report as JSON with full=1, JSON only).
+  if (url.searchParams.get("table") === "comparisons") {
+    const rows = exportComparisonRows(await store.exportComparisons(), { includeTest: url.searchParams.get("include_test") === "1", full: url.searchParams.get("format") !== "csv" && url.searchParams.get("full") === "1" });
+    if (url.searchParams.get("format") === "csv") {
+      return new Response(toCSV(rows), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="vistadex-comparisons.csv"' } });
+    }
+    return json(rows, 200);
+  }
   const table = url.searchParams.get("table") === "traces" ? "traces" : "events";
   const rows = table === "traces" ? await store.exportTraces() : await store.exportEvents();
   if (url.searchParams.get("format") === "csv") {

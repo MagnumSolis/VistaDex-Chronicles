@@ -267,7 +267,15 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-compare">
-      <div class="phead"><h1>Chatbot vs VistaDex</h1><span class="sub">study track (study-16): the chatbot answer each participant pasted, next to their VistaDex report, and which helped them more. Counted in code from the two texts; quality is for human raters (chatbot-answers.csv in Export).</span></div>
+      <div class="phead"><h1>Chatbot vs VistaDex</h1><span class="sub">study track (study-16): the chatbot answer each participant pasted, next to their VistaDex report, and which helped them more. Counted in code from the two texts; quality is for human raters (chatbot-answers.csv in Export).</span>
+        <div class="right"><label class="msg" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="incTest2"> include TEST codes (pilot runs)</label></div></div>
+      <div class="panel" style="margin-bottom:16px"><h2>In the database</h2>
+        <p class="hint">Each participant's pasted answer and their report (snapshot and the full report) are kept side by side in the <code>study_comparisons</code> table, one row per participant. <span id="cmp-db">checking…</span></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <a class="btn acc" href="/export?table=comparisons&amp;format=csv">↓ comparisons.csv (answer and report as text)</a>
+          <a class="btn" href="/export?table=comparisons&amp;full=1">{ } comparisons.json (with the full reports)</a>
+          <button class="btn" id="cmpRebuild">Rebuild from events</button>
+        </div></div>
       <div id="compare-content"><div class="skel" style="height:200px"></div></div>
     </section>
 
@@ -320,6 +328,8 @@ export const RESEARCH_PAGE = `<!doctype html>
         <a class="exp" href="/export?table=traces&format=csv"><span class="ic">↓</span><div><b>traces.csv</b><span>one row per pipeline run (full trace)</span></div></a>
         <a class="exp" href="/export?table=events"><span class="ic">{ }</span><div><b>events.json</b><span>parsed payloads, for scripts</span></div></a>
         <a class="exp" href="/export?table=traces"><span class="ic">{ }</span><div><b>traces.json</b><span>full pipeline detail per run</span></div></a>
+        <a class="exp" href="/export?table=comparisons&amp;format=csv"><span class="ic">↓</span><div><b>comparisons.csv</b><span>study_comparisons table: each participant's chatbot answer and VistaDex report side by side</span></div></a>
+        <a class="exp" href="/export?table=comparisons&amp;full=1"><span class="ic">{ }</span><div><b>comparisons.json</b><span>the same, with the report snapshot and the full report as JSON</span></div></a>
       </div>
       <p style="margin-top:18px; color:var(--ink-3); font-size:12px;">curl users: add <span class="num" style="color:var(--accent)">Authorization: Bearer &lt;EXPORT_TOKEN&gt;</span>.</p>
     </section>
@@ -935,7 +945,24 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += "</table></div>";
     html += '<p class="msg" style="margin-top:12px">C / X / D / U: confirmed, contradicted, disputed, unverified. Hedges and verdict words are counted from fixed word lists (worker/src/research-join.js); read the answers before quoting them. The coding sheet and codebook: Export → chatbot-answers.csv, docs/STUDY-PROTOCOL.md.</p>';
     $("compare-content").innerHTML = html;
+    checkComparisonTable(C);
   }
+  // The database table should hold a row for every participant the events show (TEST codes left out on both sides).
+  function checkComparisonTable(C) {
+    fetch("/export?table=comparisons" + ($("incTest").checked ? "&include_test=1" : ""), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rows) {
+      var have = {}; rows.forEach(function (r) { have[r.code] = r; });
+      var missing = C.rows.filter(function (x) { return (x.tool || x.vistadex) && !have[x.code]; }).map(function (x) { return x.code; });
+      $("cmp-db").textContent = rows.length + (rows.length === 1 ? " row" : " rows") + " now" +
+        (missing.length ? ". Not in the table yet: " + missing.join(", ") + " (press Rebuild from events)." : ", matching the events.");
+    }).catch(function () { $("cmp-db").textContent = "Could not read the table."; });
+  }
+  document.addEventListener("click", function (e) {
+    if (!e.target || e.target.id !== "cmpRebuild") return;
+    e.target.disabled = true;
+    fetch("/research/comparisons/rebuild", { method: "POST" }).then(function (r) { return r.json(); }).then(function (d) {
+      $("cmp-db").textContent = "Rebuilt: " + d.rows + (d.rows === 1 ? " row" : " rows") + " (TEST codes included in the table, left out of the exports).";
+    }).catch(function () { $("cmp-db").textContent = "Rebuild failed."; }).then(function () { e.target.disabled = false; });
+  });
   var TABLE_NOTES = {
     "paired.csv": "study track: one row per code, both parts side by side",
     "runs.csv": "one row per screening run: confidence, evidence, votes, ratings, time",
@@ -1097,7 +1124,9 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
 
   $("refreshBtn").onclick = load;
-  $("incTest").onchange = function () { if (window.__events) renderInsights(window.__events); };
+  // One switch, shown in Insights and in Chatbot vs VistaDex: a pilot with TEST codes is visible in both.
+  $("incTest").onchange = function () { $("incTest2").checked = $("incTest").checked; if (window.__events) renderInsights(window.__events); };
+  $("incTest2").onchange = function () { $("incTest").checked = $("incTest2").checked; if (window.__events) renderInsights(window.__events); };
   $("allCsvBtn").onclick = function () {
     Object.keys(TABLE_NOTES).forEach(function (name, i) { setTimeout(function () { download(name); }, i * 300); });
   };

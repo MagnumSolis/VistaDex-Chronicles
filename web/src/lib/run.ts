@@ -84,7 +84,7 @@ export async function startRun({ input, sample, confPre = null }: { input: IdeaI
     const report = data.report; // in mock mode the pipeline already carries the sample placeholders (sample_fields)
     const entry = addSessionReport({ runId, createdAt: new Date(), report, mode: data.mode, markets, traceId: data.traceId });
     telemetry.runCompleted(runId, { report, traceId: data.traceId, mode: data.mode }, Math.round(performance.now() - t0));
-    logStudyReport(runId, report); // study track only: the report, for the chatbot comparison
+    logStudyReport(runId, report, data.traceId); // study track only: the report, for the chatbot comparison
     const done = idleStages();
     const notes: Record<StageKey, string> = {
       split: `${report.claims.length} claims`, check: `${report.claims.length} claims checked`,

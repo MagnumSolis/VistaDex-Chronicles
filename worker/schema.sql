@@ -40,3 +40,28 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   session_id    TEXT PRIMARY KEY,
   withdrawn_at  TEXT NOT NULL
 );
+
+-- The study's chatbot vs VistaDex pairs (study-18): one row per study-track session, kept up to date by
+-- POST /events (worker/src/comparisons.js) and rebuildable from the events. Holds the pasted chatbot
+-- answer and the participant's VistaDex report (snapshot, and the full report from report_cache).
+-- Deleted with the session on withdrawal; created on first use if missing.
+CREATE TABLE IF NOT EXISTS study_comparisons (
+  session_id         TEXT PRIMARY KEY,
+  code               TEXT NOT NULL,        -- participant code (e.g. P07), never a name
+  idea_key           TEXT,                 -- A to D or "own"
+  study_version      TEXT,
+  chatbot_run_id     TEXT,
+  chatbot_tool       TEXT,
+  chatbot_model      TEXT,
+  chatbot_web_search TEXT,
+  chatbot_text       TEXT,                 -- the answer as pasted
+  chatbot_at         TEXT,
+  report_run_id      TEXT,
+  report_trace_id    TEXT,
+  report_snapshot    TEXT,                 -- JSON: what the report said (claims, competitors, leads, objections...)
+  report_full        TEXT,                 -- JSON: the full report from report_cache, when it is there
+  report_at          TEXT,
+  preference         TEXT,                 -- JSON: the tool_preference answers
+  preference_at      TEXT,
+  updated_at         TEXT NOT NULL
+);

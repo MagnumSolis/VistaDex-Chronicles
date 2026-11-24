@@ -267,7 +267,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     </section>
 
     <section class="view" id="v-compare">
-      <div class="phead"><h1>Chatbot vs VistaDex</h1><span class="sub">study track (study-16): the chatbot answer each participant pasted, next to their VistaDex report, and which helped them more. Counted in code from the two texts; quality is for human raters (chatbot-answers.csv in Export).</span></div>
+      <div class="phead"><h1>Chatbot vs VistaDex</h1><span class="sub">study track (study-16): the chatbot answer each participant pasted, next to their VistaDex report, and which helped them more. Counted in code from the two texts; quality is for human raters (chatbot-answers.csv in Export).</span>
+        <div class="right"><label class="msg" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="incTest2"> include TEST codes (pilot runs)</label></div></div>
       <div class="panel" style="margin-bottom:16px"><h2>In the database</h2>
         <p class="hint">Each participant's pasted answer and their report (snapshot and the full report) are kept side by side in the <code>study_comparisons</code> table, one row per participant. <span id="cmp-db">checking…</span></p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
@@ -948,7 +949,7 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
   // The database table should hold a row for every participant the events show (TEST codes left out on both sides).
   function checkComparisonTable(C) {
-    fetch("/export?table=comparisons", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rows) {
+    fetch("/export?table=comparisons" + ($("incTest").checked ? "&include_test=1" : ""), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rows) {
       var have = {}; rows.forEach(function (r) { have[r.code] = r; });
       var missing = C.rows.filter(function (x) { return (x.tool || x.vistadex) && !have[x.code]; }).map(function (x) { return x.code; });
       $("cmp-db").textContent = rows.length + (rows.length === 1 ? " row" : " rows") + " now" +
@@ -1123,7 +1124,9 @@ export const RESEARCH_PAGE = `<!doctype html>
   }
 
   $("refreshBtn").onclick = load;
-  $("incTest").onchange = function () { if (window.__events) renderInsights(window.__events); };
+  // One switch, shown in Insights and in Chatbot vs VistaDex: a pilot with TEST codes is visible in both.
+  $("incTest").onchange = function () { $("incTest2").checked = $("incTest").checked; if (window.__events) renderInsights(window.__events); };
+  $("incTest2").onchange = function () { $("incTest").checked = $("incTest2").checked; if (window.__events) renderInsights(window.__events); };
   $("allCsvBtn").onclick = function () {
     Object.keys(TABLE_NOTES).forEach(function (name, i) { setTimeout(function () { download(name); }, i * 300); });
   };

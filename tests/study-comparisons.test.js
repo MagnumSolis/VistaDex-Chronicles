@@ -127,4 +127,5 @@ test("console: the database exports, the rebuild button and the row check are wi
   assert.match(RESEARCH_PAGE, /id="cmpRebuild"/);
   assert.match(RESEARCH_PAGE, /\/research\/comparisons\/rebuild/);
   assert.match(RESEARCH_PAGE, /checkComparisonTable\(C\)/);
+  assert.match(RESEARCH_PAGE, /id="incTest2"/, "pilot runs (TEST codes) can be shown in Chatbot vs VistaDex too");
 });

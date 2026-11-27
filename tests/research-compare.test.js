@@ -38,6 +38,15 @@ test("text features: words, links that survived the paste, figures, hedges and v
   assert.equal(textFeatures("").words, 0);
 });
 
+test("websites named without a link still count as websites (a paste often keeps a link's words, not its URL)", () => {
+  // Pre-pilot 2026-11-27: answers naming levels.com or Simbi (simbi.com) scored 0 websites.
+  const f = textFeatures("See Levels (levels.com), www.Nutrisense.io and https://levels.com/blog. Mail hi@founder.com. " +
+    "The market is $4.2B, e.g. in the U.S., per report.pdf and Fig. 3.1.");
+  assert.equal(f.links, 1, "links stay the full URLs that survived the paste");
+  assert.equal(f.domains, 2, "levels.com (bare and linked) and nutrisense.io; not the e-mail, figures, abbreviations or file names");
+  assert.equal(textFeatures("Competitors: simbi.com, Superprof.").domains, 1);
+});
+
 test("per participant: what the report found that the chatbot also named, and the preferences", () => {
   const c = chatbotComparison([...person("s1", "P01", "vistadex")]);
   const r = c.rows[0];

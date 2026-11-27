@@ -160,7 +160,8 @@ goes into the repository: the script refuses an output folder inside it.
    same; two-sided exact sign test over those who chose one tool (console and `comparison.csv`). Check
    whether the first-shown option was picked more often (`pref_options_order`).
 10. **H5, answer content:** paired Wilcoxon on distinct sources (links that survived the paste vs the
-    report's sources). Describe the rest per participant: verdict words in the chatbot answer, which of
+    report's sources), and on distinct websites (from those links plus websites named without a link,
+    such as levels.com, since a paste often keeps a link's words but not its URL). Describe the rest per participant: verdict words in the chatbot answer, which of
     the six sections it took up, and the share of the report's claims, competitors, shut-down startups and
     Big Tech companies the chatbot also named. These are counts from fixed word lists, not quality.
 11. **H5, answer quality:** the human ratings from section 7a, Wilcoxon per dimension (Holm-corrected),

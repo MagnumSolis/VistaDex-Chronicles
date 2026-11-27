@@ -584,8 +584,12 @@ export function researchJoin() {
   // Everything here is counted in code from the two texts, so the same input always gives the same numbers.
   // These are features for the paper's comparison, not judgements of quality: the coding sheet
   // (chatbot-answers.csv) is for human raters. Links: chatbots often drop their citation links when an
-  // answer is copied, so "links" counts only URLs that survived the paste.
+  // answer is copied, so "links" counts only URLs that survived the paste, and "domains" (distinct websites)
+  // also counts websites named without a link (levels.com), which a paste keeps as plain words.
   var URL_RE = /https?:\/\/[^\s<>()"'\]]+/gi;
+  // A bare domain: not inside a URL or an e-mail address, ending in a common top-level domain (so figures,
+  // abbreviations like e.g. or U.S., and file names like report.pdf do not count).
+  var BARE_DOMAIN_RE = /(^|[^@\w.\/-])((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:com|org|net|io|ai|co|app|dev|gov|edu|in|uk|us|eu|de|fr|xyz|info|biz|health))(?![\w-])/gi;
   var FIGURE_RE = /(?:[$€£₹]\s?\d[\d,.]*(?:\s?(?:k|m|bn|b|billion|million|thousand|trillion)\b)?|\b\d[\d,.]*\s?(?:%|percent\b|billion\b|million\b|bn\b))/gi;
   var HEDGE_RE = /\b(may|might|could|unclear|uncertain|not sure|cannot be verified|can't verify|could not verify|couldn't verify|unable to verify|not verifiable|unverified|no reliable|limited data|as of my|i don't have access|i do not have access|estimated?|approximately|roughly)\b/gi;
   var VERDICT_RE = /\b(good idea|great idea|bad idea|promising|strong potential|high potential|worth pursuing|not worth pursuing|not viable|highly viable|go for it|i would invest|i would not invest)\b|\b\d{1,2}(?:\.\d)?\s?\/\s?10\b/gi;
@@ -606,9 +610,12 @@ export function researchJoin() {
   function textFeatures(text) {
     var t = String(text || ""), low = t.toLowerCase();
     var urls = uniq((t.match(URL_RE) || []).map(function (u) { return u.replace(/[.,;:]+$/, ""); }));
+    var sites = urls.map(host), m;
+    BARE_DOMAIN_RE.lastIndex = 0;
+    while ((m = BARE_DOMAIN_RE.exec(t))) sites.push(m[2].toLowerCase().replace(/^www\./, ""));
     var sections = {};
     Object.keys(SECTION_WORDS).forEach(function (k) { sections[k] = SECTION_WORDS[k].some(function (w) { return low.indexOf(w) >= 0; }); });
-    return { chars: t.length, words: (t.match(/\S+/g) || []).length, links: urls.length, domains: uniq(urls.map(host)).length,
+    return { chars: t.length, words: (t.match(/\S+/g) || []).length, links: urls.length, domains: uniq(sites).length,
       figures: matches(t, FIGURE_RE), hedges: matches(t, HEDGE_RE), verdicts: matches(t, VERDICT_RE),
       sections: sections, sectionsCovered: Object.keys(sections).filter(function (k) { return sections[k]; }).length };
   }

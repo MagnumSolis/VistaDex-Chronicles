@@ -49,7 +49,7 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 
 Bumped because the report a participant reads changed (decision: 2026-11-27, design audit against Amershi et al. 2019 and BITS F364 L20-21). No new events or payload keys.
 
-- **"Before you rely on this" now opens the summary**, above the VistaDex Score, so the caveat is read before the number anchors (it was below the status tiles in study-19).
+- **"Before you rely on this" now opens the summary**, before the VistaDex Score (side by side from tablet width, note on the left; stacked above it on phones), so the caveat is read before the number anchors (it was below the status tiles in study-19).
 - **The score says how much evidence backs it:** "Evidence behind it: X of N claims have two independent sources", plus "So this number rests on very little checked evidence" when none do. The formula is unchanged, so scores stay comparable across versions.
 - **"What's new"** on How it works (Amershi G18).
 - study-19 and study-20 pairs differ only in this report presentation; pool them, and report the version split as for earlier versions.

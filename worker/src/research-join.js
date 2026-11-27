@@ -195,6 +195,8 @@ export function researchJoin() {
       trust: survey ? sq.trust : null, usefulness: survey ? sq.usefulness : null, helpfulness: survey ? sq.helpfulness : null,
       effort: survey ? sq.effort : null, sourcesChecked: survey && sq.sources_checked != null ? sq.sources_checked : null,
       openText: survey && sq.open_text ? sq.open_text : "", clicks: null, votes: 0, agreePct: null,
+      // study-19: what the judgement was based on (multi-select); null when that study version did not ask.
+      basis: survey && Object.prototype.toString.call(sq.basis) === "[object Array]" ? sq.basis : null,
     };
     if (row.pre != null && row.post != null) row.delta = row.post - row.pre;
     if (c === "vistadex") {
@@ -243,10 +245,94 @@ export function researchJoin() {
         if (s) idea = s.payload.sample.slice(6);
       }
       var b = conditionRow(evs, "baseline"), v = conditionRow(evs, "vistadex");
-      return { code: code, sessions: people[code].sessions, idea: idea || null, order: order, orderInferred: inferred,
+      // The study version this participant saw (their registration's). Earlier versions stay in the
+      // analysis; measures added later are null for them, never filled in.
+      var regs = evs.filter(function (e) { return e.type === "participant_registered" && e.study_version; });
+      var version = regs.length ? regs[regs.length - 1].study_version : (evs[0] && evs[0].study_version) || null;
+      return { code: code, sessions: people[code].sessions, idea: idea || null, order: order, orderInferred: inferred, version: version,
         complete: b.pre != null && b.post != null && v.pre != null && v.post != null, baseline: b, vistadex: v,
         last: evs.length ? evs[evs.length - 1].ts : null };
     });
+  }
+
+  // ── Appropriate reliance (study-19; BITS F364 L20-21) ──
+  // A claim vote is a participant accepting (agree) or overriding (disagree) VistaDex's status. Whether that was
+  // appropriate depends on whether VistaDex was right, which needs ground truth: the team's answer key for the
+  // fixed study ideas. Each entry matches a report claim by words that must all appear in the claim text, and
+  // gives the truth found by the team with a source: "true", "false", "disputed" or "unknown" (no reliable
+  // evidence either way, so "unverified" is the right status). truth null = not decided yet, never guessed.
+  // TODO(team): fill in truth and source for each claim of ideas A to D before the analysis is reported.
+  var DEFAULT_ANSWER_KEY = {
+    A: [{ match: ["no such tool"], truth: null, source: "" }, { match: ["diabetes app market"], truth: null, source: "" }, { match: ["meal logs"], truth: null, source: "" }],
+    B: [{ match: ["no platform"], truth: null, source: "" }, { match: ["ed-tech market"], truth: null, source: "" }, { match: ["university clubs"], truth: null, source: "" }],
+    C: [{ match: ["static question banks"], truth: null, source: "" }, { match: ["job-readiness market"], truth: null, source: "" }, { match: ["500 hired candidates"], truth: null, source: "" }],
+    D: [{ match: ["homejoy"], truth: null, source: "" }, { match: ["home-services market"], truth: null, source: "" }, { match: ["repair records"], truth: null, source: "" }]
+  };
+  var RIGHT_STATUS = { "true": "confirmed", "false": "contradicted", disputed: "disputed", unknown: "unverified" };
+  function keyEntry(key, idea, claimText) {
+    var low = String(claimText || "").toLowerCase();
+    var list = (key && key[idea]) || [];
+    for (var i = 0; i < list.length; i++) {
+      var words = list[i].match || [];
+      if (words.length && words.every(function (w) { return low.indexOf(String(w).toLowerCase()) >= 0; })) return list[i];
+    }
+    return null;
+  }
+  function relianceMatrix(ev, key) {
+    var snaps = {}, codeBySid = {};
+    ev.forEach(function (e) {
+      var q = e.payload || {};
+      if (e.type === "participant_registered" && q.track === "study" && normCode(q.code)) codeBySid[e.session_id] = normCode(q.code);
+      if (e.type === "vistadex_report_snapshot" && q.run_id && q.report) snaps[e.session_id + "\u0000" + q.run_id] = q;
+    });
+    var latest = {}, order = [];
+    ev.forEach(function (e) {
+      if (e.type !== "claim_vote") return;
+      var q = e.payload || {}, k = e.session_id + "\u0000" + q.run_id + "\u0000" + q.claim_index;
+      if (!latest[k]) order.push(k);
+      latest[k] = { sid: e.session_id, run: q.run_id, index: q.claim_index, vote: q.vote, status: q.status };
+    });
+    var m = { appropriateReliance: 0, overReliance: 0, underReliance: 0, appropriateOverride: 0, notSure: 0, keyed: 0, unkeyed: 0, votes: order.length, keyReady: false, byParticipant: [] };
+    var per = {};
+    Object.keys(key || {}).forEach(function (idea) { (key[idea] || []).forEach(function (x) { if (x.truth) m.keyReady = true; }); });
+    order.forEach(function (k) {
+      var v = latest[k], snap = snaps[v.sid + "\u0000" + v.run];
+      var claim = snap && snap.report.claims ? snap.report.claims[v.index] : null;
+      var entry = claim ? keyEntry(key, snap.idea_key, claim.claim) : null;
+      if (!entry || !entry.truth || !RIGHT_STATUS[entry.truth]) { m.unkeyed++; return; }
+      m.keyed++;
+      var code = codeBySid[v.sid] || v.sid;
+      var p = per[code] || (per[code] = { code: code, appropriateReliance: 0, overReliance: 0, underReliance: 0, appropriateOverride: 0, notSure: 0 });
+      var right = (claim.status || v.status) === RIGHT_STATUS[entry.truth];
+      var cell = v.vote === "agree" ? (right ? "appropriateReliance" : "overReliance") : v.vote === "disagree" ? (right ? "underReliance" : "appropriateOverride") : "notSure";
+      m[cell]++; p[cell]++;
+    });
+    m.byParticipant = Object.keys(per).sort().map(function (c) { return per[c]; });
+    var decided = m.keyed - m.notSure;
+    m.appropriatePct = decided ? Math.round(100 * (m.appropriateReliance + m.appropriateOverride) / decided) : null;
+    return m;
+  }
+
+  var BASIS = ["answer", "sources", "own_knowledge", "own_search", "other"];
+  function basisCounts(pairs, c) {
+    var counts = {}, asked = 0;
+    BASIS.forEach(function (b) { counts[b] = 0; });
+    pairs.forEach(function (p) { var b = p[c] && p[c].basis; if (!b) return; asked++; b.forEach(function (x) { if (counts[x] != null) counts[x]++; }); });
+    return { asked: asked, counts: counts };
+  }
+  // "This looks wrong" in the public report (study-19): which claims and objections people contest.
+  function flagCounts(ev) {
+    var f = { total: 0, claim: 0, objection: 0, runs: 0, byStatus: {} }, runs = {};
+    ev.forEach(function (e) {
+      if (e.type !== "report_flag") return;
+      var q = e.payload || {};
+      f.total++;
+      if (q.kind === "objection") f.objection++; else f.claim++;
+      if (q.kind === "claim" && q.status) f.byStatus[q.status] = (f.byStatus[q.status] || 0) + 1;
+      runs[e.session_id + "\u0000" + q.run_id] = 1;
+    });
+    f.runs = Object.keys(runs).length;
+    return f;
   }
 
   // Wilcoxon signed-rank test on paired differences. Zeros are dropped; ties get average ranks; two-sided p
@@ -575,7 +661,9 @@ export function researchJoin() {
     var result = { summary: summary, quiz: quiz, pairs: pairs, h1: h1, measures: measures, orderEffect: orderEffect, h2: h2, h3: h3, h4: h4,
       direction: direction, comprehension: comprehension, attention: attention,
       reportMedianMin: reportSec.length ? Math.round(median(reportSec) / 6) / 10 : null,
-      segments: segments, funnel: funnel, quality: quality, runs: runs, votes: votes, comparison: chatbotComparison(ev) };
+      segments: segments, funnel: funnel, quality: quality, runs: runs, votes: votes, comparison: chatbotComparison(ev),
+      basis: { baseline: basisCounts(pairs, "baseline"), vistadex: basisCounts(pairs, "vistadex") },
+      reliance: relianceMatrix(ev, (opts && opts.answerKey) || DEFAULT_ANSWER_KEY), flags: flagCounts(ev) };
     result.findings = findings(result);
     return result;
   }
@@ -881,7 +969,8 @@ export function researchJoin() {
   return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct,
     pairedParticipants: pairedParticipants, wilcoxon: wilcoxon, mannWhitney: mannWhitney, analyzeStudy: analyzeStudy,
     chatbotComparison: chatbotComparison, textFeatures: textFeatures, signTest: signTest, reportText: reportText,
-    exportTables: exportTables, toCSV: toCSV, EVIDENCE_CONTROLS: EVIDENCE_CONTROLS, SECTIONS: SECTIONS };
+    exportTables: exportTables, toCSV: toCSV, EVIDENCE_CONTROLS: EVIDENCE_CONTROLS, SECTIONS: SECTIONS,
+    relianceMatrix: relianceMatrix, DEFAULT_ANSWER_KEY: DEFAULT_ANSWER_KEY, BASIS: BASIS };
 }
 
 const join = researchJoin();
@@ -898,3 +987,6 @@ export const exportTables = join.exportTables;
 export const chatbotComparison = join.chatbotComparison;
 export const textFeatures = join.textFeatures;
 export const signTest = join.signTest;
+export const relianceMatrix = join.relianceMatrix;
+export const DEFAULT_ANSWER_KEY = join.DEFAULT_ANSWER_KEY;
+export const BASIS = join.BASIS;

@@ -1,6 +1,6 @@
 // ── Report — one long page: Summary · Profile · Claims · Leads to check · Objections · Big Tech risk · Legal · Market ──
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowRight, FileDown, MessageSquareText, RotateCcw } from "lucide-react";
+import { ArrowDown, ArrowRight, FileDown, Info, MessageSquareText, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { features } from "@/edition";
@@ -129,6 +129,7 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
             ({productCount} similar product{productCount === 1 ? "" : "s"}, {report.graveyard_matches.length} shut-down startup{report.graveyard_matches.length === 1 ? "" : "s"})
             and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
+          <RelyNote claims={report.claims.length} sources={sources} />
           <Actions onAnother={another} />
           {closing && (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-inner bg-muted p-4 print:hidden">
@@ -256,4 +257,24 @@ function useScrollSpy(list: { id: SectionId }[]): [SectionId, (id: SectionId) =>
     setActive(id);
   };
   return [active, pin];
+}
+
+// "Before you rely on this" (study-19): what the report can and cannot tell you, at the top of every report
+// (Amershi et al. 2019, G1 and G2; Kim et al. 2024: plain first-person uncertainty lowers over-reliance).
+export function RelyNote({ claims, sources }: { claims: number; sources: number }) {
+  return (
+    <aside aria-labelledby="rely-note-title" className="mt-4 flex gap-3 rounded-inner bg-muted p-4">
+      <Info aria-hidden className="mt-0.5 size-5 shrink-0 text-foreground" />
+      <div className="max-w-[66ch] text-[0.9375rem] leading-relaxed text-foreground">
+        <p id="rely-note-title" className="font-semibold">Before you rely on this</p>
+        <p className="mt-1">
+          We checked {claims} claim{claims === 1 ? "" : "s"} against {sources} independent source{sources === 1 ? "" : "s"} found by a web search, and searched for similar products,
+          startups that shut down and Big Tech activity. We can miss things and we can be wrong: open the sources for anything you would act on.
+          “Unverified” means we could not find two independent sources that agree, not that the claim is false.
+        </p>
+        <button type="button" onClick={() => navigate(PATHS.how)} data-control="report_how_it_works"
+          className="mt-2 text-sm font-medium text-link underline underline-offset-4 print:hidden">What VistaDex can and cannot do</button>
+      </div>
+    </aside>
+  );
 }

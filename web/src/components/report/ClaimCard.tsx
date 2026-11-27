@@ -12,6 +12,12 @@ import type { Claim, Evidence } from "@/types";
 const withScheme = (u: string) => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
 export const sourceCount = (urls: string[]) => independentSourceCount((urls || []).map(withScheme)) as number;
 
+// Plain first-person uncertainty where the evidence is open (Kim et al. FAccT 2024). Ink, never a status hue.
+const UNSURE: Partial<Record<Claim["status"], string>> = {
+  unverified: "We're not sure: we could not find two independent sources that agree. Check it yourself before relying on it.",
+  disputed: "We're not sure: our sources disagree. Read both sides before relying on it.",
+};
+
 export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number; runId: string | null }) {
   const [open, setOpen] = useState(false);
   const sourcesId = useId();
@@ -39,6 +45,7 @@ export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number
       <div className="mt-4 rounded-inner bg-muted p-4">
         <p className="eyebrow text-muted-foreground">Why this status</p>
         <p className="mt-1.5 text-[0.9375rem] leading-relaxed">{claim.reasoning || "No reasoning was recorded."}</p>
+        {UNSURE[claim.status] && <p className="mt-2 text-[0.9375rem] font-medium leading-relaxed">{UNSURE[claim.status]}</p>}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

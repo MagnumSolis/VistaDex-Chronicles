@@ -45,7 +45,16 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-20 (HAI design audit fixes: CURRENT)
+## study_version 2026-11-study-22 (idea C retired, idea E added: CURRENT)
+
+Bumped because the preset study ideas changed (decision: 2026-11-27). No new events or payload keys; `run_started.sample` can now be `study_E` and no longer `study_C`.
+
+- **Idea C retired.** Its live server run took 388 s, past the client's 240 s timeout, so participants assigned C could not finish the VistaDex part. Ideas D (23 s) and E (21 s) were verified live.
+- **Idea E added** (flatmate rent and bill splitter over UPI, India). It takes a new letter: C is never reused, so data already collected under C stays separate. The answer key has entries for E; C's stay for the collected data.
+- **Assignment keys are now A, B, D, E** (or the participant's own idea). A browser that still holds a participant assigned C is treated as unregistered: their progress is cleared and the study page asks them to register again, so both parts judge the same valid idea (never a silent switch to A).
+- Report C pairs collected before study-22 as their own idea group; the remaining ideas are unchanged, so A, B and D pairs pool across versions.
+
+## study_version 2026-11-study-20 (HAI design audit fixes)
 
 Bumped because the report a participant reads changed (decision: 2026-11-27, design audit against Amershi et al. 2019 and BITS F364 L20-21). No new events or payload keys.
 
@@ -61,7 +70,7 @@ Bumped because the study flow, the visitor-facing report and the telemetry chang
 - **Earlier participants stay in.** The analysis pools every study version; each pair carries the version its participant saw (`pairs[].version`, `paired.csv` `study_version`, the console's Version column). Measures added in study-19 are empty for earlier versions, never filled in. Report in the paper how many pairs saw each version, and run the main tests with and without the earlier pairs as a robustness check.
 - **Order counterbalanced again** by the code's number: odd (or no number) does the AI chatbot first, even does VistaDex first (`partOrder` in `web/src/study/participant.ts`), the same rule as the comparison page's option order. Order is now a factor (`orderEffect`), no longer a stated limitation. study-16 to 18 were chatbot first, except the study-16 walkthrough path (see study-17).
 - **"What is your judgement of the idea based on?"** after each part (Kim et al., FAccT 2024): multi-select `basis` in `condition_survey` and `run_scoped_survey`: `answer` (what the tool said), `sources` (sources I opened), `own_knowledge`, `own_search`, `other`. Tells reliance on the tool apart from the participant's own checking.
-- **Appropriate reliance.** Each claim vote (agree = accepts VistaDex's status, disagree = overrides it) is set against the team's answer key for ideas A to D (`DEFAULT_ANSWER_KEY` in `worker/src/research-join.js`): appropriate reliance, over-reliance, under-reliance, appropriate override (console: Paired study; `reliance.csv`). **TODO(team): fill in the key** (truth `true` / `false` / `disputed` / `unknown`, with a source, for each claim) before reporting; until then every vote is "unkeyed" and the console says so. It applies to earlier versions' votes too, since their claim votes and snapshots are stored.
+- **Appropriate reliance.** Each claim vote (agree = accepts VistaDex's status, disagree = overrides it) is set against the team's answer key for ideas A, B, D, E (`DEFAULT_ANSWER_KEY` in `worker/src/research-join.js`): appropriate reliance, over-reliance, under-reliance, appropriate override (console: Paired study; `reliance.csv`). **TODO(team): fill in the key** (truth `true` / `false` / `disputed` / `unknown`, with a source, for each claim) before reporting; until then every vote is "unkeyed" and the console says so. It applies to earlier versions' votes too, since their claim votes and snapshots are stored.
 - **Report:** a "Before you rely on this" note in every report's summary (what was checked, that it can miss things and be wrong, what "unverified" means; Amershi G1/G2), and a plain "We're not sure" line on unverified and disputed claims (Kim et al. 2024).
 - **"This looks wrong"** on each claim and objection of the visitor's own report (Amershi G9/G15, contestability): new event `report_flag` { run_id, kind, index, status, severity }, controls `report_flag_claim`, `report_flag_objection`. Counted in the console.
 
@@ -107,8 +116,8 @@ Bumped because the chatbot part changed (decision: 2026-11-23).
 
 Bumped because the study page changed (decision: 2026-11-23). No new events or payload keys.
 
-- **Own idea.** Besides ideas A to D, a study participant can pick "My own idea" and type it once on the study page (title, one-line pitch, problem, solution, optional moat: the Screen an idea fields). The same text is the paragraph they copy into the AI chatbot and the input filled into Screen an idea, so both parts still judge one identical idea. The text stays in the browser (localStorage, removed with the participant record); telemetry records `condition_started.idea_key = "own"` and the run's `sample` is null.
-- **For the analysis.** Each own-idea pair is still within-subject (same person, same idea, both tools), so H1 holds. But own ideas differ between people and the participant knows them well, so report preset (A to D) and own-idea pairs separately as well as together; `paired.csv` has `idea = own` for them. An answer key cannot cover own ideas.
+- **Own idea.** Besides ideas A, B, D and E, a study participant can pick "My own idea" and type it once on the study page (title, one-line pitch, problem, solution, optional moat: the Screen an idea fields). The same text is the paragraph they copy into the AI chatbot and the input filled into Screen an idea, so both parts still judge one identical idea. The text stays in the browser (localStorage, removed with the participant record); telemetry records `condition_started.idea_key = "own"` and the run's `sample` is null.
+- **For the analysis.** Each own-idea pair is still within-subject (same person, same idea, both tools), so H1 holds. But own ideas differ between people and the participant knows them well, so report preset (A, B, D, E) and own-idea pairs separately as well as together; `paired.csv` has `idea = own` for them. An answer key cannot cover own ideas.
 - **The bump resets consent**, as every bump does.
 
 ## study_version 2026-11-study-13 (graveyard quiz: fresh questions and engagement events)
@@ -140,7 +149,7 @@ Bumped because a score and a telemetry enum changed (decision: 2026-11-12, docs/
 - **Graveyard distance with no match is capped at 70** (was 100): finding no lookalike is not proof nobody tried. Most reports match nothing, so VistaDex Scores from study-11 on are lower than before for those ideas; do not compare scores across this version.
 - **Roles.** The Screen an idea form adds Student and Other; the feedback form adds Accelerator / incubator and Student. `run_started.role` and `feedback_submitted.role` gain those values. Role-based comparisons now have a student group from the field track too.
 - **Wording.** The progress screen no longer marks Legal & market as skipped on live runs; How it works describes the live graveyard (fleet-confirmed, two independent pages each) instead of the 18-entry offline seed; the walkthrough's legal step describes the live section.
-- **Same input, same report** (P0-7): a report is cached for 24 hours by its exact input, and the team can freeze a reviewed report (Console, Research, Report cache). **Freeze study ideas A to D before the study**, so every participant with the same idea sees the same report. Reports show "Evidence gathered <date>".
+- **Same input, same report** (P0-7): a report is cached for 24 hours by its exact input, and the team can freeze a reviewed report (Console, Research, Report cache). **Freeze study ideas A, B, D and E before the study**, so every participant with the same idea sees the same report. Reports show "Evidence gathered <date>".
 - **Privacy** (P0-6): data older than 12 months is deleted daily; runs from visitors who are not recorded keep only a minimal log (no text) and are never cached. The Welcome notice says so.
 - **Reliability** (P0-2, P0-3): 3 screenings a minute per visitor; provider calls have timeouts and one retry; a run never exceeds its call budget, and legal markets it could not search are listed as "not searched this run".
 - **The bump resets consent**, as every bump does.

@@ -10,7 +10,7 @@ import { FIELD_LIMITS, REQUIRED_FIELDS } from "@proto/core/input.js";
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 type Ev = { type: string; payload: Record<string, unknown> };
-const participant = (track: "study" | "field", ideaKey = "C") => localStorage.setItem("vistadex_participant", JSON.stringify({
+const participant = (track: "study" | "field", ideaKey = "E") => localStorage.setItem("vistadex_participant", JSON.stringify({
   track, code: track === "study" ? "P03" : "", role: null, ideaKey: track === "study" ? ideaKey : "",
   order: track === "study" ? ["baseline", "vistadex"] : null, registered_at: "2026-11-09T00:00:00Z",
 }));
@@ -38,16 +38,16 @@ describe("assigned idea in the VistaDex condition", () => {
   });
 
   it("a study participant finds the assigned idea filled in, and the run is marked study_<key>", async () => {
-    participant("study", "C");
+    participant("study", "E");
     baselineDone();
     const { tm } = await openForm();
-    expect(field(/^Idea title/)).toBe("AI mock-interview platform");
-    expect(field(/^Solution/)).toContain("simulates a real interviewer");
-    expect(screen.getByText(/Your assigned idea \(Idea C\) is filled in/)).toBeTruthy();
+    expect(field(/^Idea title/)).toBe("Flatmate rent and bill splitter");
+    expect(field(/^Solution/)).toContain("collects each share automatically over UPI");
+    expect(screen.getByText(/Your assigned idea \(Idea E\) is filled in/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
     await reportShown();
     const started = (tm.events() as Ev[]).find(e => e.type === "run_started")!;
-    expect(started.payload.sample).toBe("study_C");
+    expect(started.payload.sample).toBe("study_E");
   }, 30000);
 
   it("an edited assigned idea is not marked as the assigned sample", async () => {

@@ -24,7 +24,7 @@ and all of it by role (founder, investor, student, ...) and channel (LinkedIn, X
 
 **What the data cannot show.** Calibration: whether confidence moved toward the *right* answer. No idea
 here has a recorded right answer, so H1 is confidence *change*. If the paper needs calibration, write an
-answer key for the four study ideas (A to D) before the study: for each claim, the verdict two team
+answer key for the four study ideas (A, B, D, E; C is retired) before the study: for each claim, the verdict two team
 members agree on from their own research. TODO(team): decide whether to add the key.
 
 ## 2. Two tracks
@@ -49,7 +49,7 @@ members agree on from their own research. TODO(team): decide whether to add the 
    deploy UI changes while the study runs; if you must, note the date and analyse by version (Insights,
    Data quality, and `summary.json` list the versions).
 3. **Prepare the codes and ideas.** `P01`, `P02`, ... up to the number you recruit, each with an assigned
-   idea, rotated: P01 A, P02 B, P03 C, P04 D, then again from A. Keep this sheet *outside the repository*, with the date, who ran the session
+   idea, rotated: P01 A, P02 B, P03 D, P04 E, then again from A (idea C is retired: never assign it). Keep this sheet *outside the repository*, with the date, who ran the session
    and anything unusual. Note on the sheet when a participant used their own idea instead (idea "own");
    decide as a team how many own-idea sessions you want, since they are analysed separately too. Never put names in the app.
 4. **Decide the sample size now.** A paired Wilcoxon test cannot reach p < 0.05 with fewer than 6
@@ -180,7 +180,7 @@ goes into the repository: the script refuses an output folder inside it.
 ## 7a. Rating the two answers (codebook for `chatbot-answers.csv`)
 
 Two raters, independently, each with their own copy of the sheet. Rate every row's chatbot answer and
-VistaDex report on each dimension, 1 (poor) to 5 (excellent). For ideas A to D, agree on the facts first
+VistaDex report on each dimension, 1 (poor) to 5 (excellent). For ideas A, B, D and E, agree on the facts first
 (the answer key in section 1, if the team writes one); for own ideas, rate from what you can check in ten
 minutes. Raters can tell the tools apart from their style, so say in the paper that rating was not blind.
 

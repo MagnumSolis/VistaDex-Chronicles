@@ -12,7 +12,8 @@
 // study-18 = the report snapshot carries the run's trace_id; the Worker keeps each participant's chatbot answer and report side by side (study_comparisons).
 // study-19 = appropriate reliance: parts counterbalanced by the code's number, "what is your judgement based on?" after each part, "Before you rely on this" and plain uncertainty in reports, "This looks wrong" on claims and objections.
 // study-20 = HAI audit fixes: "Before you rely on this" moved above the score, the score says how many claims have two independent sources, "What's new" on How it works.
-export const STUDY_VERSION = "2026-11-study-20";
+// study-22 = study idea C retired (its live run took longer than the client waits), idea E added; preset ideas A, B, D, E.
+export const STUDY_VERSION = "2026-11-study-22";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

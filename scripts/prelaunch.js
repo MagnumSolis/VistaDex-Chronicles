@@ -30,6 +30,7 @@ const decisions = [
   "Big Tech company list (prototype/core/scoring-config.js)",
   "demo category → industry mapping (web/src/lib/cohort.ts)",
   "pitch edition is unlocked client-side only (#edition=pitch); no separate pitch code is enforced by the Worker (web/src/edition.ts)",
+  "reliance answer key: truth and source for each claim of study ideas A to D, empty until the team fills it in (worker/src/research-join.js DEFAULT_ANSWER_KEY)",
   "opt-out policy: Welcome offers \"Use without recording\" (prototype/ui/study-config.js NOTICE)",
   "idea text is not stored in telemetry; the Worker trace keeps extracted claim text (prototype/ui/study-config.js NOTICE)",
   "no persistent server storage for reports: public reports live in the visitor's browser, pitch in memory + demo cohort (web/src/lib/reports.ts)",

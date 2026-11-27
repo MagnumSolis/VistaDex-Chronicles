@@ -31,9 +31,10 @@ members agree on from their own research. TODO(team): decide whether to add the 
 
 - **Study track (controlled, within subjects).** Recruited participants (students, founders, anyone you
   sit with) do both parts on the same idea: an AI chatbot of their choice with one fixed prompt, then
-  VistaDex, then a comparison of the two. From study-16 the order is fixed (chatbot first), because the
-  comparison needs both answers; up to study-15 it was counterbalanced by the code's parity. This is where
-  H1 and H5 are tested.
+  VistaDex, in an order set by the code's number (odd: chatbot first; even: VistaDex first), then a
+  comparison of the two. study-16 to 18 fixed the order (chatbot first); study-19 counterbalances it again,
+  and those earlier participants stay in the analysis, tagged with their version. This is where H1, H5 and
+  the reliance measures are tested.
 - **Field track (observational).** Everyone who opens the public link (LinkedIn, X, investors) and accepts
   the Welcome notice, screening their own idea. Self-selected, so use it for descriptive findings (who
   reads what, who opens evidence, how ratings differ by role), not for causal claims.
@@ -166,6 +167,15 @@ goes into the repository: the script refuses an output folder inside it.
     Big Tech companies the chatbot also named. These are counts from fixed word lists, not quality.
 11. **H5, answer quality:** the human ratings from section 7a, Wilcoxon per dimension (Holm-corrected),
     with inter-rater agreement (weighted Cohen's kappa or ICC) reported before any test.
+12. **Appropriate reliance (study-19):** with the team's answer key filled in (`DEFAULT_ANSWER_KEY`, worker/src/research-join.js),
+    each claim vote is appropriate reliance, over-reliance, under-reliance or an appropriate override
+    (`reliance.csv`). Report the four counts and the share of appropriate decisions, per participant and overall.
+    Write the key before looking at the votes, from sources, and keep it with the paper's materials.
+13. **Judgement basis (study-19):** what each judgement was based on, after each part (`chatbot_basis`,
+    `vistadex_basis` in `paired.csv`): how often people relied on the tool's answer alone versus their own
+    checking, compared between the two parts with McNemar's test per option.
+14. **Versions:** state how many pairs saw each study version (`study_version`); run the main tests on all
+    pairs and on study-19 pairs only, and report both.
 
 ## 7a. Rating the two answers (codebook for `chatbot-answers.csv`)
 
@@ -207,9 +217,10 @@ change to the study; never test against the live site with recording on.
 
 ## 9. Limits to state in the paper
 
-Confidence change is not calibration (section 1). The field track is self-selected. From study-16 the
-order is fixed (chatbot first, then VistaDex), so an order effect cannot be told apart from the tool
-effect; the confidence before VistaDex is already after the chatbot. The chatbot got one fixed prompt that
+Confidence change is not calibration (section 1). The field track is self-selected. study-16 to 18 fixed
+the order (chatbot first), so for those pairs an order effect cannot be told apart from the tool effect;
+study-19 counterbalances by code number, and the analysis tests the order. The study-19 report also adds a
+"Before you rely on this" note and "This looks wrong", so earlier pairs saw a slightly different report. The chatbot got one fixed prompt that
 asks for what VistaDex does, which is fairer for the comparison but not how everyone uses a chatbot.
 Chatbot answers vary by tool, model, plan and whether it searched the web (recorded, but the groups will be
 small). Copying an answer often drops its citation links, so link counts undercount the chatbot. The

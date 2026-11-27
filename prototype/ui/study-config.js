@@ -10,7 +10,8 @@
 // study-16 = chatbot part with a fixed prompt and the pasted answer, fixed order, comparison page, fresh start per code.
 // study-17 = a study participant always starts with their next part (Start with walkthrough no longer opens Screen an idea first).
 // study-18 = the report snapshot carries the run's trace_id; the Worker keeps each participant's chatbot answer and report side by side (study_comparisons).
-export const STUDY_VERSION = "2026-11-study-18";
+// study-19 = appropriate reliance: parts counterbalanced by the code's number, "what is your judgement based on?" after each part, "Before you rely on this" and plain uncertainty in reports, "This looks wrong" on claims and objections.
+export const STUDY_VERSION = "2026-11-study-19";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

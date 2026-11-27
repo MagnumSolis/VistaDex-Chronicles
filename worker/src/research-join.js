@@ -898,11 +898,18 @@ export function researchJoin() {
     var per = ["runId", "pre", "preMoved", "post", "delta", "trust", "usefulness", "helpfulness", "effort", "sourcesChecked", "openText"];
     var ph = ["code", "sessions", "idea", "order", "order_inferred", "complete"];
     ["chatbot", "vistadex"].forEach(function (c) { per.forEach(function (k) { ph.push(c + "_" + k); }); });
-    t["paired.csv"] = toCSV(ph.concat(["vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct"]), result.pairs.map(function (p) {
+    // study_version and basis (study-19) at the end: earlier versions have no basis (empty, not "none").
+    t["paired.csv"] = toCSV(ph.concat(["vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis"]), result.pairs.map(function (p) {
       var row = [p.code, p.sessions.join(";"), p.idea, p.order, p.orderInferred, p.complete];
       [p.baseline, p.vistadex].forEach(function (c) { per.forEach(function (k) { row.push(c[k]); }); });
-      return row.concat([p.vistadex.clicks, p.vistadex.votes, p.vistadex.agreePct]);
+      return row.concat([p.vistadex.clicks, p.vistadex.votes, p.vistadex.agreePct, p.version,
+        p.baseline.basis ? p.baseline.basis.join(";") : null, p.vistadex.basis ? p.vistadex.basis.join(";") : null]);
     }));
+    if (result.reliance) {
+      t["reliance.csv"] = toCSV(["code", "appropriate_reliance", "over_reliance", "under_reliance", "appropriate_override", "not_sure"], result.reliance.byParticipant.map(function (r) {
+        return [r.code, r.appropriateReliance, r.overReliance, r.underReliance, r.appropriateOverride, r.notSure];
+      }));
+    }
     var kinds = ["graveyard", "competitors", "big_tech", "legal", "market"];
     t["runs.csv"] = toCSV(["session_id", "run_id", "label", "track", "role", "channel", "industries", "mode", "sample", "completed", "pre", "pre_moved", "post", "delta",
       "claim_links_opened", "other_links_opened"].concat(kinds.map(function (k) { return k + "_links"; })).concat(["evidence_opened", "votes", "agrees", "disagrees", "not_sure", "agree_pct",

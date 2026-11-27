@@ -105,7 +105,10 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
             </dl>
           </div>
 
-          <div className="mt-6"><ScoreSummary scores={report.scores} band={report.overlap_band} runId={runId} /></div>
+          {/* Expectations before the number (Amershi G1/G2): people anchor on the first figure they see. */}
+          <RelyNote claims={report.claims.length} sources={sources} mock={entry.mode === "mock" || entry.mode === "proxy-mock"} />
+          <div className="mt-4"><ScoreSummary scores={report.scores} band={report.overlap_band} runId={runId}
+            backed={{ two: report.claims.filter(c => sourceCount(c.source_urls) >= 2).length, total: report.claims.length }} /></div>
 
           {/* One tile per status with equal presence. */}
           <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="summary">
@@ -129,7 +132,6 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
             ({productCount} similar product{productCount === 1 ? "" : "s"}, {report.graveyard_matches.length} shut-down startup{report.graveyard_matches.length === 1 ? "" : "s"})
             and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
-          <RelyNote claims={report.claims.length} sources={sources} mock={entry.mode === "mock" || entry.mode === "proxy-mock"} />
           <Actions onAnother={another} />
           {closing && (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-inner bg-muted p-4 print:hidden">
@@ -269,7 +271,7 @@ export function RelyNote({ claims, sources, mock = false }: { claims: number; so
       ? `We checked ${plural(claims, "claim")} against ${plural(sources, "independent source")} found on the web, and searched for similar products, startups that shut down and Big Tech activity.`
       : `We checked ${plural(claims, "claim")} but found no independent sources for them, and searched for similar products, startups that shut down and Big Tech activity.`;
   return (
-    <aside aria-labelledby="rely-note-title" className="mt-4 flex gap-3 rounded-inner bg-muted p-4">
+    <aside aria-labelledby="rely-note-title" className="mt-5 flex gap-3 rounded-inner bg-muted p-4">
       <Info aria-hidden className="mt-0.5 size-5 shrink-0 text-foreground" />
       <div className="max-w-[66ch] text-[0.9375rem] leading-relaxed text-foreground">
         <p id="rely-note-title" className="font-semibold">Before you rely on this</p>

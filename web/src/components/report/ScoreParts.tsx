@@ -36,7 +36,9 @@ export function OverlapBadge({ band, className }: { band: OverlapBand; className
 }
 
 // ── The score and its breakdown ──
-export function ScoreSummary({ scores, band, runId }: { scores?: Scores; band?: OverlapBand; runId: string | null }) {
+// backed: how many claims have two independent sources, shown next to the number so a score built on little
+// checked evidence cannot pass for a well-evidenced one (Lecture 20-21: a single number anchors judgement).
+export function ScoreSummary({ scores, band, runId, backed }: { scores?: Scores; band?: OverlapBand; runId: string | null; backed?: { two: number; total: number } }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   if (!scores) {
@@ -55,6 +57,12 @@ export function ScoreSummary({ scores, band, runId }: { scores?: Scores; band?: 
             <p className="mt-1 font-display leading-none"><span className="text-[4rem]">{v.value}</span><span className="ml-1 text-xl text-muted-foreground">/ 100</span></p>
           )}
           {v.sample && <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium"><FlaskConical aria-hidden className="size-4" /> Includes sample data</p>}
+          {backed && backed.total > 0 && (
+            <p className="mt-2 max-w-[52ch] text-sm font-medium leading-relaxed">
+              Evidence behind it: <span className="font-mono">{backed.two}</span> of <span className="font-mono">{backed.total}</span> claim{backed.total === 1 ? "" : "s"} {backed.two === 1 ? "has" : "have"} two independent sources.
+              {v.value !== null && backed.two === 0 && " So this number rests on very little checked evidence."}
+            </p>
+          )}
         </div>
         {band && <div className="text-right"><p className="eyebrow mb-1 text-muted-foreground">Overlap</p><OverlapBadge band={band} /></div>}
       </div>

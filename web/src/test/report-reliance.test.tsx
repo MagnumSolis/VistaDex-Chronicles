@@ -29,6 +29,14 @@ describe("a report sets expectations and admits uncertainty", () => {
     expect(within(note).getByRole("button", { name: "What VistaDex can and cannot do" })).toBeTruthy();
   }, 30000);
 
+  it("the note comes before the score, and the score says how much evidence backs it", async () => {
+    await report();
+    const note = screen.getByRole("complementary", { name: "Before you rely on this" });
+    const score = screen.getByText("VistaDex Score");
+    expect(note.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/^Evidence behind it:/).textContent).toMatch(/of \d+ claims? ha(s|ve) two independent sources/);
+  }, 30000);
+
   it("an unverified claim says plainly that we are not sure", async () => {
     await report();
     const unverified = screen.getAllByRole("article").filter(a => /Unverified$/.test(a.getAttribute("aria-label") || ""));

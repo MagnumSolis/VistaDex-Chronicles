@@ -73,6 +73,13 @@
       "run_id",
       "url"
     ],
+    "report_flag": [
+      "index",
+      "kind",
+      "run_id",
+      "severity",
+      "status"
+    ],
     "graveyard_viewed": [
       "ms_after_report",
       "run_id"
@@ -433,6 +440,10 @@
       "solution",
       "title"
     ],
+    "report_flag.kind": [
+      "claim",
+      "objection"
+    ],
     "claim_vote.vote": [
       "agree",
       "disagree",
@@ -590,6 +601,8 @@
     "legal_registry_link",
     "legal_rule_source_link",
     "market_citation_link",
+    "report_flag_claim",
+    "report_flag_objection",
     "report_save_pdf",
     "report_screen_another",
     "report_feedback_prompt",

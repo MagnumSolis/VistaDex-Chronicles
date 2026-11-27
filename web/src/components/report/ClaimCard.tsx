@@ -4,6 +4,7 @@ import { ChevronDown, ExternalLink, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CLAIM_TYPE_LABEL, STATUS, StatusTag } from "@/components/status";
 import { CardLabel } from "./ReportSection";
+import { FlagWrong } from "./FlagWrong";
 import { independentSourceCount, registrableDomain } from "@/proto";
 import * as telemetry from "@/telemetry";
 import type { Claim, Evidence } from "@/types";
@@ -49,9 +50,12 @@ export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-2 text-sm">
-          <Link2 aria-hidden className="size-4" />
-          <span><span className="font-mono font-medium">{n}</span> independent source{n === 1 ? "" : "s"}</span>
+        <span className="inline-flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <Link2 aria-hidden className="size-4" />
+            <span><span className="font-mono font-medium">{n}</span> independent source{n === 1 ? "" : "s"}</span>
+          </span>
+          <FlagWrong runId={runId} kind="claim" index={index} status={claim.status} />
         </span>
         {claim.source_urls.length > 0 && (
           <button type="button" onClick={toggle} aria-expanded={open} aria-controls={sourcesId}

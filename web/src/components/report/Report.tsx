@@ -168,7 +168,7 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
 
         <ReportSection id="objections" title="Objections" count={report.objections.length} runId={runId}
           intro="The strongest arguments against the idea, using what was found above. Read them as carefully as the claims.">
-          <Objections objections={report.objections} />
+          <Objections objections={report.objections} runId={runId} />
         </ReportSection>
 
         <ReportSection id="big_tech" title="Big Tech risk" runId={runId}

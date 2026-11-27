@@ -22,7 +22,7 @@ export const CONTROLS = [
   // report
   "report_section_jump", "idea_text_toggle", "score_breakdown_toggle", "competitor_link", "big_tech_source_link", "sources_toggle", "source_link",
   "lead_source_link", "legal_registry_link", "legal_rule_source_link", "market_citation_link",
-  "report_save_pdf", "report_screen_another", "report_feedback_prompt", "report_how_it_works", "report_empty_screen",
+  "report_flag_claim", "report_flag_objection", "report_save_pdf", "report_screen_another", "report_feedback_prompt", "report_how_it_works", "report_empty_screen",
   // contact
   "contact_feedback", "contact_your_data",
   // how it works

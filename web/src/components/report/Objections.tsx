@@ -1,9 +1,10 @@
 import { SeverityTag } from "@/components/status";
 import { CardLabel } from "./ReportSection";
+import { FlagWrong } from "./FlagWrong";
 import type { Objection } from "@/types";
 
 // Same card, type size and spacing as a claim: objections carry equal visual weight.
-export function Objections({ objections }: { objections: Objection[] }) {
+export function Objections({ objections, runId = null }: { objections: Objection[]; runId?: string | null }) {
   if (objections.length === 0) {
     return <p className="rounded-card bg-card p-5 text-[0.9375rem]">No objections were raised. That is not an endorsement.</p>;
   }
@@ -16,6 +17,7 @@ export function Objections({ objections }: { objections: Objection[] }) {
             <SeverityTag severity={o.severity} />
           </div>
           <p className="mt-4 text-[1.125rem] leading-relaxed text-foreground">{o.objection}</p>
+          <div className="mt-3"><FlagWrong runId={runId} kind="objection" index={i} severity={o.severity} /></div>
         </li>
       ))}
     </ol>

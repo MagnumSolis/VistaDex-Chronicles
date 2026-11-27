@@ -144,8 +144,15 @@ export function chatbotPrompt(key: string): string {
   ].join("\n");
 }
 
-/** Study track: register with a code. Since study-16 everyone does the AI chatbot first, then VistaDex, then
- *  compares the two (the comparison needs both answers; the order is a stated limitation). */
+/** study-19: the two parts are counterbalanced by the code's number (odd or no number: AI chatbot first;
+ *  even: VistaDex first), the rule the comparison page also uses for its option order. study-16 to 18 had
+ *  everyone do the chatbot first. */
+export function partOrder(code: string): [Condition, Condition] {
+  const num = parseInt(code.replace(/\D/g, ""), 10);
+  return Number.isFinite(num) && num % 2 === 0 ? ["vistadex", "baseline"] : ["baseline", "vistadex"];
+}
+
+/** Study track: register with a code; then both parts in the code's order, then the comparison. */
 export function registerStudyParticipant(code: string, role: string | null, ideaKey?: string): Participant {
   const clean = code.trim().slice(0, 12);
   // A different code or idea is a new participant: the parts an earlier participant finished in this
@@ -158,7 +165,7 @@ export function registerStudyParticipant(code: string, role: string | null, idea
     code: clean,
     role,
     ideaKey: ideaKey || randomIdeaKey(),
-    order: ["baseline", "vistadex"],
+    order: partOrder(clean),
     registered_at: new Date().toISOString(),
   };
   persist(p);

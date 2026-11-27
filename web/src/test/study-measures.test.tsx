@@ -43,10 +43,13 @@ describe("AI chatbot condition", () => {
     }
     expect(of(evs(), "chatbot_answer")[0].payload.run_id).toBe(runId);
     fireEvent.click(await screen.findByRole("radio", { name: "1-2" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "What the chatbot said" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "What I already knew" }));
     fireEvent.click(screen.getByRole("button", { name: /Submit and continue to VistaDex/ }));
 
     expect(of(evs(), "confidence_post", "baseline")[0].payload.run_id).toBe(runId);
     expect(of(evs(), "condition_survey", "baseline")[0].payload.sources_checked).toBe("1-2");
+    expect(of(evs(), "condition_survey", "baseline")[0].payload.basis).toEqual(["answer", "own_knowledge"]);
     expect(of(evs(), "condition_ended", "baseline")[0].payload).toEqual({ condition: "baseline", run_id: runId, verified_sources: 0 });
   }, 30000);
 
@@ -70,9 +73,12 @@ describe("VistaDex condition", () => {
     const runId = of(evs(), "run_started")[0].payload.run_id;
     expect(of(evs(), "condition_started", "vistadex")[0].payload).toEqual({ condition: "vistadex", idea_key: "D", order_position: 2 });
     fireEvent.click(screen.getByRole("radio", { name: "3+" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Sources I opened and read myself" }));
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
     expect(of(evs(), "condition_survey", "vistadex")[0].payload.sources_checked).toBe("3+");
     expect(of(evs(), "run_scoped_survey")[0].payload.sources_checked).toBe("3+");
+    expect(of(evs(), "condition_survey", "vistadex")[0].payload.basis).toEqual(["sources"]);
+    expect(of(evs(), "run_scoped_survey")[0].payload.basis).toEqual(["sources"]);
     expect(of(evs(), "condition_ended", "vistadex")[0].payload).toEqual({ condition: "vistadex", run_id: runId, verified_sources: 0 });
   }, 30000);
 

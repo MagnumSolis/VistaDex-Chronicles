@@ -46,6 +46,7 @@ export const CONTROLS = [
   "study_claim_agree", "study_claim_disagree", "study_claim_not_sure", "study_objection_agree", "study_objection_disagree", "study_objection_not_sure",
   "study_conf_pre", "study_conf_post", "study_sources_0", "study_sources_1_2", "study_sources_3p",
   "study_survey_open", "study_survey_submit", "comprehension_check",
+  "study_basis_answer", "study_basis_sources", "study_basis_own_knowledge", "study_basis_own_search", "study_basis_other",
   // graveyard quiz (while-you-wait)
   "quiz_start", "quiz_answer", "quiz_next", "quiz_finish",
   // not found

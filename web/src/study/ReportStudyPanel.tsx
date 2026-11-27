@@ -10,6 +10,8 @@ import type { Report } from "@/types";
 import { type Vote, logClaimVote, logConfidencePost, logConditionSurvey, logObjectionVote, logComprehensionCheck, logRunScopedSurvey } from "./studyEvents";
 import { flushNow } from "@/telemetry";
 import type { Condition } from "./participant";
+import { BasisQuestion } from "./BasisQuestion";
+import type { Basis } from "./studyEvents";
 
 /** One answer: a full-width rectangle (44px+) around a native radio with a visible dot, in the feedback
  *  page's colours. Nothing is preselected. onSelect runs on every press of the option itself (click,
@@ -91,6 +93,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
   const [helpfulness, setHelpfulness] = useState(4);
   const [effort, setEffort] = useState(4);
   const [open, setOpen] = useState("");
+  const [basis, setBasis] = useState<Basis[]>([]);
   const [checkedSources, setCheckedSources] = useState<number | null>(null);
   const [comprehension, setComprehension] = useState<"honest_uncertainty" | "system_failure" | "not_sure" | "other" | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -98,9 +101,9 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
   const submit = () => {
     logConfidencePost(condition, runId, confPost);
     const sourcesChecked = checkedSources === null ? null : checkedSources === 0 ? "0" : checkedSources === 1 ? "1-2" : "3+";
-    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
+    logConditionSurvey(condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked, basis });
     // Per-run copy for the learning analysis (H4): same answers, run-scoped.
-    logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
+    logRunScopedSurvey(runId, condition, { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked, basis });
     // Survey answers are the study's core measure: upload immediately, never wait for the batch window.
     flushNow().catch(() => {});
     setSubmitted(true);
@@ -166,6 +169,7 @@ export function ReportStudyPanel({ report, runId, condition, onDone }: {
             ))}
           </div>
         </fieldset>
+        <BasisQuestion tool="the VistaDex report" value={basis} onChange={setBasis} />
         <label className="mt-4 block">
           <span className={QUESTION}>In your words: what did the report make you think or feel about this idea? (optional)</span>
           <textarea

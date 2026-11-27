@@ -39,6 +39,8 @@ export async function runScreen(ideaOrInput, deps = {}) {
   const similarity = deps.similarity || lexicalSimilarity;
   const graveyard = deps.graveyard || [];
   const onStage = deps.onStage || (async () => {});
+  // Run deadline (providers/http.js): logged once, when it first stops or cuts short a provider call.
+  if (deps.budget && "onDeadline" in deps.budget) deps.budget.onDeadline = info => trace.log("deadline", info);
   trace.log("run_start", {
     retrieval: retrieval.name, similarity: similarity.name, structured_input: Boolean(input), samples: Boolean(deps.samples),
     llm: { extract: llm.available("extract"), classify: llm.available("classify"), objector: llm.available("objector") },

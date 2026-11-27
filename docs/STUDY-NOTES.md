@@ -45,7 +45,15 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-20 (HAI design audit fixes: CURRENT)
+## study_version 2026-11-study-21 (honest timeout error: CURRENT)
+
+Bumped because the telemetry changed (decision: 2026-11-27, fix/screen-timeout). The report is unchanged.
+
+- **A screening that takes too long now says so.** When the client gives up after 240 s, `run_failed` carries the new code `timeout` (it was `network`) and the visitor sees "This screening took too long" instead of "We couldn't reach the screening server". A rejected request is still `network`.
+- The server now ends a run after 150 s with the report built from what arrived (providers that had not answered abstain), so long runs end in a report rather than a client timeout.
+- When comparing failure rates across versions, read study-20 and earlier `network` failures as "timeout or network".
+
+## study_version 2026-11-study-20 (HAI design audit fixes)
 
 Bumped because the report a participant reads changed (decision: 2026-11-27, design audit against Amershi et al. 2019 and BITS F364 L20-21). No new events or payload keys.
 

@@ -16,6 +16,8 @@ ALLOWED_ORIGINS = "https://vistadex-app.pages.dev,https://magnumsolis.github.io,
 ACCESS_REQUIRED = "false"
 # Global cap on /screen runs per UTC day (counted in D1). "0" disables it.
 SCREEN_DAILY_CAP = "300"
+# Run deadline for one /screen, in ms: past it, provider calls stop and the report is built from what arrived (client waits 240 s).
+RUN_DEADLINE_MS = "150000"
 
 # Per-IP rate limits (Workers Rate Limiting API; Wrangler >= 4.36). period must be 10 or 60.
 # Check before deploy: that the binding is available on your Cloudflare plan (docs/DEPLOY.md).

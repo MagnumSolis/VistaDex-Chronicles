@@ -47,9 +47,11 @@ export function ScoreSummary({ scores, band, runId, backed }: { scores?: Scores;
   const v = scores.vistadex;
   const toggle = () => { setOpen(o => !o); };
   return (
-    <div className="rounded-card bg-card p-4 md:p-5" data-tour="score">
+    <div className="rounded-card bg-card p-4 md:p-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        {/* The walkthrough's score step points here: the number and what backs it (the whole card no longer
+            fits under the title on a laptop screen once "Before you rely on this" comes first). */}
+        <div data-tour="score">
           <p className="eyebrow text-muted-foreground">VistaDex Score</p>
           {v.value === null ? (
             <p className="mt-1 font-display text-[2.5rem] leading-none">Not enough data</p>

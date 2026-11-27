@@ -36,7 +36,9 @@ export function OverlapBadge({ band, className }: { band: OverlapBand; className
 }
 
 // ── The score and its breakdown ──
-export function ScoreSummary({ scores, band, runId }: { scores?: Scores; band?: OverlapBand; runId: string | null }) {
+// backed: how many claims have two independent sources, shown next to the number so a score built on little
+// checked evidence cannot pass for a well-evidenced one (Lecture 20-21: a single number anchors judgement).
+export function ScoreSummary({ scores, band, runId, backed }: { scores?: Scores; band?: OverlapBand; runId: string | null; backed?: { two: number; total: number } }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   if (!scores) {
@@ -45,9 +47,11 @@ export function ScoreSummary({ scores, band, runId }: { scores?: Scores; band?: 
   const v = scores.vistadex;
   const toggle = () => { setOpen(o => !o); };
   return (
-    <div className="rounded-card bg-card p-4 md:p-5" data-tour="score">
+    <div className="rounded-card bg-card p-4 md:p-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        {/* The walkthrough's score step points here: the number and what backs it (the whole card no longer
+            fits under the title on a laptop screen once "Before you rely on this" comes first). */}
+        <div data-tour="score">
           <p className="eyebrow text-muted-foreground">VistaDex Score</p>
           {v.value === null ? (
             <p className="mt-1 font-display text-[2.5rem] leading-none">Not enough data</p>
@@ -55,8 +59,14 @@ export function ScoreSummary({ scores, band, runId }: { scores?: Scores; band?: 
             <p className="mt-1 font-display leading-none"><span className="text-[4rem]">{v.value}</span><span className="ml-1 text-xl text-muted-foreground">/ 100</span></p>
           )}
           {v.sample && <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium"><FlaskConical aria-hidden className="size-4" /> Includes sample data</p>}
+          {backed && backed.total > 0 && (
+            <p className="mt-2 max-w-[52ch] text-sm font-medium leading-relaxed">
+              Evidence behind it: <span className="font-mono">{backed.two}</span> of <span className="font-mono">{backed.total}</span> claim{backed.total === 1 ? "" : "s"} {backed.two === 1 ? "has" : "have"} two independent sources.
+              {v.value !== null && backed.two === 0 && " So this number rests on very little checked evidence."}
+            </p>
+          )}
         </div>
-        {band && <div className="text-right"><p className="eyebrow mb-1 text-muted-foreground">Overlap</p><OverlapBadge band={band} /></div>}
+        {band && <div><p className="eyebrow mb-1 text-muted-foreground">Overlap</p><OverlapBadge band={band} /></div>}
       </div>
       <p className="mt-3 max-w-[64ch] text-sm leading-relaxed text-muted-foreground">
         {v.value === null ? v.reason : "A weighted mean of the axes below that have enough data. It describes the evidence found, not whether the idea will work."}

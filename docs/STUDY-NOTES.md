@@ -45,7 +45,16 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-19 (appropriate reliance: counterbalanced order, judgement basis, answer key, contesting: CURRENT)
+## study_version 2026-11-study-20 (HAI design audit fixes: CURRENT)
+
+Bumped because the report a participant reads changed (decision: 2026-11-27, design audit against Amershi et al. 2019 and BITS F364 L20-21). No new events or payload keys.
+
+- **"Before you rely on this" now opens the summary**, before the VistaDex Score (side by side from tablet width, note on the left; stacked above it on phones), so the caveat is read before the number anchors (it was below the status tiles in study-19).
+- **The score says how much evidence backs it:** "Evidence behind it: X of N claims have two independent sources", plus "So this number rests on very little checked evidence" when none do. The formula is unchanged, so scores stay comparable across versions.
+- **"What's new"** on How it works (Amershi G18).
+- study-19 and study-20 pairs differ only in this report presentation; pool them, and report the version split as for earlier versions.
+
+## study_version 2026-11-study-19 (appropriate reliance: counterbalanced order, judgement basis, answer key, contesting)
 
 Bumped because the study flow, the visitor-facing report and the telemetry changed (decision: 2026-11-27, redesign against BITS F364: Amershi et al. 2019 guidelines, Lectures 20-21 on appropriate reliance).
 

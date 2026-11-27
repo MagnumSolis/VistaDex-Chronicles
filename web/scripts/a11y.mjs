@@ -283,6 +283,9 @@ for (const [name, viewport, isMobile] of [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[
     for (let i = 0; i < 40 && !(await page.evaluate(() => scrollY + innerHeight >= document.documentElement.scrollHeight - 2)); i++) await page.mouse.wheel(0, 1200);
     const ok = await page.waitForFunction(() => document.querySelector("[data-control=report_section_jump][aria-current=location]")?.dataset.controlValue === "market", null, { timeout: 2000 }).then(() => true, () => false);
     if (!ok) problems.push(`[jump 1280x1400 pitch] ${id}: scrolled to the bottom, "${await page.evaluate(() => document.querySelector("[aria-current=location]")?.dataset.controlValue)}" is current, not "market"`);
+    // Let the last wheel scroll finish before opening the next report: a wheel scroll still in flight lands
+    // after the route's scroll to the top and leaves the next report a few pixels down (a test race).
+    await page.evaluate(() => new Promise(r => { let y = -1; const t = setInterval(() => { if (scrollY === y) { clearInterval(t); r(); } y = scrollY; }, 150); }));
   }
   await ctx.close();
 }

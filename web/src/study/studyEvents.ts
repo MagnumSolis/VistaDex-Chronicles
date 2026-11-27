@@ -35,7 +35,9 @@ export function logObjectionVote(runId: string, objectionIndex: number, severity
 
 /** H2 self-report: how many sources the participant opened or looked up themselves (null: not answered). */
 export type SourcesChecked = "0" | "1-2" | "3+" | null;
-type SurveyAnswers = { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string; sourcesChecked: SourcesChecked };
+/** study-19: what a judgement rests on (several may apply). */
+export type Basis = "answer" | "sources" | "own_knowledge" | "own_search" | "other";
+type SurveyAnswers = { trust: number; usefulness: number; helpfulness: number; effort: number; openText: string; sourcesChecked: SourcesChecked; basis: Basis[] };
 
 export function logConditionSurvey(condition: Condition, answers: SurveyAnswers) {
   track("condition_survey", {
@@ -45,6 +47,7 @@ export function logConditionSurvey(condition: Condition, answers: SurveyAnswers)
     helpfulness: answers.helpfulness,
     effort: answers.effort,
     sources_checked: answers.sourcesChecked,
+    basis: answers.basis,
     // The visitor wrote this text to be read (feedback field) — stored verbatim,
     // unlike usage telemetry which never stores idea or report content.
     open_text: answers.openText.slice(0, 2000),
@@ -74,6 +77,7 @@ export function logRunScopedSurvey(runId: string, condition: Condition, answers:
     helpfulness: answers.helpfulness,
     effort: answers.effort,
     sources_checked: answers.sourcesChecked,
+    basis: answers.basis,
     open_text: answers.openText.slice(0, 2000),
   });
 }

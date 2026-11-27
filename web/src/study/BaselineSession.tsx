@@ -13,6 +13,8 @@ import { Slider } from "@/components/ui/slider";
 import { flushNow } from "@/telemetry";
 import type { Participant } from "./participant";
 import { chatbotPrompt, conditionDone } from "./participant";
+import { BasisQuestion } from "./BasisQuestion";
+import type { Basis } from "./studyEvents";
 import {
   MAX_ANSWER_CHARS, logChatbotAnswer, logConditionEnded, logConditionStarted, logConditionSurvey, logConfidencePost, logConfidencePre,
   logParticipantProfile, newBaselineRunId, type SourcesChecked, type WebSearch,
@@ -84,6 +86,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
   const [sourcesChecked, setSourcesChecked] = useState<SourcesChecked>(null);
   const [minutes, setMinutes] = useState("");
   const [open, setOpen] = useState("");
+  const [basis, setBasis] = useState<Basis[]>([]);
 
   const tab = `Part ${part}: AI chatbot`;
   const title = <h1 className="font-display text-3xl">{first ? "Your first task: an AI chatbot" : "Your second task: an AI chatbot"}</h1>;
@@ -105,7 +108,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
   };
   const submit = () => {
     logConfidencePost("baseline", runId, confPost);
-    logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked });
+    logConditionSurvey("baseline", { trust, usefulness, helpfulness, effort, openText: open, sourcesChecked, basis });
     logConditionEnded("baseline", runId, 0);
     flushNow().catch(() => {});
     onDone();
@@ -239,6 +242,7 @@ export function BaselineSession({ participant, onDone }: { participant: Particip
           <span className="text-sm font-medium">About how long did you spend with the AI? (minutes)</span>
           <input className={FIELD} value={minutes} onChange={e => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))} data-control="baseline_minutes_field" placeholder="e.g. 5" />
         </label>
+        <BasisQuestion tool="the chatbot" value={basis} onChange={setBasis} />
         <label className="mt-4 block">
           <span className="text-sm font-medium">In your words: what did the AI's answer make you think or feel about this idea? (optional)</span>
           <textarea className={`${FIELD} min-h-24`} value={open} onChange={e => setOpen(e.target.value)} maxLength={2000} data-control="baseline_open_field" />

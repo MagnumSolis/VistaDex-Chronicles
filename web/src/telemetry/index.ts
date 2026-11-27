@@ -247,6 +247,10 @@ export function sourceClicked(runId: string | null, claimIndex: number, url: str
     clicksByRun.set(runId, (clicksByRun.get(runId) ?? 0) + 1);
   }
 }
+/** "This looks wrong" on a claim or objection of this session's report (study-19). */
+export function reportFlag(runId: string, kind: "claim" | "objection", index: number, status: string | null, severity: string | null) {
+  track("report_flag", { run_id: runId, kind, index, status, severity });
+}
 /** Evidence links opened in a run's report in this page load (condition_ended.verified_sources). */
 export const sourceClicksIn = (runId: string) => clicksByRun.get(runId) ?? 0;
 

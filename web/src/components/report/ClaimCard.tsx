@@ -4,6 +4,7 @@ import { ChevronDown, ExternalLink, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CLAIM_TYPE_LABEL, STATUS, StatusTag } from "@/components/status";
 import { CardLabel } from "./ReportSection";
+import { FlagWrong } from "./FlagWrong";
 import { independentSourceCount, registrableDomain } from "@/proto";
 import * as telemetry from "@/telemetry";
 import type { Claim, Evidence } from "@/types";
@@ -11,6 +12,12 @@ import type { Claim, Evidence } from "@/types";
 // Demo data stores scheme-less paths ("harvey.ai/pricing"); count their domains too (same rule as the pipeline).
 const withScheme = (u: string) => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
 export const sourceCount = (urls: string[]) => independentSourceCount((urls || []).map(withScheme)) as number;
+
+// Plain first-person uncertainty where the evidence is open (Kim et al. FAccT 2024). Ink, never a status hue.
+const UNSURE: Partial<Record<Claim["status"], string>> = {
+  unverified: "We're not sure: we could not find two independent sources that agree. Check it yourself before relying on it.",
+  disputed: "We're not sure: our sources disagree. Read both sides before relying on it.",
+};
 
 export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number; runId: string | null }) {
   const [open, setOpen] = useState(false);
@@ -39,12 +46,16 @@ export function ClaimCard({ claim, index, runId }: { claim: Claim; index: number
       <div className="mt-4 rounded-inner bg-muted p-4">
         <p className="eyebrow text-muted-foreground">Why this status</p>
         <p className="mt-1.5 text-[0.9375rem] leading-relaxed">{claim.reasoning || "No reasoning was recorded."}</p>
+        {UNSURE[claim.status] && <p className="mt-2 text-[0.9375rem] font-medium leading-relaxed">{UNSURE[claim.status]}</p>}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-2 text-sm">
-          <Link2 aria-hidden className="size-4" />
-          <span><span className="font-mono font-medium">{n}</span> independent source{n === 1 ? "" : "s"}</span>
+        <span className="inline-flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <Link2 aria-hidden className="size-4" />
+            <span><span className="font-mono font-medium">{n}</span> independent source{n === 1 ? "" : "s"}</span>
+          </span>
+          <FlagWrong runId={runId} kind="claim" index={index} status={claim.status} />
         </span>
         {claim.source_urls.length > 0 && (
           <button type="button" onClick={toggle} aria-expanded={open} aria-controls={sourcesId}

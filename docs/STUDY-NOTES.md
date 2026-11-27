@@ -45,7 +45,18 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-18 (the chatbot answer and the report side by side in the database: CURRENT)
+## study_version 2026-11-study-19 (appropriate reliance: counterbalanced order, judgement basis, answer key, contesting: CURRENT)
+
+Bumped because the study flow, the visitor-facing report and the telemetry changed (decision: 2026-11-27, redesign against BITS F364: Amershi et al. 2019 guidelines, Lectures 20-21 on appropriate reliance).
+
+- **Earlier participants stay in.** The analysis pools every study version; each pair carries the version its participant saw (`pairs[].version`, `paired.csv` `study_version`, the console's Version column). Measures added in study-19 are empty for earlier versions, never filled in. Report in the paper how many pairs saw each version, and run the main tests with and without the earlier pairs as a robustness check.
+- **Order counterbalanced again** by the code's number: odd (or no number) does the AI chatbot first, even does VistaDex first (`partOrder` in `web/src/study/participant.ts`), the same rule as the comparison page's option order. Order is now a factor (`orderEffect`), no longer a stated limitation. study-16 to 18 were chatbot first, except the study-16 walkthrough path (see study-17).
+- **"What is your judgement of the idea based on?"** after each part (Kim et al., FAccT 2024): multi-select `basis` in `condition_survey` and `run_scoped_survey`: `answer` (what the tool said), `sources` (sources I opened), `own_knowledge`, `own_search`, `other`. Tells reliance on the tool apart from the participant's own checking.
+- **Appropriate reliance.** Each claim vote (agree = accepts VistaDex's status, disagree = overrides it) is set against the team's answer key for ideas A to D (`DEFAULT_ANSWER_KEY` in `worker/src/research-join.js`): appropriate reliance, over-reliance, under-reliance, appropriate override (console: Paired study; `reliance.csv`). **TODO(team): fill in the key** (truth `true` / `false` / `disputed` / `unknown`, with a source, for each claim) before reporting; until then every vote is "unkeyed" and the console says so. It applies to earlier versions' votes too, since their claim votes and snapshots are stored.
+- **Report:** a "Before you rely on this" note in every report's summary (what was checked, that it can miss things and be wrong, what "unverified" means; Amershi G1/G2), and a plain "We're not sure" line on unverified and disputed claims (Kim et al. 2024).
+- **"This looks wrong"** on each claim and objection of the visitor's own report (Amershi G9/G15, contestability): new event `report_flag` { run_id, kind, index, status, severity }, controls `report_flag_claim`, `report_flag_objection`. Counted in the console.
+
+## study_version 2026-11-study-18 (the chatbot answer and the report side by side in the database)
 
 Bumped because a payload changed (decision: 2026-11-24).
 

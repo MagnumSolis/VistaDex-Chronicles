@@ -11,7 +11,7 @@ afterEach(() => { cleanup(); localStorage.clear(); });
 
 describe("study participant, chatbot part not done", () => {
   it("Start with walkthrough leads to the chatbot part, not Screen an idea", async () => {
-    registerStudyParticipant("P02", null, "A");
+    registerStudyParticipant("P03", null, "A");
     await loadApp({ hash: "#/welcome" });
     fireEvent.click(await screen.findByRole("button", { name: "Start with walkthrough" }));
     await waitFor(() => expect(location.hash).toBe("#/baseline"));
@@ -19,7 +19,7 @@ describe("study participant, chatbot part not done", () => {
   }, 30000);
 
   it("opening Screen an idea leads back to the chatbot part", async () => {
-    registerStudyParticipant("P04", null, "B");
+    registerStudyParticipant("P05", null, "B");
     await loadApp();
     fireEvent.click(await screen.findByRole("button", { name: "Skip to the tool" }));
     go("/screen");

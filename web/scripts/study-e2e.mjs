@@ -1,7 +1,8 @@
 // ── study-e2e.mjs — The whole study, end to end, against a local Worker and database ──
 // Runs the Worker's handler in this process (memory store, mock pipeline, no provider keys), points the
 // app at it, and takes two participants through the study in one browser (the second after "Next
-// participant"), plus one field visitor. Then checks what the research side gets: one study_comparisons
+// participant"; E2E01 chatbot first, E2E02 VistaDex first, by code number), plus one field visitor who
+// flags a claim as looking wrong. Then checks what the research side gets: one study_comparisons
 // row per participant with the pasted answer, the report snapshot, the full report and the preferences;
 // the CSV and JSON exports; the console's analysis (chatbotComparison) on the same events; and that the
 // field visitor has no row. Never reaches the deployed Worker (lib.mjs blocks workers.dev).
@@ -39,15 +40,7 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
 const ANSWERS = { E2E01: "E2E answer one. Levels and Nutrisense already sell glucose-based meal advice; the $4.2B figure could not be verified. ".repeat(3),
   E2E02: "E2E answer two. Skill-swap platforms like Superprof exist; many campus marketplaces shut down. ".repeat(3) };
 
-async function participant(page, code, idea, { first }) {
-  if (first) {
-    await page.evaluate(() => { location.hash = "#/study"; });
-    await page.getByRole("button", { name: "I have a participant code" }).click();
-  }
-  await page.getByLabel("Participant code").fill(code);
-  await page.locator(`[data-control=study_idea_pick][data-control-value=${idea}]`).click();
-  await page.locator("[data-control=study_start]").click();
-  await page.getByRole("button", { name: "Start with walkthrough" }).click(); // must still lead to the chatbot part
+async function chatbotPart(page, code) {
   await page.getByRole("button", { name: "Copy prompt" }).waitFor();
   await setProxy(page, WORKER);
   await page.locator("[data-control=baseline_sent]").click();
@@ -57,12 +50,31 @@ async function participant(page, code, idea, { first }) {
   await page.getByLabel("The chatbot's answer").fill(ANSWERS[code]);
   await page.locator("[data-control=baseline_save_answer]").click();
   await pick(page, "study_sources_1_2");
+  await pick(page, "study_basis_answer");
   await page.locator("[data-control=baseline_submit]").click();
+}
+async function vistadexPart(page) {
   await page.getByText(/is filled in/).waitFor();
+  await setProxy(page, WORKER);
   await page.getByRole("button", { name: /^Run$/ }).click();
   await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 60000 });
   await pick(page, "study_sources_3p");
+  await pick(page, "study_basis_sources");
   await page.locator("[data-control=study_survey_submit]").click();
+}
+
+// study-19: odd codes do the chatbot first, even codes VistaDex first.
+async function participant(page, code, idea, { first }) {
+  if (first) {
+    await page.evaluate(() => { location.hash = "#/study"; });
+    await page.getByRole("button", { name: "I have a participant code" }).click();
+  }
+  await page.getByLabel("Participant code").fill(code);
+  await page.locator(`[data-control=study_idea_pick][data-control-value=${idea}]`).click();
+  await page.locator("[data-control=study_start]").click();
+  await page.getByRole("button", { name: "Start with walkthrough" }).click(); // must still lead to the participant's first part
+  if (parseInt(code.replace(/\D/g, ""), 10) % 2 === 1) { await chatbotPart(page, code); await vistadexPart(page); }
+  else { await vistadexPart(page); await chatbotPart(page, code); }
   await page.getByRole("heading", { name: "The AI chatbot or VistaDex?" }).waitFor();
   await pick(page, "compare_pick_vistadex");
   await page.getByLabel(/^Why\?/).fill(`why ${code}`);
@@ -93,6 +105,7 @@ try {
     await page.getByRole("button", { name: "Mental-health journaling app" }).click();
     await page.getByRole("button", { name: /^Run$/ }).click();
     await page.getByRole("heading", { name: "Your report" }).waitFor({ timeout: 60000 });
+    await page.locator("[data-control=report_flag_claim]").first().click();
     await flush(page);
     await ctx.close();
   }
@@ -120,9 +133,14 @@ try {
   const A = analyzeStudy(data.all_events);
   check(A.comparison.n.both === 2 && A.comparison.n.preferences === 2, `analysis: ${JSON.stringify(A.comparison.n)}`);
   check(A.pairs.filter(p => p.complete).length === 2, "Paired study: both participants should be complete");
-  check(A.pairs.every(p => p.order === "baseline-first"), "a participant did not do the chatbot first");
+  const orderOf = c => A.pairs.find(p => p.code === c)?.order;
+  check(orderOf("E2E01") === "baseline-first" && orderOf("E2E02") === "vistadex-first", `order not counterbalanced by code: ${orderOf("E2E01")} / ${orderOf("E2E02")}`);
+  check(A.pairs.every(p => p.version === "2026-11-study-19"), "a pair is not tagged with study-19");
+  const basisOf = c => A.pairs.find(p => p.code === c);
+  check(["E2E01", "E2E02"].every(c => JSON.stringify(basisOf(c)?.baseline.basis) === '["answer"]' && JSON.stringify(basisOf(c)?.vistadex.basis) === '["sources"]'), "judgement basis not recorded for both parts");
+  check(A.flags.total === 1 && A.flags.claim === 1, `report_flag: ${JSON.stringify(A.flags)}`);
   const types = new Set(data.all_events.map(e => e.type));
-  for (const t of ["participant_profile", "chatbot_answer", "vistadex_report_snapshot", "tool_preference", "condition_survey"]) check(types.has(t), `no ${t} event reached the Worker`);
+  for (const t of ["participant_profile", "chatbot_answer", "vistadex_report_snapshot", "tool_preference", "condition_survey", "report_flag"]) check(types.has(t), `no ${t} event reached the Worker`);
   const fieldSid = data.all_events.find(e => e.type === "participant_registered" && e.payload.track === "field")?.session_id;
   check(fieldSid && !rows.some(r => r.session_id === fieldSid), "the field visitor got a study row");
   console.log(`study e2e: ${data.all_events.length} events in ${new Set(data.all_events.map(e => e.session_id)).size} sessions; ${rows.length} study_comparisons rows`);

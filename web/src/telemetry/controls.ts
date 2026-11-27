@@ -22,7 +22,7 @@ export const CONTROLS = [
   // report
   "report_section_jump", "idea_text_toggle", "score_breakdown_toggle", "competitor_link", "big_tech_source_link", "sources_toggle", "source_link",
   "lead_source_link", "legal_registry_link", "legal_rule_source_link", "market_citation_link",
-  "report_save_pdf", "report_screen_another", "report_feedback_prompt", "report_how_it_works", "report_empty_screen",
+  "report_flag_claim", "report_flag_objection", "report_save_pdf", "report_screen_another", "report_feedback_prompt", "report_how_it_works", "report_empty_screen",
   // contact
   "contact_feedback", "contact_your_data",
   // how it works
@@ -46,6 +46,7 @@ export const CONTROLS = [
   "study_claim_agree", "study_claim_disagree", "study_claim_not_sure", "study_objection_agree", "study_objection_disagree", "study_objection_not_sure",
   "study_conf_pre", "study_conf_post", "study_sources_0", "study_sources_1_2", "study_sources_3p",
   "study_survey_open", "study_survey_submit", "comprehension_check",
+  "study_basis_answer", "study_basis_sources", "study_basis_own_knowledge", "study_basis_own_search", "study_basis_other",
   // graveyard quiz (while-you-wait)
   "quiz_start", "quiz_answer", "quiz_next", "quiz_finish",
   // not found

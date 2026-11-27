@@ -1,6 +1,6 @@
 {
-  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-18). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts), with one exception: a study-track participant (with a participant code) sends the AI chatbot answer they paste (chatbot_answer) and a snapshot of their VistaDex report (vistadex_report_snapshot), for the chatbot vs VistaDex comparison; the study page says so. The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
-  "study_version": "2026-11-study-18",
+  "about": "Telemetry contract for the two-edition web/ UI (study_version 2026-11-study-19). PUBLIC edition only: the PITCH edition sends no events at all. Nothing is logged before the visitor answers the Welcome notice, and nothing after \"Use without recording\". No idea text and no report content is logged (runs are described by lengths and counts), with one exception: a study-track participant (with a participant code) sends the AI chatbot answer they paste (chatbot_answer) and a snapshot of their VistaDex report (vistadex_report_snapshot), for the chatbot vs VistaDex comparison; the study page says so. The UI must reproduce the envelope, the payload keys per event type, the enum values and the control ids. feedback_submitted is sent under its own random session id, never linked to the visitor's usage session.",
+  "study_version": "2026-11-study-19",
   "envelope": [
     "session_id",
     "seq",
@@ -72,6 +72,13 @@
       "claim_index",
       "run_id",
       "url"
+    ],
+    "report_flag": [
+      "index",
+      "kind",
+      "run_id",
+      "severity",
+      "status"
     ],
     "graveyard_viewed": [
       "ms_after_report",
@@ -145,6 +152,7 @@
       "vote"
     ],
     "condition_survey": [
+      "basis",
       "condition",
       "effort",
       "helpfulness",
@@ -179,6 +187,7 @@
       "run_id"
     ],
     "run_scoped_survey": [
+      "basis",
       "condition",
       "effort",
       "helpfulness",
@@ -431,6 +440,10 @@
       "solution",
       "title"
     ],
+    "report_flag.kind": [
+      "claim",
+      "objection"
+    ],
     "claim_vote.vote": [
       "agree",
       "disagree",
@@ -457,6 +470,13 @@
       "honest_uncertainty",
       "system_failure",
       "not_sure",
+      "other"
+    ],
+    "condition_survey.basis": [
+      "answer",
+      "sources",
+      "own_knowledge",
+      "own_search",
       "other"
     ],
     "condition_survey.sources_checked": [
@@ -581,6 +601,8 @@
     "legal_registry_link",
     "legal_rule_source_link",
     "market_citation_link",
+    "report_flag_claim",
+    "report_flag_objection",
     "report_save_pdf",
     "report_screen_another",
     "report_feedback_prompt",
@@ -674,7 +696,12 @@
     "quiz_answer",
     "quiz_next",
     "quiz_finish",
-    "comprehension_check"
+    "comprehension_check",
+    "study_basis_answer",
+    "study_basis_sources",
+    "study_basis_own_knowledge",
+    "study_basis_own_search",
+    "study_basis_other"
   ],
   "panel_viewed_rule": {
     "2026-10-pilot-1": "IntersectionObserver threshold 0.5 of the panel's own height. A panel taller than twice the viewport never reported (measurement bug).",

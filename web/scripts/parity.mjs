@@ -67,6 +67,9 @@ const pick = (page, control) => page.locator(`label:has([data-control=${control}
     await page.locator(`#section-${id}`).scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
   }
+  // "This looks wrong" (study-19): one claim and one objection
+  await page.locator("[data-control=report_flag_claim]").first().click();
+  await page.locator("[data-control=report_flag_objection]").first().click();
   await page.locator("[data-control=report_save_pdf]").first().click();
   check(await page.evaluate(() => window.__printed === 1), "Save as PDF did not open the print dialog");
 

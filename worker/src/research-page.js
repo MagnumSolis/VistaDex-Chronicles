@@ -795,6 +795,30 @@ export const RESEARCH_PAGE = `<!doctype html>
     return (b == null ? "—" : esc(b)) + " / " + (v == null ? "—" : esc(v));
   }
   var ORDER_LABEL = { "baseline-first": "chatbot first", "vistadex-first": "VistaDex first" };
+  var BASIS_LABEL = { answer: "The tool's answer", sources: "Sources I opened", own_knowledge: "What I already knew", own_search: "My own search", other: "Something else" };
+  // study-19: appropriate reliance (claim votes against the team's answer key), what judgements were based on,
+  // and "This looks wrong" flags from the public report.
+  function relianceHTML(ev, rows) {
+    var m = JOIN.relianceMatrix(ev, JOIN.DEFAULT_ANSWER_KEY);
+    var h = '<h3 style="margin:22px 0 8px">Appropriate reliance</h3>';
+    if (!m.keyReady) {
+      h += '<p class="msg">The answer key is not filled in yet (TODO(team): DEFAULT_ANSWER_KEY in worker/src/research-join.js). Until it is, no claim vote can be scored as appropriate or not. ' + m.votes + ' claim votes are waiting.</p>';
+    } else {
+      h += '<div class="tbl-wrap"><table><tr><th></th><th>VistaDex right</th><th>VistaDex wrong</th></tr>' +
+        "<tr><td>Participant agreed</td><td class='num'>" + m.appropriateReliance + " appropriate reliance</td><td class='num'>" + m.overReliance + " over-reliance</td></tr>" +
+        "<tr><td>Participant disagreed</td><td class='num'>" + m.underReliance + " under-reliance</td><td class='num'>" + m.appropriateOverride + " appropriate override</td></tr></table></div>" +
+        '<p class="msg">' + m.keyed + " votes scored against the answer key (" + m.notSure + " not sure, " + m.unkeyed + " on claims the key does not cover). Appropriate: " + (m.appropriatePct == null ? "n/a" : m.appropriatePct + "%") + " of decided votes. Per participant in reliance.csv (Export).</p>";
+    }
+    h += '<h3 style="margin:22px 0 8px">What judgements were based on</h3><div class="tbl-wrap"><table><tr><th>Based on</th><th>After the chatbot</th><th>After VistaDex</th></tr>';
+    var asked = function (c) { return rows.filter(function (r) { return r[c].basis; }).length; };
+    var n = function (c, b) { return rows.filter(function (r) { return r[c].basis && r[c].basis.indexOf(b) >= 0; }).length; };
+    Object.keys(BASIS_LABEL).forEach(function (b) { h += "<tr><td>" + esc(BASIS_LABEL[b]) + "</td><td class='num'>" + n("baseline", b) + "</td><td class='num'>" + n("vistadex", b) + "</td></tr>"; });
+    h += "</table></div>" + '<p class="msg">Asked of ' + asked("baseline") + " / " + asked("vistadex") + " participants (from study-19; earlier versions did not ask). Several answers may apply.</p>";
+    var f = { total: 0, claim: 0, objection: 0 };
+    ev.forEach(function (e) { if (e.type === "report_flag") { f.total++; if ((e.payload || {}).kind === "objection") f.objection++; else f.claim++; } });
+    h += '<p class="msg">Public report, "This looks wrong": ' + f.total + " flags (" + f.claim + " on claims, " + f.objection + " on objections).</p>";
+    return h;
+  }
   function renderPairs(ev) {
     var rows = JOIN.pairedParticipants(ev).sort(function (a, b) { return a.code.localeCompare(b.code, undefined, { numeric: true }); });
     window.__pairs = rows;
@@ -821,7 +845,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     });
     html += "</table></div>";
     html += '<p class="msg" style="margin:8px 0 18px">Differences are VistaDex minus AI chatbot, per participant, over the participants who answered the measure in both conditions. Wilcoxon signed-rank test: zero differences dropped, ties ranked by average, exact p up to 25 pairs. With a small sample, report the median differences and pairs alongside p.</p>';
-    html += '<div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Order</th><th>Chatbot: before → after</th><th>VistaDex: before → after</th><th>Trust C / V</th><th>Useful C / V</th><th>Verify C / V</th><th>Effort C / V</th><th>Sources checked C / V</th><th>Links opened</th><th>Agree %</th><th>Complete</th></tr>';
+    html += '<div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Order</th><th>Chatbot: before → after</th><th>VistaDex: before → after</th><th>Trust C / V</th><th>Useful C / V</th><th>Verify C / V</th><th>Effort C / V</th><th>Sources checked C / V</th><th>Links opened</th><th>Agree %</th><th>Version</th><th>Complete</th></tr>';
     html += rows.length ? rows.map(function (r) {
       return "<tr><td class='num'>" + esc(r.code) + "</td><td class='num'>" + esc(r.idea || "?") + "</td>" +
         "<td>" + esc(ORDER_LABEL[r.order] || "?") + (r.orderInferred ? ' <span style="color:var(--ink-3);font-size:11px">from code</span>' : "") + "</td>" +
@@ -831,9 +855,11 @@ export const RESEARCH_PAGE = `<!doctype html>
         "<td class='num'>" + both(r, function (c) { return c.sourcesChecked; }) + "</td>" +
         "<td class='num'>" + (r.vistadex.clicks == null ? dash() : r.vistadex.clicks) + "</td>" +
         "<td class='num'>" + (r.vistadex.agreePct == null ? dash() : r.vistadex.agreePct + "% of " + r.vistadex.votes) + "</td>" +
+        "<td class='num'>" + esc(String(r.version || "?").replace(/^\d{4}-\d{2}-/, "")) + "</td>" +
         "<td>" + (r.complete ? "yes" : "not yet") + "</td></tr>";
-    }).join("") : '<tr><td colspan="13" class="empty">No study-track participants yet: they appear when someone registers a participant code on #/study.</td></tr>';
+    }).join("") : '<tr><td colspan="14" class="empty">No study-track participants yet: they appear when someone registers a participant code on #/study.</td></tr>';
     html += "</table></div>";
+    html += relianceHTML(ev, rows);
     $("pairs-content").innerHTML = html;
     return rows;
   }
@@ -846,14 +872,15 @@ export const RESEARCH_PAGE = `<!doctype html>
     var per = ["run_id", "pre", "pre_moved", "post", "delta", "trust", "usefulness", "helpfulness", "effort", "sources_checked", "open_text"];
     var cols = ["code", "sessions", "idea", "order", "order_inferred", "complete"];
     ["chatbot", "vistadex"].forEach(function (c) { per.forEach(function (k) { cols.push(c + "_" + k); }); });
-    cols.push("vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct");
+    cols.push("vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis");
     var out = [cols.join(",")];
     rows.forEach(function (r) {
       var line = [r.code, r.sessions.join(";"), r.idea, r.order, r.orderInferred, r.complete];
       [r.baseline, r.vistadex].forEach(function (c) {
         line.push(c.runId, c.pre, c.preMoved, c.post, c.delta, c.trust, c.usefulness, c.helpfulness, c.effort, c.sourcesChecked, c.openText);
       });
-      line.push(r.vistadex.clicks, r.vistadex.votes, r.vistadex.agreePct);
+      line.push(r.vistadex.clicks, r.vistadex.votes, r.vistadex.agreePct, r.version,
+        r.baseline.basis ? r.baseline.basis.join(";") : "", r.vistadex.basis ? r.vistadex.basis.join(";") : "");
       out.push(line.map(csvCell).join(","));
     });
     return out.join(String.fromCharCode(10));
@@ -964,7 +991,8 @@ export const RESEARCH_PAGE = `<!doctype html>
     }).catch(function () { $("cmp-db").textContent = "Rebuild failed."; }).then(function () { e.target.disabled = false; });
   });
   var TABLE_NOTES = {
-    "paired.csv": "study track: one row per code, both parts side by side",
+    "paired.csv": "study track: one row per code, both parts side by side, with the study version each saw and what each judgement was based on",
+    "reliance.csv": "claim votes scored against the team's answer key, per participant (empty until the key is filled in)",
     "runs.csv": "one row per screening run: confidence, evidence, votes, ratings, time",
     "attention.csv": "seconds each report section was in view, per finished run",
     "votes.csv": "each item's latest vote, with the claim's status or the objection's severity",

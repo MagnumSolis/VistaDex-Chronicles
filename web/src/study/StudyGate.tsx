@@ -91,8 +91,8 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
             <div className="rounded-card border-2 border-foreground/10 bg-card p-4">
               <h2 className="font-semibold">A. Compare two tools (~20 min)</h2>
               <p className="mt-2 text-sm text-foreground/75">
-                You'll judge the same idea twice: first with an AI chatbot you normally use
-                (ChatGPT, Claude, Gemini...), then with VistaDex, and say which helped you more.
+                You'll judge the same idea twice: once with an AI chatbot you normally use
+                (ChatGPT, Claude, Gemini...) and once with VistaDex, in an order set by your code, then say which helped you more.
                 You paste the chatbot's answer here; it is stored with your answers so the two can be compared.
                 For recruited participants (you have a participant code).
               </p>

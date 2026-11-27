@@ -66,7 +66,7 @@ export function ScoreSummary({ scores, band, runId, backed }: { scores?: Scores;
             </p>
           )}
         </div>
-        {band && <div className="text-right"><p className="eyebrow mb-1 text-muted-foreground">Overlap</p><OverlapBadge band={band} /></div>}
+        {band && <div><p className="eyebrow mb-1 text-muted-foreground">Overlap</p><OverlapBadge band={band} /></div>}
       </div>
       <p className="mt-3 max-w-[64ch] text-sm leading-relaxed text-muted-foreground">
         {v.value === null ? v.reason : "A weighted mean of the axes below that have enough data. It describes the evidence found, not whether the idea will work."}

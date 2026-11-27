@@ -13,7 +13,8 @@ export function liveMode() {
 }
 
 // Errors carry a machine-readable code next to the plain-language message:
-//   access | daily_cap | rate_limited | misconfigured | http | contract | network | cancelled
+//   access | daily_cap | rate_limited | misconfigured | http | contract | timeout | network | cancelled
+//   (timeout: no answer within SCREEN_TIMEOUT_MS; network: the request itself failed)
 export class ScreenError extends Error {
   constructor(code, message) { super(message); this.name = "ScreenError"; this.code = code; }
 }
@@ -66,7 +67,7 @@ async function screenViaProxy(ideaOrInput, onStage = async () => {}, signal) {
     });
   } catch (err) {
     if (signal?.aborted) throw cancelled();
-    if (limit.signal.aborted) throw new ScreenError("network", `The server took longer than ${SCREEN_TIMEOUT_MS / 1000} seconds. Please try again in a minute.`);
+    if (limit.signal.aborted) throw new ScreenError("timeout", `The server took longer than ${SCREEN_TIMEOUT_MS / 1000} seconds. Please try again in a minute.`);
     throw new ScreenError("network", `The server could not be reached (${err?.message || "network error"}).`);
   } finally {
     clearTimeout(timer);

@@ -129,7 +129,7 @@ export function Report({ entry, closing }: { entry: ReportEntry; closing?: React
             ({productCount} similar product{productCount === 1 ? "" : "s"}, {report.graveyard_matches.length} shut-down startup{report.graveyard_matches.length === 1 ? "" : "s"})
             and <span className="font-mono text-foreground">{report.objections.length}</span> objection{report.objections.length === 1 ? "" : "s"}. The score explains the evidence; the decision is yours.
           </p>
-          <RelyNote claims={report.claims.length} sources={sources} />
+          <RelyNote claims={report.claims.length} sources={sources} mock={entry.mode === "mock" || entry.mode === "proxy-mock"} />
           <Actions onAnother={another} />
           {closing && (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-inner bg-muted p-4 print:hidden">
@@ -261,15 +261,20 @@ function useScrollSpy(list: { id: SectionId }[]): [SectionId, (id: SectionId) =>
 
 // "Before you rely on this" (study-19): what the report can and cannot tell you, at the top of every report
 // (Amershi et al. 2019, G1 and G2; Kim et al. 2024: plain first-person uncertainty lowers over-reliance).
-export function RelyNote({ claims, sources }: { claims: number; sources: number }) {
+export function RelyNote({ claims, sources, mock = false }: { claims: number; sources: number; mock?: boolean }) {
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const checked = mock
+    ? `This is a mock run: nothing was searched, so none of the ${plural(claims, "claim")} has live evidence.`
+    : sources > 0
+      ? `We checked ${plural(claims, "claim")} against ${plural(sources, "independent source")} found on the web, and searched for similar products, startups that shut down and Big Tech activity.`
+      : `We checked ${plural(claims, "claim")} but found no independent sources for them, and searched for similar products, startups that shut down and Big Tech activity.`;
   return (
     <aside aria-labelledby="rely-note-title" className="mt-4 flex gap-3 rounded-inner bg-muted p-4">
       <Info aria-hidden className="mt-0.5 size-5 shrink-0 text-foreground" />
       <div className="max-w-[66ch] text-[0.9375rem] leading-relaxed text-foreground">
         <p id="rely-note-title" className="font-semibold">Before you rely on this</p>
         <p className="mt-1">
-          We checked {claims} claim{claims === 1 ? "" : "s"} against {sources} independent source{sources === 1 ? "" : "s"} found by a web search, and searched for similar products,
-          startups that shut down and Big Tech activity. We can miss things and we can be wrong: open the sources for anything you would act on.
+          {checked} We can miss things and we can be wrong: open the sources for anything you would act on.
           “Unverified” means we could not find two independent sources that agree, not that the claim is false.
         </p>
         <button type="button" onClick={() => navigate(PATHS.how)} data-control="report_how_it_works"

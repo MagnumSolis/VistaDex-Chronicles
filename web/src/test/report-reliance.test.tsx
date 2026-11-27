@@ -23,6 +23,8 @@ describe("a report sets expectations and admits uncertainty", () => {
     await report();
     const note = screen.getByRole("complementary", { name: "Before you rely on this" });
     expect(within(note).getByText(/we can be wrong/)).toBeTruthy();
+    // The test run is a mock run: the note must not claim a web search happened.
+    expect(within(note).getByText(/This is a mock run: nothing was searched/)).toBeTruthy();
     expect(within(note).getByText(/not that the claim is false/)).toBeTruthy();
     expect(within(note).getByRole("button", { name: "What VistaDex can and cannot do" })).toBeTruthy();
   }, 30000);

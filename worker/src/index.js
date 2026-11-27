@@ -183,8 +183,9 @@ async function screen(request, env, { store, fetchImpl, now, cors }) {
 
 async function runAndStore(idea, env, { store, fetchImpl, now, cors, recorded = true, key }) {
 
-  // One call budget per run, shared by every provider (prototype/core/providers/http.js).
-  const budget = createBudget(Number(env.CALL_BUDGET) || undefined);
+  // One call budget per run, shared by every provider (prototype/core/providers/http.js), with a run
+  // deadline: past it, provider calls fail at once and every stage falls back, so the run still ends with a report.
+  const budget = createBudget(Number(env.CALL_BUDGET) || undefined, { deadlineMs: Number(env.RUN_DEADLINE_MS) || 150000 });
   const llmRoutes = routesFromEnv(env, fetchImpl, { budget });
   const retrieval = retrievalFromEnv(env, fetchImpl, { budget });
   const live = Object.values(llmRoutes).some(chain => chain.length) || retrieval.name !== "mock";

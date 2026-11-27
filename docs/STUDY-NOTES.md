@@ -54,6 +54,15 @@ Bumped because the preset study ideas changed (decision: 2026-11-27). No new eve
 - **Assignment keys are now A, B, D, E** (or the participant's own idea). A browser that still holds a participant assigned C is treated as unregistered: their progress is cleared and the study page asks them to register again, so both parts judge the same valid idea (never a silent switch to A).
 - Report C pairs collected before study-22 as their own idea group; the remaining ideas are unchanged, so A, B and D pairs pool across versions.
 
+## study_version 2026-11-study-21 (honest timeout error)
+
+Bumped because the telemetry changed (decision: 2026-11-27, fix/screen-timeout). The report is unchanged.
+
+- **A screening that takes too long now says so.** When the client gives up after 240 s, `run_failed` carries the new code `timeout` (it was `network`) and the visitor sees "This screening took too long" instead of "We couldn't reach the screening server". A rejected request is still `network`.
+- The server now ends a run after 150 s with the report built from what arrived (providers that had not answered abstain), so long runs end in a report rather than a client timeout.
+- When comparing failure rates across versions, read study-20 and earlier `network` failures as "timeout or network".
+- **The running screen past 75 s:** the progress bar keeps creeping towards 99% instead of sticking at 95%, and the copy says "Taking longer than usual · it should finish within 2½ minutes" instead of "About 5s to go". Participants in long runs saw a stuck bar up to study-20; no event changed.
+
 ## study_version 2026-11-study-20 (HAI design audit fixes)
 
 Bumped because the report a participant reads changed (decision: 2026-11-27, design audit against Amershi et al. 2019 and BITS F364 L20-21). No new events or payload keys.

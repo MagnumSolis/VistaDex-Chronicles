@@ -22,7 +22,7 @@ export const STAGES: { key: StageKey; name: string; desc: string }[] = [
 const PIPELINE: Record<number, StageKey> = { 1: "split", 2: "check", 3: "graveyard", 4: "objections" };
 
 export interface StageView { state: StageState; note?: string }
-export type RunErrorCode = "access" | "daily_cap" | "rate_limited" | "misconfigured" | "http" | "contract" | "network" | "pipeline";
+export type RunErrorCode = "access" | "daily_cap" | "rate_limited" | "misconfigured" | "http" | "contract" | "timeout" | "network" | "pipeline";
 export interface RunState {
   status: "idle" | "running" | "done" | "failed" | "cancelled";
   runId: string | null;
@@ -105,7 +105,7 @@ export async function startRun({ input, sample, confPre = null }: { input: IdeaI
     }
     console.error(err);
     const message = err instanceof Error ? err.message : String(err);
-    const known: RunErrorCode = (["access", "daily_cap", "rate_limited", "misconfigured", "http", "contract", "network"] as const).includes(code as never) ? (code as RunErrorCode) : "pipeline";
+    const known: RunErrorCode = (["access", "daily_cap", "rate_limited", "misconfigured", "http", "contract", "timeout", "network"] as const).includes(code as never) ? (code as RunErrorCode) : "pipeline";
     telemetry.runFailed(runId, known, message);
     set({ status: "failed", error: { code: known, message }, server: false });
     navigate(PATHS.screen);
@@ -131,6 +131,7 @@ export function errorCopy(code: RunErrorCode): { title: string; body: string } {
     case "rate_limited": return { title: "That was a lot of screenings at once", body: "Please wait a minute, then press Run again. Your idea text is still here." };
     case "access": return { title: "This link is missing its access code", body: "Please open VistaDex from the link you were given; it carries the code." };
     case "misconfigured": return { title: "The screening server is not set up correctly", body: "This is our problem, not yours. Please tell the VistaDex team." };
+    case "timeout": return { title: "This screening took too long", body: "One of our sources was slow to answer. Please try again in a few minutes. Your idea text is still here." };
     case "network": return { title: "We couldn't reach the screening server", body: "Check your connection and try again. Your idea text is still here." };
     default: return { title: "The screening did not finish", body: "Something went wrong while screening your idea. Please try again; if it keeps happening, please tell the VistaDex team." };
   }

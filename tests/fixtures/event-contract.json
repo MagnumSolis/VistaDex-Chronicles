@@ -321,6 +321,7 @@
       "misconfigured",
       "http",
       "contract",
+      "timeout",
       "network",
       "pipeline"
     ],

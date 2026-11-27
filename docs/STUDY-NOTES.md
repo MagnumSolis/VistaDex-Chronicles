@@ -52,6 +52,7 @@ Bumped because the telemetry changed (decision: 2026-11-27, fix/screen-timeout).
 - **A screening that takes too long now says so.** When the client gives up after 240 s, `run_failed` carries the new code `timeout` (it was `network`) and the visitor sees "This screening took too long" instead of "We couldn't reach the screening server". A rejected request is still `network`.
 - The server now ends a run after 150 s with the report built from what arrived (providers that had not answered abstain), so long runs end in a report rather than a client timeout.
 - When comparing failure rates across versions, read study-20 and earlier `network` failures as "timeout or network".
+- **The running screen past 75 s:** the progress bar keeps creeping towards 99% instead of sticking at 95%, and the copy says "Taking longer than usual · it should finish within 2½ minutes" instead of "About 5s to go". Participants in long runs saw a stuck bar up to study-20; no event changed.
 
 ## study_version 2026-11-study-20 (HAI design audit fixes)
 

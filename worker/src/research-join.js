@@ -261,12 +261,13 @@ export function researchJoin() {
   // fixed study ideas. Each entry matches a report claim by words that must all appear in the claim text, and
   // gives the truth found by the team with a source: "true", "false", "disputed" or "unknown" (no reliable
   // evidence either way, so "unverified" is the right status). truth null = not decided yet, never guessed.
-  // TODO(team): fill in truth and source for each claim of ideas A to D before the analysis is reported.
+  // TODO(team): fill in truth and source for each claim of ideas A, B, D, E (C retired) before the analysis is reported.
   var DEFAULT_ANSWER_KEY = {
     A: [{ match: ["no such tool"], truth: null, source: "" }, { match: ["diabetes app market"], truth: null, source: "" }, { match: ["meal logs"], truth: null, source: "" }],
     B: [{ match: ["no platform"], truth: null, source: "" }, { match: ["ed-tech market"], truth: null, source: "" }, { match: ["university clubs"], truth: null, source: "" }],
     C: [{ match: ["static question banks"], truth: null, source: "" }, { match: ["job-readiness market"], truth: null, source: "" }, { match: ["500 hired candidates"], truth: null, source: "" }],
-    D: [{ match: ["homejoy"], truth: null, source: "" }, { match: ["home-services market"], truth: null, source: "" }, { match: ["repair records"], truth: null, source: "" }]
+    D: [{ match: ["homejoy"], truth: null, source: "" }, { match: ["home-services market"], truth: null, source: "" }, { match: ["repair records"], truth: null, source: "" }],
+    E: [{ match: ["no app"], truth: null, source: "" }, { match: ["rental market"], truth: null, source: "" }, { match: ["housing societies"], truth: null, source: "" }]
   };
   var RIGHT_STATUS = { "true": "confirmed", "false": "contradicted", disputed: "disputed", unknown: "unverified" };
   function keyEntry(key, idea, claimText) {

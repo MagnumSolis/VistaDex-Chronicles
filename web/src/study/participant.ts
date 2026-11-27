@@ -27,11 +27,14 @@ export interface Participant {
 
 // Researcher-assigned idea set for Track A. Participants get one at random;
 // code+ideaKey lets researchers group participants who screened the same idea.
+// Keys are never reused: a retired idea's letter stays retired, so data collected under it stays separate.
+/** study-22: C retired (its live run took 388 s, past the client's 240 s timeout); E replaces it. */
+export const RETIRED_IDEA_KEYS: readonly string[] = ["C"];
 const STUDY_IDEAS: Record<string, string> = {
   "A": "We are building an AI-powered meal-planning app for diabetic patients that reads continuous glucose monitor data and plans meals around readings, at $25/month. No such tool exists. The diabetes app market is worth $4.2B and growing 15% annually. Our moat is a nutrition model trained on 200,000 anonymized diabetic meal logs.",
   "B": "We are building a peer-to-peer skill-swap marketplace for university students — teach what you know, learn what you need, no money involved. No platform does this well today. The global ed-tech market is $250B. Our moat is exclusive partnerships with 40 university clubs in our first year.",
-  "C": "We are building an AI mock-interview platform that simulates a real interviewer from the company you're applying to, with voice and follow-up questions, at $15/month. Existing tools only offer static question banks. The job-readiness market is $8B. Our moat is interview transcripts from 500 hired candidates.",
   "D": "We are building a same-day hardware-repair marketplace connecting users with verified local technicians, with upfront pricing and a warranty. No one has cracked this since Homejoy failed. The home-services market is $500B. Our moat is a vetting process and a pricing model built from 10,000 completed repair records.",
+  "E": "We are building an app that splits rent, electricity and internet bills between flatmates and collects each share automatically over UPI, at ₹99/month. No app handles shared rent and bills for flatmates in India. India's residential rental market is worth $20B. Our moat is partnerships with 30 housing societies in Bengaluru.",
 };
 
 // The same ideas as Screen an idea input, filled in for the VistaDex condition so every participant
@@ -54,19 +57,19 @@ const STUDY_INPUTS: Record<string, StudyInput> = {
     solution: "We are building a peer-to-peer skill-swap marketplace for university students — teach what you know, learn what you need, no money involved.",
     moat: "Our moat is exclusive partnerships with 40 university clubs in our first year.",
   },
-  "C": {
-    title: "AI mock-interview platform",
-    pitch: "Practice interviews with an AI interviewer, for job applicants.",
-    problem: "Existing tools only offer static question banks. The job-readiness market is $8B.",
-    solution: "We are building an AI mock-interview platform that simulates a real interviewer from the company you're applying to, with voice and follow-up questions, at $15/month.",
-    moat: "Our moat is interview transcripts from 500 hired candidates.",
-  },
   "D": {
     title: "Same-day repair marketplace",
     pitch: "Same-day repairs by verified local technicians.",
     problem: "No one has cracked this since Homejoy failed. The home-services market is $500B.",
     solution: "We are building a same-day hardware-repair marketplace connecting users with verified local technicians, with upfront pricing and a warranty.",
     moat: "Our moat is a vetting process and a pricing model built from 10,000 completed repair records.",
+  },
+  "E": {
+    title: "Flatmate rent and bill splitter",
+    pitch: "Split rent and utility bills with flatmates automatically, for renters in India.",
+    problem: "No app handles shared rent and bills for flatmates in India. India's residential rental market is worth $20B.",
+    solution: "We are building an app that splits rent, electricity and internet bills between flatmates and collects each share automatically over UPI, at ₹99/month.",
+    moat: "Our moat is partnerships with 30 housing societies in Bengaluru.",
   },
 };
 
@@ -196,6 +199,13 @@ export function currentParticipant(): Participant | null {
     if (!raw) return null;
     const p = JSON.parse(raw) as Participant;
     if (!p || typeof p.code !== "string" || !p.registered_at) return null;
+    // Assigned a retired idea: not mapped to another idea (the two parts could then judge different
+    // ideas). The record and its progress are cleared, so the study page asks them to register again.
+    if (p.track === "study" && RETIRED_IDEA_KEYS.includes(p.ideaKey)) {
+      localStorage.removeItem(STORAGE_KEY);
+      clearProgress();
+      return null;
+    }
     return p;
   } catch {
     return null;

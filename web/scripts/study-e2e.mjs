@@ -135,7 +135,7 @@ try {
   check(A.pairs.filter(p => p.complete).length === 2, "Paired study: both participants should be complete");
   const orderOf = c => A.pairs.find(p => p.code === c)?.order;
   check(orderOf("E2E01") === "baseline-first" && orderOf("E2E02") === "vistadex-first", `order not counterbalanced by code: ${orderOf("E2E01")} / ${orderOf("E2E02")}`);
-  check(A.pairs.every(p => p.version === "2026-11-study-21"), "a pair is not tagged with the current study version");
+  check(A.pairs.every(p => p.version === "2026-11-study-22"), "a pair is not tagged with the current study version");
   const basisOf = c => A.pairs.find(p => p.code === c);
   check(["E2E01", "E2E02"].every(c => JSON.stringify(basisOf(c)?.baseline.basis) === '["answer"]' && JSON.stringify(basisOf(c)?.vistadex.basis) === '["sources"]'), "judgement basis not recorded for both parts");
   check(A.flags.total === 1 && A.flags.claim === 1, `report_flag: ${JSON.stringify(A.flags)}`);

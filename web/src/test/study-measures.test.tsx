@@ -9,7 +9,7 @@ import { chatbotPartToRatings, go, loadApp, reportShown } from "./helpers";
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 type Ev = { type: string; payload: Record<string, unknown> };
-const participant = (order: ["baseline", "vistadex"] | ["vistadex", "baseline"], ideaKey = "C") =>
+const participant = (order: ["baseline", "vistadex"] | ["vistadex", "baseline"], ideaKey = "E") =>
   localStorage.setItem("vistadex_participant", JSON.stringify({ track: "study", code: "P09", role: null, ideaKey, order, registered_at: "2026-11-11T00:00:00Z" }));
 const of = (evs: Ev[], type: string, condition?: string) => evs.filter(e => e.type === type && (!condition || e.payload.condition === condition));
 
@@ -26,7 +26,7 @@ describe("AI chatbot condition", () => {
     const { tm } = await start("/baseline");
     fireEvent.click(await screen.findByRole("button", { name: /I've sent it/ }));
     const evs = () => tm.events() as Ev[];
-    expect(of(evs(), "condition_started", "baseline")[0].payload).toEqual({ condition: "baseline", idea_key: "C", order_position: 1 });
+    expect(of(evs(), "condition_started", "baseline")[0].payload).toEqual({ condition: "baseline", idea_key: "E", order_position: 1 });
     // Confidence before is answered while the chatbot writes, before its answer is pasted (and read).
     expect(of(evs(), "confidence_pre", "baseline")).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: /Next: read the answer/ }));

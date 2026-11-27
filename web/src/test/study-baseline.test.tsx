@@ -7,7 +7,7 @@ import { chatbotPartToRatings, go, loadApp } from "./helpers";
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 const participant = (order: ["baseline", "vistadex"] | ["vistadex", "baseline"]) => localStorage.setItem("vistadex_participant", JSON.stringify({
-  track: "study", code: "P05", role: null, ideaKey: "C", order, registered_at: "2026-11-11T00:00:00Z",
+  track: "study", code: "P05", role: null, ideaKey: "E", order, registered_at: "2026-11-11T00:00:00Z",
 }));
 
 async function openBaseline() {

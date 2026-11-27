@@ -301,7 +301,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       <div class="phead"><h1>Research analysis</h1><span class="sub">one row per screening run · H4 split by evidence opened · every open answer</span></div>
       <div id="research-content" style="margin-bottom:28px"><div class="skel" style="height:200px"></div></div>
       <h2 class="sec">Report cache</h2>
-      <p class="sec-sub">The same input gets the same report for 24 hours. Freeze a report you have reviewed and it is served to everyone who screens that input, for good: freeze each study idea (A to D) before the study starts, so every participant sees the same report.</p>
+      <p class="sec-sub">The same input gets the same report for 24 hours. Freeze a report you have reviewed and it is served to everyone who screens that input, for good: freeze each study idea (A, B, D, E; C retired) before the study starts, so every participant sees the same report.</p>
       <div class="tbl-wrap"><table id="cache"><tr><td class="empty">loading</td></tr></table></div>
       <h2 style="font-size:14px;margin:26px 0 4px;font-weight:700">Qualitative store <span class="sub" id="qualitative-meta" style="font-size:12px;color:var(--ink-3);font-weight:400">every survey, feedback and comprehension answer, verbatim</span></h2>
       <div id="qualitative-content"><div class="skel" style="height:120px"></div></div>

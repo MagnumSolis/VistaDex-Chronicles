@@ -30,3 +30,14 @@ describe("part order by participant code", () => {
     expect(reg!.payload.code).toBe("P52");
   }, 30000);
 });
+
+describe("the code is read from what was typed (27 Nov: a participant typed 'Its P50')", () => {
+  it("'Its P50' registers as P50, 'p15' as P15; anything else is kept as typed", async () => {
+    const { registerStudyParticipant, cleanCode } = await import("@/study/participant");
+    expect(cleanCode("Its P50")).toBe("P50");
+    expect(cleanCode(" p15 ")).toBe("P15");
+    expect(cleanCode("test02")).toBe("TEST02");
+    expect(cleanCode("Alice")).toBe("Alice");
+    expect(registerStudyParticipant("Its P50", null).code).toBe("P50");
+  });
+});

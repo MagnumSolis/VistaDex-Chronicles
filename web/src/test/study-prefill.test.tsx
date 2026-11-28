@@ -43,7 +43,7 @@ describe("assigned idea in the VistaDex condition", () => {
     const { tm } = await openForm();
     expect(field(/^Idea title/)).toBe("Flatmate rent and bill splitter");
     expect(field(/^Solution/)).toContain("collects each share automatically over UPI");
-    expect(screen.getByText(/Your assigned idea \(Idea E\) is filled in/)).toBeTruthy();
+    expect(screen.getByText(/Your assigned idea \(Idea D\) is filled in/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Run$/ }));
     await reportShown();
     const started = (tm.events() as Ev[]).find(e => e.type === "run_started")!;
@@ -78,7 +78,7 @@ describe("assigned idea in the VistaDex condition", () => {
     await openForm();
     fireEvent.change(screen.getByLabelText(/^Idea title/), { target: { value: "My own title" } });
     expect(screen.queryByText(/is filled in/)).toBe(null);
-    expect(screen.getByText(/You changed your assigned idea \(Idea D\)/)).toBeTruthy();
+    expect(screen.getByText(/You changed your assigned idea \(Idea C\)/)).toBeTruthy();
     go("/reports");
     go("/screen");
     expect(field(/^Idea title/)).toBe("My own title");

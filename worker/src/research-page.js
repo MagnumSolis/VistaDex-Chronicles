@@ -819,6 +819,9 @@ export const RESEARCH_PAGE = `<!doctype html>
     h += '<p class="msg">Public report, "This looks wrong": ' + f.total + " flags (" + f.claim + " on claims, " + f.objection + " on objections).</p>";
     return h;
   }
+  // study-23: participants see keys D and E as Idea C and Idea D; key C is the retired mock-interview idea.
+  var IDEA_SHOWN = { D: "C", E: "D" };
+  function ideaShown(k) { return k && IDEA_SHOWN[k] ? k + " (shown as " + IDEA_SHOWN[k] + ")" : (k || "?"); }
   function renderPairs(ev) {
     var rows = JOIN.pairedParticipants(ev).sort(function (a, b) { return a.code.localeCompare(b.code, undefined, { numeric: true }); });
     window.__pairs = rows;
@@ -831,7 +834,7 @@ export const RESEARCH_PAGE = `<!doctype html>
       '<div class="kpi hl"><div class="label">Complete pairs</div><div class="val">' + complete.length + '</div><div class="note">confidence before and after in both conditions</div></div>' +
       '<div class="kpi"><div class="label">Participants</div><div class="val">' + rows.length + '</div><div class="note">study-track codes registered</div></div>' +
       '<div class="kpi"><div class="label">Order</div><div class="val">' + count(function (r) { return r.order === "baseline-first"; }) + " / " + count(function (r) { return r.order === "vistadex-first"; }) + '</div><div class="note">chatbot first / VistaDex first · ' + count(function (r) { return r.orderInferred; }) + " from the code number</div></div>" +
-      '<div class="kpi"><div class="label">Ideas</div><div class="val" style="font-size:18px">' + Object.keys(ideas).sort().map(function (k) { return esc(k) + " " + ideas[k]; }).join(" · ") + '</div><div class="note">participants per assigned idea</div></div>' +
+      '<div class="kpi"><div class="label">Ideas</div><div class="val" style="font-size:18px">' + Object.keys(ideas).sort().map(function (k) { return esc(k) + " " + ideas[k]; }).join(" · ") + '</div><div class="note">participants per stored idea key (D shown as C, E as D; C retired)</div></div>' +
       "</div>";
     html += '<div class="tbl-wrap"><table><tr><th>Measure</th><th>Pairs</th><th>Chatbot mean</th><th>VistaDex mean</th><th>Median difference</th><th>W+ / W−</th><th>p (two-sided)</th></tr>';
     PAIR_MEASURES.forEach(function (m) {
@@ -847,7 +850,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += '<p class="msg" style="margin:8px 0 18px">Differences are VistaDex minus AI chatbot, per participant, over the participants who answered the measure in both conditions. Wilcoxon signed-rank test: zero differences dropped, ties ranked by average, exact p up to 25 pairs. With a small sample, report the median differences and pairs alongside p.</p>';
     html += '<div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Order</th><th>Chatbot: before → after</th><th>VistaDex: before → after</th><th>Trust C / V</th><th>Useful C / V</th><th>Verify C / V</th><th>Effort C / V</th><th>Sources checked C / V</th><th>Links opened</th><th>Agree %</th><th>Version</th><th>Complete</th></tr>';
     html += rows.length ? rows.map(function (r) {
-      return "<tr><td class='num'>" + esc(r.code) + "</td><td class='num'>" + esc(r.idea || "?") + "</td>" +
+      return "<tr><td class='num'>" + esc(r.code) + "</td><td class='num'>" + esc(ideaShown(r.idea)) + "</td>" +
         "<td>" + esc(ORDER_LABEL[r.order] || "?") + (r.orderInferred ? ' <span style="color:var(--ink-3);font-size:11px">from code</span>' : "") + "</td>" +
         "<td>" + prePost(r.baseline) + "</td><td>" + prePost(r.vistadex) + "</td>" +
         "<td class='num'>" + both(r, function (c) { return c.trust; }) + "</td><td class='num'>" + both(r, function (c) { return c.usefulness; }) + "</td>" +
@@ -962,7 +965,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += '<h2 class="sec">Per participant</h2><div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Chatbot</th><th>Web</th><th>Words</th><th>Links</th><th>Hedges</th><th>Verdict words</th><th>Sections taken up</th><th>Report: claims (C / X / D / U)</th><th>Report sources</th><th>Claims named</th><th>Competitors named</th><th>Leads named</th><th>Overall pick</th><th>Answer</th></tr>';
     html += C.rows.length ? C.rows.map(function (x) {
       var c = x.chatbot, v = x.vistadex, o = x.overlap;
-      return "<tr><td class='num'>" + esc(x.code) + "</td><td class='num'>" + esc(x.idea || "?") + "</td><td>" + esc(x.tool || "–") + (x.model ? ' <span style="color:var(--ink-3);font-size:11px">' + esc(x.model) + "</span>" : "") + "</td><td>" + esc(x.webSearch || "–") + "</td>" +
+      return "<tr><td class='num'>" + esc(x.code) + "</td><td class='num'>" + esc(ideaShown(x.idea)) + "</td><td>" + esc(x.tool || "–") + (x.model ? ' <span style="color:var(--ink-3);font-size:11px">' + esc(x.model) + "</span>" : "") + "</td><td>" + esc(x.webSearch || "–") + "</td>" +
         "<td class='num'>" + (c ? c.words : dash()) + "</td><td class='num'>" + (c ? c.links : dash()) + "</td><td class='num'>" + (c ? c.hedges : dash()) + "</td><td class='num'>" + (c ? c.verdicts : dash()) + "</td><td class='num'>" + (c ? c.sectionsCovered + " of 6" : dash()) + "</td>" +
         "<td class='num'>" + (v ? v.claims + " (" + v.confirmed + " / " + v.contradicted + " / " + v.disputed + " / " + v.unverified + ")" : dash()) + "</td><td class='num'>" + (v ? cell(v.sources) : dash()) + "</td>" +
         "<td class='num'>" + ofN(o && o.claims) + "</td><td class='num'>" + ofN(o && o.competitors) + "</td><td class='num'>" + ofN(o && o.graveyard) + "</td>" +

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui-vd";
-import { ROLES, OWN_IDEA, registerStudyParticipant, registerFieldParticipant, setOwnIdea, studyIdeaKeys, studyIdeaInput, currentParticipant, conditionDone, type StudyInput } from "./participant";
+import { ROLES, OWN_IDEA, ideaLabel, registerStudyParticipant, registerFieldParticipant, setOwnIdea, studyIdeaKeys, studyIdeaInput, currentParticipant, conditionDone, type StudyInput } from "./participant";
 import { startNewParticipant } from "./fresh";
 import { takeTarget } from "@/lib/gate";
 import { navigate } from "@/router";
@@ -149,7 +149,7 @@ export function StudyGate({ onDone }: { onDone: () => void }) {
                     onClick={() => setIdeaKey(k)} aria-pressed={ideaKey === k}
                     className={`min-h-11 rounded-control border-2 p-3 text-left text-sm leading-relaxed transition-colors ${ideaKey === k ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent"}`}
                   >
-                    <b className="font-mono">Idea {k}</b>: {studyIdeaInput(k).title}
+                    <b className="font-mono">Idea {ideaLabel(k)}</b>: {studyIdeaInput(k).title}
                   </button>
                 ))}
                 <button

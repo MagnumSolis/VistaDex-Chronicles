@@ -13,7 +13,7 @@ import { latestSessionReport, useSessionReports } from "@/lib/reports";
 import { clearRunError, errorCopy, reportPath, startRun, useRun } from "@/lib/run";
 import { features } from "@/edition";
 import { Slider } from "@/components/ui/slider";
-import { assignedStudyIdea } from "@/study/participant";
+import { assignedStudyIdea, ideaLabel } from "@/study/participant";
 import { logConditionStarted } from "@/study/studyEvents";
 import { JURISDICTIONS, type IdeaInput, type Jurisdiction, type Role } from "@/types";
 
@@ -150,8 +150,8 @@ export function ScreenIdea({ preview }: { preview?: IdeaInput } = {}) {
           {assigned && (
             <p className="mt-4 rounded-inner bg-muted p-4 text-[0.9375rem] text-foreground">
               {same(input, { ...empty(), ...assigned.input })
-                ? <>{assigned.sample ? `Your assigned idea (Idea ${assigned.key})` : "Your own idea"} is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.</>
-                : <>You changed {assigned.sample ? `your assigned idea (Idea ${assigned.key})` : "your own idea"}. Please run it as {assigned.sample ? "it was given" : "you wrote it at the start"}: reload this page to fill it in again.</>}
+                ? <>{assigned.sample ? `Your assigned idea (Idea ${ideaLabel(assigned.key)})` : "Your own idea"} is filled in: the same idea you {assigned.baselineDone ? "gave" : "will give"} the AI chatbot. Please run it without changes.</>
+                : <>You changed {assigned.sample ? `your assigned idea (Idea ${ideaLabel(assigned.key)})` : "your own idea"}. Please run it as {assigned.sample ? "it was given" : "you wrote it at the start"}: reload this page to fill it in again.</>}
             </p>
           )}
           {errors.length > 0 && (

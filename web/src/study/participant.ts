@@ -107,6 +107,13 @@ export function assignedStudyIdea(): { key: string; sample: string | null; input
 
 export const ROLES = ["founder", "investor", "student", "researcher", "other"] as const;
 
+// study-23: the letter participants (and the code sheet) see. Stored keys stay A, B, D, E: C is the retired
+// mock-interview idea and keeps its data, so a shown letter never stands for two ideas in the data.
+const IDEA_LABELS: Record<string, string> = { A: "A", B: "B", D: "C", E: "D" };
+export function ideaLabel(key: string): string {
+  return IDEA_LABELS[key] ?? key;
+}
+
 export function studyIdeaKeys(): string[] {
   return Object.keys(STUDY_IDEAS);
 }

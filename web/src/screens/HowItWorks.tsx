@@ -158,6 +158,7 @@ VistaDex shows what the evidence says about each claim, who already does somethi
       {/* Amershi et al. 2019, G18 (notify users about changes): what changed in the app, newest first. */}
       <Panel as="section" tab="What's new" tabId="how-new" aria-labelledby="how-new">
         <ul className="max-w-[72ch] list-disc space-y-2.5 pl-5 text-[1rem] leading-relaxed">
+          <li><span className="font-semibold">28 Nov 2026.</span> Claims about your own product, such as its features or its price, are no longer checked on the web: no page can confirm them, and searches found other products instead. Every claim is now searched and judged with your idea and the markets you chose, so a source about another country no longer counts.</li>
           <li><span className="font-semibold">27 Nov 2026.</span> Every report opens with “Before you rely on this” (what was checked and what it cannot tell you), the score says how many claims have two independent sources, open claims say plainly that we are not sure, and you can mark any claim or objection with “This looks wrong”.</li>
           <li>Reports you saved earlier in this browser are shown with these changes too; their claims, sources and scores are as they were.</li>
         </ul>

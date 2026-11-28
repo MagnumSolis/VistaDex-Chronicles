@@ -45,7 +45,17 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-22 (idea C retired, idea E added: CURRENT)
+## study_version 2026-11-study-23 (claims checked in context; ideas shown as A to D: CURRENT)
+
+Bumped because reports change for the same input (decision: 2026-11-28, fix/claim-context; PIPELINE_VERSION 2026-11-28a, so cached reports are rebuilt). No new events or payload keys.
+
+- **Own-product claims are no longer web-checked.** A live Idea E report checked "The app charges ₹99/month" (found "support" in Google Play Pass at Rs 99) and "confirmed" "The app splits rent, electricity, and internet bills between flatmates" with a UK bills service. Claims about the founder's own product, its features or its price, are now dropped at the split (trace `claim_dropped`, reason "about the founder's own product"), unless the rules type them as traction, defensibility, novelty or market size. The split prompt asks for self-contained claims that keep the place the idea names.
+- **Every claim is searched and judged in context.** The search query adds the target markets the claim does not name (`claimQuery`), and the judge sees the idea (title: pitch) and the markets, with the rule that a source about another country is irrelevant.
+- **Study ideas are shown as A, B, C, D.** The stored keys stay A, B, D, E (`ideaLabel` in web/src/study/participant.ts): shown C is key D (repair marketplace), shown D is key E (flatmate splitter). Key C stays the retired mock-interview idea, so P07's pair is never mixed with the new C. Telemetry (`idea_key`, `study_<key>`, `data-control-value`) uses the stored keys; the console shows both ("E (shown as D)"). Code sheets from today use the shown letters.
+- **Comparing across versions:** reports from study-22 and earlier can include own-product claims and context-free statuses. Report claim counts and reliance by version, or restrict claim-level analyses to study-23.
+- Existing limit, unchanged: the rule-based splitter (used only when no LLM answers) drops "No such tool exists." in Idea A as too short.
+
+## study_version 2026-11-study-22 (idea C retired, idea E added)
 
 Bumped because the preset study ideas changed (decision: 2026-11-27). No new events or payload keys; `run_started.sample` can now be `study_E` and no longer `study_C`.
 

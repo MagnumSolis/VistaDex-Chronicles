@@ -14,7 +14,8 @@
 // study-20 = HAI audit fixes: "Before you rely on this" moved above the score, the score says how many claims have two independent sources, "What's new" on How it works.
 // study-21 = a screening that takes too long says so ("This screening took too long", run_failed code "timeout") instead of blaming the connection.
 // study-22 = study idea C retired (its live run took longer than the client waits), idea E added; preset ideas A, B, D, E.
-export const STUDY_VERSION = "2026-11-study-22";
+// study-23 = claims about the founder's own product (features, price) are no longer web-checked; every claim is searched and judged with the idea and its target markets; study ideas shown as A, B, C, D (stored keys A, B, D, E).
+export const STUDY_VERSION = "2026-11-study-23";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

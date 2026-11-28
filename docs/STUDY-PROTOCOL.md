@@ -49,7 +49,7 @@ members agree on from their own research. TODO(team): decide whether to add the 
    deploy UI changes while the study runs; if you must, note the date and analyse by version (Insights,
    Data quality, and `summary.json` list the versions).
 3. **Prepare the codes and ideas.** `P01`, `P02`, ... up to the number you recruit, each with an assigned
-   idea, rotated by the letter participants see: A, B, C, D, then again from A. Since study-23 the shown letters A, B, C, D are stored as keys A, B, D, E (key C is the retired mock-interview idea), and the console shows both. Keep this sheet *outside the repository*, with the date, who ran the session
+   idea, rotated by the letter participants see: A, B, C, D, then again from A. Code ranges per recruiter, so two recruiters never hand out the same code: P01 to P10 the first team sessions, from P11 Richeek, from P50 Aditya, from P100 Lakshit (P15 was still given to two people on 27 Nov: keep one sheet per range and tick each code off when it is given). Since study-23 the shown letters A, B, C, D are stored as keys A, B, D, E (key C is the retired mock-interview idea), and the console shows both. Keep this sheet *outside the repository*, with the date, who ran the session
    and anything unusual. Note on the sheet when a participant used their own idea instead (idea "own");
    decide as a team how many own-idea sessions you want, since they are analysed separately too. Never put names in the app.
 4. **Decide the sample size now.** A paired Wilcoxon test cannot reach p < 0.05 with fewer than 6

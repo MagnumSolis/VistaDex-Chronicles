@@ -13,12 +13,24 @@ const MIN_CLAIM_CHARS = 20;
 // with the idea text; otherwise it is treated as invented and dropped.
 const MIN_GROUNDING = 0.5;
 
-const EXTRACT_PROMPT = `Split the startup idea into atomic, falsifiable factual claims.
+export const EXTRACT_PROMPT = `Split the startup idea into atomic, falsifiable factual claims that the web could confirm or contradict.
 Rules:
-- One checkable assertion per claim (about novelty, market size, defensibility, traction, pricing, regulation, etc.).
+- One checkable assertion per claim (about novelty, market size, competitors, customers, defensibility, traction, regulation, etc.).
 - Use the idea's own wording; do not add facts, numbers or companies that are not in the text.
-- Skip pure descriptions of what the product does.
+- Skip what the founder's own product does, costs or plans to do (its features, its price, how it works): no web page can check those.
+- Make every claim self-contained: never start with "the app", "this", "it" or "they"; name what it is about, and keep the
+  place the idea names (for example "in India").
 Return a JSON object: {"claims": [{"claim": "..."}]}. Never return a bare array.`;
+
+// "The app charges ₹99/month", "Our platform collects each share over UPI": the founder's own product, its
+// features or its price. Nothing on the web can confirm them, and a search finds other products instead (a live
+// report "confirmed" an Indian rent splitter with a UK bills service). A claim the rules type as traction,
+// defensibility, novelty or market size ("The app already has 2,000 paying users") is kept: those are checked.
+const OWN_PRODUCT = /^(?:(?:the|our|this|my) (?:app|application|platform|product|service|tool|solution|startup)\b|(?:we|it|this)\s+(?:are building|build|will|plan|charge|charges|cost|costs|offer|offers|provide|provides|let|lets|help|helps|split|splits|collect|collects)\b)/i;
+const OWN_PRODUCT_REASON = "about the founder's own product (features or price), nothing on the web can check it";
+export function isOwnProductClaim(text) {
+  return OWN_PRODUCT.test(String(text).trim()) && typeClaim(text).type === "other";
+}
 
 const TYPE_PROMPT = `Type each claim as exactly one of: novelty, market_size, defensibility, traction, other.
 novelty = nothing like this exists / first / only; market_size = size, growth or demand of a whole market
@@ -70,6 +82,7 @@ async function splitClaims(ideaText, { llm, trace }) {
           if (!text || text.length < MIN_CLAIM_CHARS) continue;
           const g = grounding(text, ideaText);
           if (g < MIN_GROUNDING) { trace.log("claim_dropped", { claim: text, reason: "not grounded in idea text", grounding: g }); continue; }
+          if (isOwnProductClaim(text)) { trace.log("claim_dropped", { claim: text, reason: OWN_PRODUCT_REASON }); continue; }
           kept.push(text);
         }
         trace.log("split", { router: "llm", claims: kept.length });
@@ -94,6 +107,7 @@ export function splitDeterministic(ideaText, trace) {
   for (const s of sentences) {
     if (s.length < MIN_CLAIM_CHARS) { trace?.log("claim_dropped", { claim: s, reason: "too short" }); continue; }
     if (!isFalsifiable(s)) { trace?.log("claim_dropped", { claim: s, reason: "descriptive, nothing checkable" }); continue; }
+    if (isOwnProductClaim(s)) { trace?.log("claim_dropped", { claim: s, reason: OWN_PRODUCT_REASON }); continue; }
     kept.push(s);
   }
   trace?.log("split", { router: "rules", claims: kept.length });

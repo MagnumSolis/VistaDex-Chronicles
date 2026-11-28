@@ -5,7 +5,9 @@ import assert from "node:assert/strict";
 import { extractClaims } from "../prototype/core/stages/extract.js";
 import { createTrace } from "../prototype/core/trace.js";
 
-const PRICE = "The product offers AI contract review with a human lawyer backstop for a price under $200 per month";
+// Not phrased as the founder's own product ("The product offers..."): such claims are dropped before typing
+// since study-23 (claim-context.test.js). A price still reaches typing in other phrasings, like this one.
+const PRICE = "AI contract review with a human lawyer backstop is available for a price under $200 per month";
 const MARKET = "The global legal-tech market is worth $27 billion";
 const WEIRD = "Teams switch tools every quarter";
 

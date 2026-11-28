@@ -15,7 +15,7 @@ import { raiseObjections } from "./stages/objector.js";
 import { findCompetitors } from "./stages/competitors.js";
 import { assessBigTech } from "./stages/bigtech.js";
 import { searchMarket } from "./stages/market.js";
-import { searchLegal } from "./stages/legal.js";
+import { searchLegal, MARKET_NAME } from "./stages/legal.js";
 
 // ideaOrInput: the idea text (string), or the structured input { title, pitch, problem, solution, moat,
 // industries, role, markets } — then idea_text is built from it (input.js) and the input is kept on the report.
@@ -24,7 +24,7 @@ import { searchLegal } from "./stages/legal.js";
 const stripSearch = ({ search, ...rest }) => rest;
 // Bump when the pipeline's output for the same input would change (prompts, rules, stages): cached reports
 // from an older version are not reused (worker/src/index.js cacheKey).
-export const PIPELINE_VERSION = "2026-11-12a";
+export const PIPELINE_VERSION = "2026-11-28a";
 // Rough cost of one optional search stage (search + fetch + one model call), and what the objector needs after.
 const CALLS_PER_SEARCH = 3;
 const CALLS_RESERVED = 3;
@@ -51,7 +51,12 @@ export async function runScreen(ideaOrInput, deps = {}) {
   await onStage(1, "done", `${extracted.length} claims extracted`);
 
   await onStage(2, "running");
-  const classified = await classifyClaims(extracted, { llm, retrieval, trace });
+  // Each claim is searched and judged with the idea and its target markets (classify.js claimQuery).
+  const claimContext = {
+    idea: input ? [input.title, input.pitch].filter(Boolean).join(": ") : ideaText.slice(0, 200),
+    markets: (input?.markets || []).map(m => MARKET_NAME[m] || m),
+  };
+  const classified = await classifyClaims(extracted, { llm, retrieval, trace, context: claimContext });
   const novelPages = classified.flatMap(c => c._pages || []);
   const claims = classified.map(({ _pages, ...c }) => c);
   // Competitors (dedicated search on title + pitch, plus the novelty claims' pages) and Big Tech risk.

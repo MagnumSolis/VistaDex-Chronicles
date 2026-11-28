@@ -23,26 +23,43 @@ Read the claim's exact wording:
   number meets that threshold. A number that does not ("one to three hours", "$150") contradicts it.
 - A general point on the same topic does not support a specific claim: "integration is hard" does not show that
   "large vendors are prevented from competing". Mark it irrelevant.
+- Read the claim as being about the idea and the target markets given above it. A source about another country
+  or region than those markets neither supports nor contradicts the claim: mark it irrelevant.
 Quote the exact sentence from the source that justifies a supports/contradicts stance.
 Do not use outside knowledge. Do not judge the claim overall.
 Return a JSON object: {"judgments": [{"source": 1, "stance": "supports|contradicts|irrelevant", "quote": "..."}]}. Never return a bare array.`;
 
-export async function classifyClaims(claims, { llm, retrieval, trace }) {
+// context: { idea: "title: pitch", markets: ["India", ...] } (full market names), optional. A claim is searched
+// with the markets it does not already name, and judged knowing the idea and the markets, so "the app" or
+// "renters" are read in that context (a live report confirmed an Indian rent splitter with a UK bills service).
+export async function classifyClaims(claims, { llm, retrieval, trace, context = {} }) {
   // Claims verify in parallel; each one isolates its own failures downstream,
   // and the output order always matches the input order (indexed map).
-  const out = await Promise.all(claims.map((c, i) => classifyOne(c, i, { llm, retrieval, trace })));
+  const out = await Promise.all(claims.map((c, i) => classifyOne(c, i, { llm, retrieval, trace, context })));
   return out;
+}
+
+// The claim, cut to fit, plus every target market it does not already name. → at most 200 characters.
+export function claimQuery(claim, { markets = [] } = {}) {
+  const text = String(claim);
+  const missing = markets.filter(m => !new RegExp(`\\b${m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text));
+  const suffix = missing.length ? ` ${missing.join(" ")}` : "";
+  return `${text.slice(0, 200 - suffix.length).trim()}${suffix}`;
 }
 
 // Novelty claims also hand their fetched pages on (as _pages, never part of the contract) so the
 // competitor stage can look for named products on them without fetching again.
 async function classifyOne(claim, index, ctx) {
-  const pages = await gatherEvidence(claim, index, ctx);
+  const pages = await gatherEvidence({ claim: claimQuery(claim.claim, ctx.context) }, index, ctx);
   const result = await judge(claim, index, pages, ctx);
   return claim.type === "novelty" ? { ...result, _pages: pages } : result;
 }
 
-async function judge(claim, index, pages, { llm, trace }) {
+function contextLines({ idea, markets = [] } = {}) {
+  return [idea && `Idea: ${String(idea).slice(0, 300)}`, markets.length && `Target markets: ${markets.join(", ")}`].filter(Boolean).join("\n");
+}
+
+async function judge(claim, index, pages, { llm, trace, context }) {
   if (!pages.length) {
     return abstain(claim, index, trace, "abstain(no-evidence)",
       "No evidence was retrieved for this claim, so it is not marked true or false. Check it yourself.");
@@ -58,7 +75,7 @@ async function judge(claim, index, pages, { llm, trace }) {
       json: true,
       messages: [
         { role: "system", content: JUDGE_PROMPT },
-        { role: "user", content: `Claim: ${claim.claim}\n\n${pages.map((p, k) => `[${k + 1}] ${p.url}\n${p.title}\n${p.text.slice(0, PAGE_CHARS)}`).join("\n\n")}` },
+        { role: "user", content: `${contextLines(context) ? `${contextLines(context)}\n` : ""}Claim: ${claim.claim}\n\n${pages.map((p, k) => `[${k + 1}] ${p.url}\n${p.title}\n${p.text.slice(0, PAGE_CHARS)}`).join("\n\n")}` },
       ],
     });
     judgments = parseWrapped(content, "judgments");

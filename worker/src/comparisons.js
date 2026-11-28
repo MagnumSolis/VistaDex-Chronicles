@@ -5,7 +5,7 @@
 // always starts a new session). The row is derived data: POST /research/comparisons/rebuild recreates it
 // from the event log, and withdrawing the session deletes it with the events.
 // Only sessions registered on the study track with a code get a row; field visitors never do.
-import { researchJoin } from "./research-join.js";
+import { researchJoin, normCode } from "./research-join.js"; // normCode: "Its P50" is P50, as in the analysis
 
 const { reportText } = researchJoin();
 
@@ -19,7 +19,6 @@ export const COMPARISON_COLUMNS = [
 const RELEVANT = new Set(["participant_registered", "condition_started", "chatbot_answer", "vistadex_report_snapshot", "tool_preference"]);
 const CONTENT = new Set(["chatbot_answer", "vistadex_report_snapshot", "tool_preference"]);
 
-const normCode = c => String(c ?? "").trim().toUpperCase();
 const str = (v, max) => (v == null ? null : String(v).slice(0, max));
 
 /** The row fields a batch of one session's events sets (later events win). Pure: no storage. */

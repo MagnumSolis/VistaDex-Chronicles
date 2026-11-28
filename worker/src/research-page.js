@@ -823,7 +823,8 @@ export const RESEARCH_PAGE = `<!doctype html>
   var IDEA_SHOWN = { D: "C", E: "D" };
   function ideaShown(k) { return k && IDEA_SHOWN[k] ? k + " (shown as " + IDEA_SHOWN[k] + ")" : (k || "?"); }
   function renderPairs(ev) {
-    var rows = JOIN.pairedParticipants(ev).sort(function (a, b) { return a.code.localeCompare(b.code, undefined, { numeric: true }); });
+    // TEST codes are left out here too, as in Insights and the exports (the "include TEST codes" switch keeps them).
+    var rows = JOIN.pairedParticipants(JOIN.withoutTest(ev, $("incTest").checked)).sort(function (a, b) { return a.code.localeCompare(b.code, undefined, { numeric: true }); });
     window.__pairs = rows;
     var complete = rows.filter(function (r) { return r.complete; });
     $("cnt-pairs").textContent = complete.length + "/" + rows.length;
@@ -850,7 +851,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     html += '<p class="msg" style="margin:8px 0 18px">Differences are VistaDex minus AI chatbot, per participant, over the participants who answered the measure in both conditions. Wilcoxon signed-rank test: zero differences dropped, ties ranked by average, exact p up to 25 pairs. With a small sample, report the median differences and pairs alongside p.</p>';
     html += '<div class="tbl-wrap"><table><tr><th>Code</th><th>Idea</th><th>Order</th><th>Chatbot: before → after</th><th>VistaDex: before → after</th><th>Trust C / V</th><th>Useful C / V</th><th>Verify C / V</th><th>Effort C / V</th><th>Sources checked C / V</th><th>Links opened</th><th>Agree %</th><th>Version</th><th>Complete</th></tr>';
     html += rows.length ? rows.map(function (r) {
-      return "<tr><td class='num'>" + esc(r.code) + "</td><td class='num'>" + esc(ideaShown(r.idea)) + "</td>" +
+      return "<tr><td class='num'>" + esc(r.code) + (r.sharedCode ? ' <span style="color:var(--ink-3);font-size:11px" title="Two browsers each finished the study under this code: counted as two participants. Note it on the code sheet.">shared code</span>' : "") + "</td><td class='num'>" + esc(ideaShown(r.idea)) + "</td>" +
         "<td>" + esc(ORDER_LABEL[r.order] || "?") + (r.orderInferred ? ' <span style="color:var(--ink-3);font-size:11px">from code</span>' : "") + "</td>" +
         "<td>" + prePost(r.baseline) + "</td><td>" + prePost(r.vistadex) + "</td>" +
         "<td class='num'>" + both(r, function (c) { return c.trust; }) + "</td><td class='num'>" + both(r, function (c) { return c.usefulness; }) + "</td>" +
@@ -875,7 +876,7 @@ export const RESEARCH_PAGE = `<!doctype html>
     var per = ["run_id", "pre", "pre_moved", "post", "delta", "trust", "usefulness", "helpfulness", "effort", "sources_checked", "open_text"];
     var cols = ["code", "sessions", "idea", "order", "order_inferred", "complete"];
     ["chatbot", "vistadex"].forEach(function (c) { per.forEach(function (k) { cols.push(c + "_" + k); }); });
-    cols.push("vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis");
+    cols.push("vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis", "shared_code");
     var out = [cols.join(",")];
     rows.forEach(function (r) {
       var line = [r.code, r.sessions.join(";"), r.idea, r.order, r.orderInferred, r.complete];
@@ -883,7 +884,7 @@ export const RESEARCH_PAGE = `<!doctype html>
         line.push(c.runId, c.pre, c.preMoved, c.post, c.delta, c.trust, c.usefulness, c.helpfulness, c.effort, c.sourcesChecked, c.openText);
       });
       line.push(r.vistadex.clicks, r.vistadex.votes, r.vistadex.agreePct, r.version,
-        r.baseline.basis ? r.baseline.basis.join(";") : "", r.vistadex.basis ? r.vistadex.basis.join(";") : "");
+        r.baseline.basis ? r.baseline.basis.join(";") : "", r.vistadex.basis ? r.vistadex.basis.join(";") : "", !!r.sharedCode);
       out.push(line.map(csvCell).join(","));
     });
     return out.join(String.fromCharCode(10));
@@ -1156,8 +1157,8 @@ export const RESEARCH_PAGE = `<!doctype html>
 
   $("refreshBtn").onclick = load;
   // One switch, shown in Insights and in Chatbot vs VistaDex: a pilot with TEST codes is visible in both.
-  $("incTest").onchange = function () { $("incTest2").checked = $("incTest").checked; if (window.__events) renderInsights(window.__events); };
-  $("incTest2").onchange = function () { $("incTest").checked = $("incTest2").checked; if (window.__events) renderInsights(window.__events); };
+  $("incTest").onchange = function () { $("incTest2").checked = $("incTest").checked; if (window.__events) { renderPairs(window.__events); renderInsights(window.__events); } };
+  $("incTest2").onchange = function () { $("incTest").checked = $("incTest2").checked; if (window.__events) { renderPairs(window.__events); renderInsights(window.__events); } };
   $("allCsvBtn").onclick = function () {
     Object.keys(TABLE_NOTES).forEach(function (name, i) { setTimeout(function () { download(name); }, i * 300); });
   };

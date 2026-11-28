@@ -121,3 +121,9 @@ test("console page: Feedback histograms close every tag, funnels stay inside the
   assert.ok(RESEARCH_PAGE.includes("<th>Evidence opened</th>"));
   assert.ok(!RESEARCH_PAGE.includes("the calibration measure"), "confidence change is not called calibration");
 });
+
+test("the Paired study table leaves TEST codes out, like Insights (it showed p 0.047 with TEST101 in)", async () => {
+  const { RESEARCH_PAGE } = await import("../worker/src/research-page.js");
+  const body = RESEARCH_PAGE.slice(RESEARCH_PAGE.indexOf("function renderPairs(ev)"));
+  assert.match(body.slice(0, 400), /JOIN\.withoutTest\(ev, \$\("incTest"\)\.checked\)/);
+});

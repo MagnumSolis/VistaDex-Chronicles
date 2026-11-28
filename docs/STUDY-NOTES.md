@@ -45,7 +45,16 @@ The public demo is a product, not the study: the Welcome screen is a transparenc
 - **TODO: survey item sign-off.** The 5 Likert items are drafts (`SURVEY.signedOff = false`). Retired with the study UI in public-1.
 - **TODO: feedback question wording** (public-1). `FEEDBACK.signedOff = false`; `npm run prelaunch` blocks until it is approved.
 
-## study_version 2026-11-study-23 (claims checked in context; ideas shown as A to D: CURRENT)
+## study_version 2026-11-study-24 (codes read from what was typed; console pairs fixed: CURRENT)
+
+Bumped because the stored participant code can change (decision: 2026-11-28, fix/console-pairs, after the 28 Nov data check). No new events or payload keys.
+
+- **Codes typed loosely.** A participant typed "Its P50"; the analysis treated it as its own code. The study page now saves the P or TEST number it finds ("Its P50" → P50, " p15 " → P15; `cleanCode`), and the analysis reads older data the same way (`normCode` in research-join.js, also used for study_comparisons). So "Its P50" is P50 in every view.
+- **One code in two browsers.** Two people were given P15 (a founder and an investor, a minute apart, 27 Nov); the analysis merged their answers into one row. When two or more browsers each finished both parts under one code, each is now its own participant ("P15", "P15#2"), flagged `sharedCode` (console tag, `shared_code` in paired.csv), in the paired view, the chatbot comparison and reliance. A browser that did not finish stays with the first (a retry, like P103).
+- **TEST codes in Paired study.** The console's Paired study table counted TEST101 (it showed p 0.047 for confidence change; Insights, without it, 0.094). It now leaves TEST codes out like Insights and the exports; "include TEST codes" shows them in both.
+- Code ranges per recruiter (so codes never collide): see STUDY-PROTOCOL §3.
+
+## study_version 2026-11-study-23 (claims checked in context; ideas shown as A to D)
 
 Bumped because reports change for the same input (decision: 2026-11-28, fix/claim-context; PIPELINE_VERSION 2026-11-28a, so cached reports are rebuilt). No new events or payload keys.
 

@@ -165,7 +165,20 @@ export function researchJoin() {
   // registered that code belongs to them (two sittings in two sessions are one participant). Per condition,
   // its run is the one named in condition_ended; else (older data) the assigned-idea run (run_started.sample
   // "study_<key>") or the chatbot part's "b_" run; else the condition's latest measures, flagged runInferred.
-  function normCode(c) { return String(c == null ? "" : c).replace(/^\s+|\s+$/g, "").toUpperCase(); }
+  // What was typed, read as a code: "Its P50" is P50, "p15" is P15, "P 52" is P52 (a participant typed "Its P50" on
+  // 27 Nov). Anything without a P or TEST number stays trimmed and upper case, as before.
+  function normCode(c) {
+    var s = String(c == null ? "" : c).replace(/^\s+|\s+$/g, "").toUpperCase();
+    var m = /(?:^|[^A-Z0-9])(TEST|P)\s*-?\s*(\d+)(?![0-9])/.exec(" " + s);
+    return m ? m[1] + m[2] : s;
+  }
+  // Every event of a session that registered a TEST code is left out, unless includeTest.
+  function withoutTest(events, includeTest) {
+    if (includeTest) return events;
+    var testSids = {};
+    events.forEach(function (e) { if (e.type === "participant_registered" && /^TEST/.test(normCode((e.payload || {}).code))) testSids[e.session_id] = 1; });
+    return events.filter(function (e) { return !testSids[e.session_id]; });
+  }
   function lastOf(list) { return list.length ? list[list.length - 1] : null; }
   function conditionRow(evs, c) {
     function ofType(t, cond) { return evs.filter(function (e) { return e.type === t && (!cond || (e.payload || {}).condition === c); }); }
@@ -216,6 +229,12 @@ export function researchJoin() {
     }
     return row;
   }
+  // session id → participant code as the paired view has it (a shared code's second browser is "P15#2").
+  function participantOfSession(ev) {
+    var out = {};
+    pairedParticipants(ev).forEach(function (r) { r.sessions.forEach(function (sid) { out[sid] = r.code; }); });
+    return out;
+  }
   function pairedParticipants(ev) {
     var codeBySid = {};
     ev.forEach(function (e) {
@@ -230,13 +249,32 @@ export function researchJoin() {
       if (people[code].sessions.indexOf(e.session_id) < 0) people[code].sessions.push(e.session_id);
       people[code].evs.push(e);
     });
-    return codes.map(function (code) {
-      var evs = people[code].evs;
+    // One code, two browsers that each finished both parts: two people were given the same code (P15 on
+    // 27 Nov: a founder and an investor, a minute apart). Each such browser is its own participant ("P15",
+    // "P15#2"), flagged sharedCode; a browser that did not finish stays with the first (a retry).
+    var groups = [];
+    codes.forEach(function (code) {
+      var sids = people[code].sessions;
+      var own = sids.length > 1 ? sids.filter(function (sid) {
+        var evs = people[code].evs.filter(function (e) { return e.session_id === sid; });
+        var b = conditionRow(evs, "baseline"), v = conditionRow(evs, "vistadex");
+        return b.pre != null && b.post != null && v.pre != null && v.post != null;
+      }) : [];
+      if (own.length < 2) { groups.push({ code: code, sessions: sids, evs: people[code].evs, shared: false }); return; }
+      var rest = sids.filter(function (sid) { return own.indexOf(sid) < 0; });
+      own.forEach(function (sid, i) {
+        var mine = i === 0 ? [sid].concat(rest) : [sid];
+        groups.push({ code: i === 0 ? code : code + "#" + (i + 1), sessions: mine, shared: true,
+          evs: people[code].evs.filter(function (e) { return mine.indexOf(e.session_id) >= 0; }) });
+      });
+    });
+    return groups.map(function (g) {
+      var code = g.code, evs = g.evs;
       var starts = evs.filter(function (e) { return e.type === "condition_started"; });
       var first = starts.filter(function (e) { return e.payload.order_position === 1; })[0];
       var order = first ? first.payload.condition + "-first" : null, inferred = false;
       if (!order) {
-        var num = parseInt(code.replace(/\D/g, ""), 10);
+        var num = parseInt(code.split("#")[0].replace(/\D/g, ""), 10);
         if (num > 0) { order = num % 2 === 1 ? "baseline-first" : "vistadex-first"; inferred = true; }
       }
       var idea = starts.length ? starts[0].payload.idea_key : null;
@@ -249,7 +287,7 @@ export function researchJoin() {
       // analysis; measures added later are null for them, never filled in.
       var regs = evs.filter(function (e) { return e.type === "participant_registered" && e.study_version; });
       var version = regs.length ? regs[regs.length - 1].study_version : (evs[0] && evs[0].study_version) || null;
-      return { code: code, sessions: people[code].sessions, idea: idea || null, order: order, orderInferred: inferred, version: version,
+      return { code: code, sessions: g.sessions, sharedCode: g.shared, idea: idea || null, order: order, orderInferred: inferred, version: version,
         complete: b.pre != null && b.post != null && v.pre != null && v.post != null, baseline: b, vistadex: v,
         last: evs.length ? evs[evs.length - 1].ts : null };
     });
@@ -280,10 +318,9 @@ export function researchJoin() {
     return null;
   }
   function relianceMatrix(ev, key) {
-    var snaps = {}, codeBySid = {};
+    var snaps = {}, codeBySid = participantOfSession(ev);
     ev.forEach(function (e) {
       var q = e.payload || {};
-      if (e.type === "participant_registered" && q.track === "study" && normCode(q.code)) codeBySid[e.session_id] = normCode(q.code);
       if (e.type === "vistadex_report_snapshot" && q.run_id && q.report) snaps[e.session_id + "\u0000" + q.run_id] = q;
     });
     var latest = {}, order = [];
@@ -462,12 +499,12 @@ export function researchJoin() {
   // events: as /export or /research/data return them. opts.includeTest keeps codes starting with "TEST".
   function analyzeStudy(events, opts) {
     var includeTest = !!(opts && opts.includeTest);
-    var testSids = {}, testCodes = {};
+    var testCodes = {};
     events.forEach(function (e) {
       var code = normCode((e.payload || {}).code);
-      if (e.type === "participant_registered" && /^TEST/.test(code)) { testSids[e.session_id] = 1; testCodes[code] = 1; }
+      if (e.type === "participant_registered" && /^TEST/.test(code)) testCodes[code] = 1;
     });
-    var ev = includeTest ? events : events.filter(function (e) { return !testSids[e.session_id]; });
+    var ev = withoutTest(events, includeTest);
     var sessions = groupBy(ev, function (e) { return e.session_id; });
     var sids = Object.keys(sessions);
     var versions = {};
@@ -755,8 +792,7 @@ export function researchJoin() {
   }
   var PREF_KEYS = ["overall", "accuracy", "evidence", "risks", "honesty", "decision"];
   function chatbotComparison(ev) {
-    var codeBySid = {};
-    ev.forEach(function (e) { var q = e.payload || {}; if (e.type === "participant_registered" && q.track === "study" && normCode(q.code)) codeBySid[e.session_id] = normCode(q.code); });
+    var codeBySid = participantOfSession(ev);
     var people = {}, codes = [];
     ev.forEach(function (e) {
       var code = codeBySid[e.session_id];
@@ -900,11 +936,11 @@ export function researchJoin() {
     var ph = ["code", "sessions", "idea", "order", "order_inferred", "complete"];
     ["chatbot", "vistadex"].forEach(function (c) { per.forEach(function (k) { ph.push(c + "_" + k); }); });
     // study_version and basis (study-19) at the end: earlier versions have no basis (empty, not "none").
-    t["paired.csv"] = toCSV(ph.concat(["vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis"]), result.pairs.map(function (p) {
+    t["paired.csv"] = toCSV(ph.concat(["vistadex_links_opened", "vistadex_items_voted", "vistadex_agree_pct", "study_version", "chatbot_basis", "vistadex_basis", "shared_code"]), result.pairs.map(function (p) {
       var row = [p.code, p.sessions.join(";"), p.idea, p.order, p.orderInferred, p.complete];
       [p.baseline, p.vistadex].forEach(function (c) { per.forEach(function (k) { row.push(c[k]); }); });
       return row.concat([p.vistadex.clicks, p.vistadex.votes, p.vistadex.agreePct, p.version,
-        p.baseline.basis ? p.baseline.basis.join(";") : null, p.vistadex.basis ? p.vistadex.basis.join(";") : null]);
+        p.baseline.basis ? p.baseline.basis.join(";") : null, p.vistadex.basis ? p.vistadex.basis.join(";") : null, !!p.sharedCode]);
     }));
     if (result.reliance) {
       t["reliance.csv"] = toCSV(["code", "appropriate_reliance", "over_reliance", "under_reliance", "appropriate_override", "not_sure"], result.reliance.byParticipant.map(function (r) {
@@ -975,7 +1011,7 @@ export function researchJoin() {
   }
 
   return { PER_RUN_TYPES: PER_RUN_TYPES, joinRuns: joinRuns, latestVotes: latestVotes, voteTotals: voteTotals, agreePct: agreePct,
-    pairedParticipants: pairedParticipants, wilcoxon: wilcoxon, mannWhitney: mannWhitney, analyzeStudy: analyzeStudy,
+    pairedParticipants: pairedParticipants, normCode: normCode, withoutTest: withoutTest, wilcoxon: wilcoxon, mannWhitney: mannWhitney, analyzeStudy: analyzeStudy,
     chatbotComparison: chatbotComparison, textFeatures: textFeatures, signTest: signTest, reportText: reportText,
     exportTables: exportTables, toCSV: toCSV, EVIDENCE_CONTROLS: EVIDENCE_CONTROLS, SECTIONS: SECTIONS,
     relianceMatrix: relianceMatrix, DEFAULT_ANSWER_KEY: DEFAULT_ANSWER_KEY, BASIS: BASIS };
@@ -988,6 +1024,8 @@ export const latestVotes = join.latestVotes;
 export const voteTotals = join.voteTotals;
 export const agreePct = join.agreePct;
 export const pairedParticipants = join.pairedParticipants;
+export const normCode = join.normCode;
+export const withoutTest = join.withoutTest;
 export const wilcoxon = join.wilcoxon;
 export const mannWhitney = join.mannWhitney;
 export const analyzeStudy = join.analyzeStudy;

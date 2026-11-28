@@ -162,9 +162,16 @@ export function partOrder(code: string): [Condition, Condition] {
   return Number.isFinite(num) && num % 2 === 0 ? ["vistadex", "baseline"] : ["baseline", "vistadex"];
 }
 
+/** What was typed, read as a code: "Its P50" → "P50", " p15 " → "P15". Same rule as the analysis
+ *  (worker/src/research-join.js normCode); anything without a P or TEST number is kept as typed. */
+export function cleanCode(code: string): string {
+  const m = /(?:^|[^A-Za-z0-9])(TEST|P)\s*-?\s*(\d+)(?![0-9])/i.exec(` ${code.trim()}`);
+  return m ? `${m[1].toUpperCase()}${m[2]}` : code.trim();
+}
+
 /** Study track: register with a code; then both parts in the code's order, then the comparison. */
 export function registerStudyParticipant(code: string, role: string | null, ideaKey?: string): Participant {
-  const clean = code.trim().slice(0, 12);
+  const clean = cleanCode(code).slice(0, 12);
   // A different code or idea is a new participant: the parts an earlier participant finished in this
   // browser must not count (they would skip the new person's parts and leave Screen an idea empty).
   const prev = currentParticipant();

@@ -15,7 +15,8 @@
 // study-21 = a screening that takes too long says so ("This screening took too long", run_failed code "timeout") instead of blaming the connection.
 // study-22 = study idea C retired (its live run took longer than the client waits), idea E added; preset ideas A, B, D, E.
 // study-23 = claims about the founder's own product (features, price) are no longer web-checked; every claim is searched and judged with the idea and its target markets; study ideas shown as A, B, C, D (stored keys A, B, D, E).
-export const STUDY_VERSION = "2026-11-study-23";
+// study-24 = the participant code is read from what was typed ("Its P50" is saved as P50); console: TEST codes left out of Paired study, a code finished in two browsers counts as two participants.
+export const STUDY_VERSION = "2026-11-study-24";
 
 // ── Open decisions for the team (not decided in code). Shown to participants as bracketed
 // placeholders so an unfinished value can't go unnoticed. Replace before the study starts.

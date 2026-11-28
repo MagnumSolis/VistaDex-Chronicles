@@ -150,3 +150,46 @@ test("joinRuns: the AI chatbot condition's measures never land on a VistaDex run
   assert.equal(runs[0].survey.trust, 3, "the VistaDex survey, not the chatbot's");
   assert.equal(runs[0].inferred, 0);
 });
+
+// ── 28 Nov 2026 data check: codes typed loosely, one code in two browsers, TEST codes in the paired view ──
+import { normCode, withoutTest } from "../worker/src/research-join.js";
+
+test("a participant code is read from what was typed: 'Its P50' is P50, 'p15' is P15", () => {
+  assert.equal(normCode("Its P50"), "P50");
+  assert.equal(normCode("p15"), "P15");
+  assert.equal(normCode("  P07 "), "P07");
+  assert.equal(normCode("P 52"), "P52");
+  assert.equal(normCode("TEST101"), "TEST101");
+  assert.equal(normCode("test01"), "TEST01");
+  assert.equal(normCode("ABC"), "ABC", "anything else: trimmed, upper case, as before");
+  assert.equal(normCode(""), "");
+});
+
+test("'Its P50' and 'P50' are the same participant", () => {
+  // The chatbot part in one browser as "Its P50", the VistaDex part in another as "P50".
+  const rows = pairedParticipants([...participant("s1", "Its P50", { order: ["baseline"] }), ...participant("s2", "P50", { order: ["vistadex"] })]);
+  assert.deepEqual(rows.map(r => r.code), ["P50"]);
+  assert.equal(rows[0].complete, true);
+});
+
+test("two browsers that each finished the whole study under one code are two participants, flagged", () => {
+  const rows = pairedParticipants([...participant("s1", "P15"), ...participant("s2", "p15", { b: [80, 65], v: [50, 50] })]);
+  assert.deepEqual(rows.map(r => r.code), ["P15", "P15#2"]);
+  assert.ok(rows.every(r => r.complete && r.sharedCode));
+  assert.deepEqual(rows.map(r => r.sessions.length), [1, 1]);
+  assert.equal(rows[1].baseline.pre, 80, "each row keeps only its own browser's answers");
+});
+
+test("a retry in a second browser that did not finish stays with the same participant", () => {
+  const retry = participant("s2", "P103", { order: ["baseline"] });
+  const rows = pairedParticipants([...participant("s1", "P103"), ...retry]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].sessions.length, 2);
+  assert.ok(!rows[0].sharedCode);
+});
+
+test("withoutTest drops every session that registered a TEST code, unless asked to keep them", () => {
+  const events = [...participant("s1", "P11"), ...participant("s2", "TEST101")];
+  assert.deepEqual([...new Set(withoutTest(events).map(e => e.session_id))], ["s1"]);
+  assert.equal(withoutTest(events, true).length, events.length);
+});

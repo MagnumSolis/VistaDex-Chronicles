@@ -129,3 +129,8 @@ test("console: the database exports, the rebuild button and the row check are wi
   assert.match(RESEARCH_PAGE, /checkComparisonTable\(C\)/);
   assert.match(RESEARCH_PAGE, /id="incTest2"/, "pilot runs (TEST codes) can be shown in Chatbot vs VistaDex too");
 });
+
+test("comparisonFields reads the code the way the analysis does: 'Its P50' is P50", () => {
+  const f = comparisonFields([{ session_id: "s", seq: 1, ts: "2026-11-27T09:32:00Z", type: "participant_registered", payload: { code: "Its P50", track: "study" } }]);
+  assert.equal(f.code, "P50");
+});
